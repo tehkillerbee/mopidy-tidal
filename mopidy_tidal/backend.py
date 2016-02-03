@@ -1,7 +1,9 @@
+from __future__ import unicode_literals
+
 import pykka
 from mopidy import backend
 from tidalapi import *
-from mopidy_tidal import playback, library
+from mopidy_tidal import playback, library, playlists
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class TidalBackend(pykka.ThreadingActor, backend.Backend):
         self._password = config['tidal']['password']
         self.playback = playback.TidalPlaybackProvider(audio=audio, backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
+        self.playlists = playlists.TidalPlaylistsProvider(backend=self)
         self.uri_schemes = ['tidal']
 
     def on_start(self):
