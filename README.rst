@@ -39,7 +39,10 @@ Before starting Mopidy, you must add configuration for
 Mopidy-Tidal to your Mopidy configuration file::
 
     [tidal]
-    # TODO: Add example of extension config
+    enabled = true
+    username = YOUR_TIDAL_USERNAME
+    password = YOUR_TIDAL_PASSWORD
+    quality = LOSSLESS
 
 
 Project resources
@@ -52,8 +55,8 @@ Project resources
 Credits
 =======
 
-- Original author: ` <https://github.com/mones88`__
-- Current maintainer: ` <https://github.com/mones88`__
+- Original author: `mones88 <https://github.com/mones88>`__
+- Current maintainer: `mones88 <https://github.com/mones88>`__
 - `Contributors <https://github.com/mones88/mopidy-tidal/graphs/contributors>`_
 
 
