@@ -87,17 +87,24 @@ class TidalLibraryProvider(backend.LibraryProvider):
             logger.info("EX")
             logger.info("%r", ex)
 
-    def lookup(self, uri):
-        logger.info("Lookup uri %s", uri)
+    def lookup(self, uris=None):
+        logger.info("Lookup uris %r", uris)
         session = self.backend._session
-        parts = uri.split(':')
+        if not hasattr(uris, '__iter__'):
+            uris = [uris]
 
-        if uri.startswith('tidal:track:'):
-            return self._lookup_track(session, parts)
-        elif uri.startswith('tidal:album'):
-            return self._lookup_album(session, parts)
-        else:
-            return []
+        tracks = []
+        for uri in uris:
+            parts = uri.split(':')
+            if uri.startswith('tidal:track:'):
+                tracks += self._lookup_track(session, parts)
+            elif uri.startswith('tidal:album'):
+                tracks += self._lookup_album(session, parts)
+            elif uri.startswith('tidal:artist'):
+                tracks += self._lookup_artist(session, parts)
+
+        logger.info("Returning %d tracks", len(tracks))
+        return tracks
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
@@ -115,4 +122,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
         album_id = parts[2]
         tracks = session.get_album_tracks(album_id)
         return full_models_mappers.create_mopidy_tracks(tracks)
+
+    def _lookup_artist(self, session, parts):
+        artist_id = parts[2]
+        artist_tracks = session.get_artist_top_tracks(artist_id)
+        return full_models_mappers.create_mopidy_tracks(artist_tracks)
+
 
