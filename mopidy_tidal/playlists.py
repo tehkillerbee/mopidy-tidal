@@ -51,8 +51,12 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         session = self.backend._session
         for pl in session.user.playlists():
             uri = "tidal:playlist:" + pl.id
-            tracks = full_models_mappers.create_mopidy_tracks(session.get_playlist_tracks(pl.id))
-            playlists[uri] = Playlist(uri=uri, name=pl.name, tracks=tracks, last_modified=pl.last_updated)
+            pl_tracks = session.get_playlist_tracks(pl.id)
+            tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
+            playlists[uri] = Playlist(uri=uri,
+                                      name=pl.name,
+                                      tracks=tracks,
+                                      last_modified=pl.last_updated)
 
         self._playlists = playlists
         backend.BackendListener.send('playlists_loaded')

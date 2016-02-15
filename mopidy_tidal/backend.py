@@ -1,21 +1,28 @@
 from __future__ import unicode_literals
 
-import pykka
+import logging
+
 from mopidy import backend
-from tidalapi import *
-from mopidy_tidal import playback, library, playlists
+
+from pykka import ThreadingActor
+
+from tidalapi import Config, Session
+
+from mopidy_tidal import library, playback, playlists
+
 
 logger = logging.getLogger(__name__)
 
 
-class TidalBackend(pykka.ThreadingActor, backend.Backend):
+class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(TidalBackend, self).__init__()
         self._session = None
         self._config = config
         self._username = config['tidal']['username']
         self._password = config['tidal']['password']
-        self.playback = playback.TidalPlaybackProvider(audio=audio, backend=self)
+        self.playback = playback.TidalPlaybackProvider(audio=audio,
+                                                       backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
         self.playlists = playlists.TidalPlaylistsProvider(backend=self)
         self.uri_schemes = ['tidal']
@@ -29,8 +36,3 @@ class TidalBackend(pykka.ThreadingActor, backend.Backend):
             logger.info("TIDAL Login OK")
         else:
             logger.info("TIDAL Login KO")
-
-
-
-
-

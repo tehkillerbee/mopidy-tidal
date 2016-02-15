@@ -1,13 +1,20 @@
-from mopidy import backend, models
-from mopidy.models import SearchResult
+from __future__ import unicode_literals
 
-from mopidy_tidal import ref_models_mappers
-from mopidy_tidal import full_models_mappers
-from mopidy_tidal.lru_cache import LruCache
 import logging
 
+from mopidy import backend, models
+
+from mopidy.models import SearchResult
+
+from mopidy_tidal import full_models_mappers
+
+from mopidy_tidal import ref_models_mappers
+
+from mopidy_tidal.lru_cache import LruCache
+
 from mopidy_tidal.search import tidal_search
-from mopidy_tidal.utils import *
+
+from mopidy_tidal.utils import apply_watermark
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +32,30 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         if not query:  # library root
             if field == "artist":
-                return [apply_watermark(a.name) for a in session.user.favorites.artists()]
+                return [apply_watermark(a.name) for a in
+                        session.user.favorites.artists()]
             elif field == "album" or field == "albumartist":
-                return [apply_watermark(a.name) for a in session.user.favorites.albums()]
+                return [apply_watermark(a.name) for a in
+                        session.user.favorites.albums()]
             elif field == "track":
-                return [apply_watermark(t.name) for t in session.user.favorites.tracks()]
+                return [apply_watermark(t.name) for t in
+                        session.user.favorites.tracks()]
         else:
             if field == "artist":
-                return [apply_watermark(a.name) for a in session.user.favorites.artists()]
+                return [apply_watermark(a.name) for a in
+                        session.user.favorites.artists()]
             elif field == "album" or field == "albumartist":
-                artists, _, _ = tidal_search(session, query, exact=True, map_to_mopidy_models=False)
+                artists, _, _ = tidal_search(session,
+                                             query,
+                                             exact=True,
+                                             map_to_mopidy_models=False)
                 if len(artists) > 0:
                     artist = artists[0]
-                    return [apply_watermark(a.name) for a in session.get_artist_albums(artist.id)]
+                    return [apply_watermark(a.name) for a in
+                            session.get_artist_albums(artist.id)]
             elif field == "track":
-                return [apply_watermark(t.name) for t in session.user.favorites.tracks()]
+                return [apply_watermark(t.name) for t in
+                        session.user.favorites.tracks()]
             pass
 
         return []
@@ -57,11 +73,14 @@ class TidalLibraryProvider(backend.LibraryProvider):
             return ref_models_mappers.create_root()
 
         elif uri == "tidal:my_artists":
-            return ref_models_mappers.create_artists(session.user.favorites.artists())
+            return ref_models_mappers.create_artists(
+                    session.user.favorites.artists())
         elif uri == "tidal:my_albums":
-            return ref_models_mappers.create_albums(session.user.favorites.albums())
+            return ref_models_mappers.create_albums(
+                    session.user.favorites.albums())
         elif uri == "tidal:my_playlists":
-            return ref_models_mappers.create_playlists(session.user.favorites.playlists())
+            return ref_models_mappers.create_playlists(
+                    session.user.favorites.playlists())
 
         # details
 
@@ -69,20 +88,25 @@ class TidalLibraryProvider(backend.LibraryProvider):
         nr_of_parts = len(parts)
 
         if nr_of_parts == 3 and parts[1] == "album":
-            return ref_models_mappers.create_tracks(session.get_album_tracks(parts[2]))
+            return ref_models_mappers.create_tracks(
+                    session.get_album_tracks(parts[2]))
 
         if nr_of_parts == 3 and parts[1] == "artist":
             top_10_tracks = session.get_artist_top_tracks(parts[2])[:10]
-            return ref_models_mappers.create_albums(
-                session.get_artist_albums(parts[2])) + ref_models_mappers.create_tracks(top_10_tracks)
+            albums = ref_models_mappers.create_albums(
+                    session.get_artist_albums(parts[2]))
+            return albums + ref_models_mappers.create_tracks(top_10_tracks)
 
         logger.debug('Unknown uri for browse request: %s', uri)
         return []
 
     def search(self, query=None, uris=None, exact=False):
         try:
-            artists, albums, tracks = tidal_search(self.backend._session, query, exact)
-            return SearchResult(artists=artists, albums=albums, tracks=tracks)
+            artists, albums, tracks = \
+                tidal_search(self.backend._session, query, exact)
+            return SearchResult(artists=artists,
+                                albums=albums,
+                                tracks=tracks)
         except Exception as ex:
             logger.info("EX")
             logger.info("%r", ex)
@@ -127,5 +151,3 @@ class TidalLibraryProvider(backend.LibraryProvider):
         artist_id = parts[2]
         artist_tracks = session.get_artist_top_tracks(artist_id)
         return full_models_mappers.create_mopidy_tracks(artist_tracks)
-
-

@@ -1,5 +1,8 @@
-from mopidy import backend
+from __future__ import unicode_literals
+
 import logging
+
+from mopidy import backend
 
 logger = logging.getLogger(__name__)
 
