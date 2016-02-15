@@ -31,10 +31,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
         session = self.backend._session
 
         if not query:  # library root
-            if field == "artist":
+            if field == "artist" or field == "albumartist":
                 return [apply_watermark(a.name) for a in
                         session.user.favorites.artists()]
-            elif field == "album" or field == "albumartist":
+            elif field == "album":
                 return [apply_watermark(a.name) for a in
                         session.user.favorites.albums()]
             elif field == "track":
