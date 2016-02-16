@@ -4,6 +4,8 @@ import logging
 
 from threading import Thread
 
+from lru_cache import SearchCache
+
 from mopidy_tidal.full_models_mappers import create_mopidy_albums, \
     create_mopidy_artists, create_mopidy_tracks
 
@@ -12,7 +14,8 @@ from mopidy_tidal.utils import remove_watermark
 logger = logging.getLogger(__name__)
 
 
-def tidal_search(session, query, exact, map_to_mopidy_models=True):
+@SearchCache
+def tidal_search(session, query, exact):
     logger.info('Searching Tidal for: %s %r', "Exact" if exact else "", query)
     for (field, values) in query.iteritems():
         if not hasattr(values, '__iter__'):
@@ -43,11 +46,6 @@ def tidal_search(session, query, exact, map_to_mopidy_models=True):
                     album_search.results, \
                     track_search.results
 
-            if map_to_mopidy_models:
-                results = create_mopidy_artists(results[0]), \
-                          create_mopidy_albums(results[1]), \
-                          create_mopidy_tracks(results[2])
-
             return results
 
         return [], [], []
@@ -63,11 +61,14 @@ class TidalSearchThread(Thread):
 
     def run(self):
         if self.kind == "artist":
-            self.results = self.session.search("artist", self.keyword).artists
+            artists = self.session.search("artist", self.keyword).artists
+            self.results = create_mopidy_artists(artists)
         elif self.kind == "album":
-            self.results = self.session.search("album", self.keyword).albums
+            albums = self.session.search("album", self.keyword).albums
+            self.results = create_mopidy_albums(albums)
         elif self.kind == "track":
-            self.results = self.session.search("track", self.keyword).tracks
+            tracks = self.session.search("track", self.keyword).tracks
+            self.results = create_mopidy_tracks(tracks)
 
 
 class TidalExactSearchThread(TidalSearchThread):
@@ -92,8 +93,9 @@ class TidalExactSearchThread(TidalSearchThread):
                       if a.name.lower() == self.keyword.lower()), None)
         logger.info("Album not found" if album is None else "Album found OK")
         if album:
-            self.albums = [album]
-            self.tracks = self.session.get_album_tracks(album.id)
+            self.albums = create_mopidy_albums([album])
+            tracks = self.session.get_album_tracks(album.id)
+            self.tracks = create_mopidy_tracks(tracks)
             logger.info("Found %d tracks for album", len(self.tracks))
 
     def search_artist(self):
@@ -102,5 +104,5 @@ class TidalExactSearchThread(TidalSearchThread):
         for artist in res:
             if artist.name.lower() == self.keyword.lower():
                 logger.info("Artist match OK")
-                self.artists = [artist]
+                self.artists = create_mopidy_artists([artist])
                 break

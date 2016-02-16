@@ -4,6 +4,7 @@ import logging
 
 from collections import OrderedDict
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,3 +39,53 @@ class LruCache(OrderedDict):
             # delete oldest entries
             k = self.keys()[0]
             del self[k]
+
+
+class SearchCache(LruCache):
+    def __init__(self, func):
+        super(SearchCache, self).__init__()
+        self._func = func
+
+    def __call__(self, *args, **kwargs):
+        key = SearchKey(**kwargs)
+        cached_result = self.hit(key)
+        logger.info("Search cache miss" if cached_result is None
+                    else "Search cache hit")
+        if cached_result is None:
+            cached_result = self._func(*args, **kwargs)
+            self[key] = cached_result
+
+        return cached_result
+
+
+class SearchKey(object):
+    def __init__(self, **kwargs):
+        fixed_query = self.fix_query(kwargs["query"])
+        self._query = tuple(sorted(fixed_query.iteritems()))
+        self._exact = kwargs["exact"]
+        self._hash = None
+
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash(self._exact)
+            self._hash ^= hash(repr(self._query))
+
+        return self._hash
+
+    def __eq__(self, other):
+        if not isinstance(other, SearchKey):
+            return False
+
+        return self._exact == other._exact and \
+            self._query == other._query
+
+    @staticmethod
+    def fix_query(query):
+        """
+        Removes some query parameters that otherwise will lead to a cache miss.
+        Eg: 'track_no' since we can't query TIDAL for a specific album's track.
+        :param query: query dictionary
+        :return: sanitized query dictionary
+        """
+        query.pop("track_no", None)
+        return query

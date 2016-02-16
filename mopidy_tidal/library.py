@@ -27,7 +27,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_album_tracks = LruCache(max_size=10)
 
     def get_distinct(self, field, query=None):
-        logger.info("Browsing distinct %s with query %r", field, query)
+        logger.debug("Browsing distinct %s with query %r", field, query)
         session = self.backend._session
 
         if not query:  # library root
@@ -46,13 +46,13 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         session.user.favorites.artists()]
             elif field == "album" or field == "albumartist":
                 artists, _, _ = tidal_search(session,
-                                             query,
-                                             exact=True,
-                                             map_to_mopidy_models=False)
+                                             query=query,
+                                             exact=True)
                 if len(artists) > 0:
                     artist = artists[0]
+                    artist_id = artist.uri.split(":")[2]
                     return [apply_watermark(a.name) for a in
-                            session.get_artist_albums(artist.id)]
+                            session.get_artist_albums(artist_id)]
             elif field == "track":
                 return [apply_watermark(t.name) for t in
                         session.user.favorites.tracks()]
@@ -103,7 +103,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def search(self, query=None, uris=None, exact=False):
         try:
             artists, albums, tracks = \
-                tidal_search(self.backend._session, query, exact)
+                tidal_search(self.backend._session,
+                             query=query,
+                             exact=exact)
             return SearchResult(artists=artists,
                                 albums=albums,
                                 tracks=tracks)
