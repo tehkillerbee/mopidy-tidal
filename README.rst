@@ -47,10 +47,11 @@ Mopidy-Tidal to your Mopidy configuration file::
 
 Quality can be set to LOSSLESS, HIGH or LOW.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
-For High and Low quality be sure to have installed gstreamer bad-plugins, for eg:
+For High and Low quality be sure to have installed gstreamer bad-plugins, for eg::
 
     sudo pacman -S gstreamer0.10-bad-plugins
     
+
 This is mandatory to be able to play m4a streams.
 
 Project resources
