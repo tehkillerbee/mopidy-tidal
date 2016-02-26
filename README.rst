@@ -45,6 +45,10 @@ Mopidy-Tidal to your Mopidy configuration file::
     quality = LOSSLESS
 
 
+Quality can be set to LOSSLESS, HIGH or LOW.
+Lossless requires Tidal HiFi Subscription.
+
+
 Project resources
 =================
 
@@ -62,6 +66,13 @@ Credits
 
 Changelog
 =========
+
+v0.2.0
+----------------------------------------
+- playlist support (read-only)
+- implemented artists lookup
+- high and low quality streams should now work correctly
+- cache search results (to be improved in next releases)
 
 v0.1.0
 ----------------------------------------
