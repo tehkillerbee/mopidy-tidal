@@ -6,7 +6,7 @@ from mopidy import backend
 
 from pykka import ThreadingActor
 
-from tidalapi import Config, Session
+from tidalapi4mopidy import Config, Session
 
 from mopidy_tidal import library, playback, playlists
 
