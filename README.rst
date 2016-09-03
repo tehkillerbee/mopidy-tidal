@@ -18,7 +18,9 @@ Mopidy-Tidal
    :target: https://coveralls.io/r/mones88/mopidy-tidal
    :alt: Test coverage
 
-Tidal music service integration
+Tidal music service integration.
+
+**NOTE: I don't have an active Tidal subscription at the moment! I cannot add features or fix bugs!**
 
 
 Installation
