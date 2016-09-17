@@ -74,6 +74,12 @@ Credits
 Changelog
 =========
 
+v0.2.1
+----------------------------------------
+- implemented get_images method
+- updated tidal's api key
+
+
 v0.2.0
 ----------------------------------------
 - playlist support (read-only)
