@@ -4,7 +4,7 @@ import logging
 
 from mopidy import backend, models
 
-from mopidy.models import SearchResult
+from mopidy.models import Image, SearchResult
 
 from mopidy_tidal import full_models_mappers
 
@@ -25,6 +25,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def __init__(self, *args, **kwargs):
         super(TidalLibraryProvider, self).__init__(*args, **kwargs)
         self.lru_album_tracks = LruCache(max_size=10)
+        self.lru_artist_img = LruCache()
+        self.lru_album_img = LruCache()
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
@@ -112,6 +114,46 @@ class TidalLibraryProvider(backend.LibraryProvider):
         except Exception as ex:
             logger.info("EX")
             logger.info("%r", ex)
+
+    def get_images(self, uris):
+        logger.debug("Searching Tidal for images for %r" % uris)
+        session = self.backend._session
+        images = {}
+        for uri in uris:
+            uri_images = None
+            if uri.startswith('tidal:'):
+                parts = uri.split(':')
+                if parts[1] == 'artist':
+                    artist_id = parts[2]
+                    img_uri = self.lru_artist_img.hit(artist_id)
+                    if img_uri is None:
+                        artist = session.get_artist(artist_id)
+                        img_uri = artist.image
+                        self.lru_artist_img[artist.id] = img_uri
+
+                    uri_images = [Image(uri=img_uri, width=512, height=512)]
+                elif parts[1] == 'album':
+                    album_id = parts[2]
+                    img_uri = self.lru_album_img.hit(album_id)
+                    if img_uri is None:
+                        album = session.get_album(album_id)
+                        img_uri = album.image
+                        self.lru_album_img[album_id] = img_uri
+
+                    uri_images = [Image(uri=img_uri, width=512, height=512)]
+                elif parts[1] == 'track':
+                    album_id = parts[3]
+                    img_uri = self.lru_album_img.hit(album_id)
+                    if img_uri is None:
+                        album = session.get_album(album_id)
+                        img_uri = album.image
+                        self.lru_album_img[album_id] = img_uri
+
+                    uri_images = [Image(uri=img_uri, width=512, height=512)]
+                    pass
+
+            images[uri] = uri_images or ()
+        return images
 
     def lookup(self, uris=None):
         logger.info("Lookup uris %r", uris)
