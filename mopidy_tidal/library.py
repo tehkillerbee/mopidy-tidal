@@ -89,6 +89,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         elif uri == "tidal:moods":
             return ref_models_mappers.create_moods(
                     session.get_moods())
+        elif uri == "tidal:genres":
+            return ref_models_mappers.create_genres(
+                    session.get_genres())
 
         # details
 
@@ -112,6 +115,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if nr_of_parts == 3 and parts[1] == "mood":
             return ref_models_mappers.create_playlists(
                 session.get_mood_playlists(parts[2]))
+
+        if nr_of_parts == 3 and parts[1] == "genre":
+            return ref_models_mappers.create_playlists(
+                session.get_genre_items(parts[2], 'playlists'))
 
         logger.debug('Unknown uri for browse request: %s', uri)
         return []
