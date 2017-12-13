@@ -83,6 +83,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         elif uri == "tidal:my_playlists":
             return ref_models_mappers.create_playlists(
                     session.user.favorites.playlists())
+        elif uri == "tidal:my_tracks":
+            return ref_models_mappers.create_tracks(
+                    session.user.favorites.tracks())
 
         # details
 
