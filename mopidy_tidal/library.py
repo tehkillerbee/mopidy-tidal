@@ -99,6 +99,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     session.get_artist_albums(parts[2]))
             return albums + ref_models_mappers.create_tracks(top_10_tracks)
 
+        if nr_of_parts == 3 and parts[1] == "playlist":
+            return ref_models_mappers.create_tracks(
+                session.get_playlist_tracks(parts[2]))
+
         logger.debug('Unknown uri for browse request: %s', uri)
         return []
 
