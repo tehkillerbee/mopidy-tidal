@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_root():
-    return [Ref.directory(uri="tidal:my_artists", name="My Artists"),
+    return [Ref.directory(uri="tidal:moods", name="Moods"),
+            Ref.directory(uri="tidal:my_artists", name="My Artists"),
             Ref.directory(uri="tidal:my_albums", name="My Albums"),
             Ref.directory(uri="tidal:my_playlists", name="My Playlists")]
 
@@ -29,6 +30,15 @@ def create_playlists(tidal_playlists):
 def create_playlist(tidal_playlist):
     return Ref.playlist(uri="tidal:playlist:" + str(tidal_playlist.id),
                         name=tidal_playlist.name)
+
+
+def create_moods(tidal_moods):
+    return [create_mood(m) for m in tidal_moods]
+
+
+def create_mood(tidal_mood):
+    return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
+                        name=tidal_mood.name)
 
 
 def create_albums(tidal_albums):
