@@ -53,7 +53,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         plists = session.user.favorites.playlists()
         for pl in plists:
             pl.name = "* " + pl.name
-        # Append favourites to end to keep the tagged name if there are duplicates
+        # Append favourites to end to keep the tagged name if there are
+        # duplicates
         plists = session.user.playlists() + plists
 
         for pl in plists:
