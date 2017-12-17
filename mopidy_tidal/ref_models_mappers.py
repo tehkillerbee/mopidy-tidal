@@ -12,7 +12,8 @@ def create_root():
             Ref.directory(uri="tidal:moods", name="Moods"),
             Ref.directory(uri="tidal:my_artists", name="My Artists"),
             Ref.directory(uri="tidal:my_albums", name="My Albums"),
-            Ref.directory(uri="tidal:my_playlists", name="My Playlists")]
+            Ref.directory(uri="tidal:my_playlists", name="My Playlists"),
+            Ref.directory(uri="tidal:my_tracks", name="My Tracks")]
 
 
 def create_artists(tidal_artists):
