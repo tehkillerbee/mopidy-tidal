@@ -83,6 +83,15 @@ class TidalLibraryProvider(backend.LibraryProvider):
         elif uri == "tidal:my_playlists":
             return ref_models_mappers.create_playlists(
                     session.user.favorites.playlists())
+        elif uri == "tidal:my_tracks":
+            return ref_models_mappers.create_tracks(
+                    session.user.favorites.tracks())
+        elif uri == "tidal:moods":
+            return ref_models_mappers.create_moods(
+                    session.get_moods())
+        elif uri == "tidal:genres":
+            return ref_models_mappers.create_genres(
+                    session.get_genres())
 
         # details
 
@@ -98,6 +107,18 @@ class TidalLibraryProvider(backend.LibraryProvider):
             albums = ref_models_mappers.create_albums(
                     session.get_artist_albums(parts[2]))
             return albums + ref_models_mappers.create_tracks(top_10_tracks)
+
+        if nr_of_parts == 3 and parts[1] == "playlist":
+            return ref_models_mappers.create_tracks(
+                session.get_playlist_tracks(parts[2]))
+
+        if nr_of_parts == 3 and parts[1] == "mood":
+            return ref_models_mappers.create_playlists(
+                session.get_mood_playlists(parts[2]))
+
+        if nr_of_parts == 3 and parts[1] == "genre":
+            return ref_models_mappers.create_playlists(
+                session.get_genre_items(parts[2], 'playlists'))
 
         logger.debug('Unknown uri for browse request: %s', uri)
         return []

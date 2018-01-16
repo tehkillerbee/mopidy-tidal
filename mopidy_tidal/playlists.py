@@ -49,7 +49,15 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         logger.debug("Refreshing TIDAL playlists..")
         playlists = {}
         session = self.backend._session
-        for pl in session.user.playlists():
+
+        plists = session.user.favorites.playlists()
+        for pl in plists:
+            pl.name = "* " + pl.name
+        # Append favourites to end to keep the tagged name if there are
+        # duplicates
+        plists = session.user.playlists() + plists
+
+        for pl in plists:
             uri = "tidal:playlist:" + pl.id
             pl_tracks = session.get_playlist_tracks(pl.id)
             tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
