@@ -73,6 +73,11 @@ Credits
 Changelog
 =========
 
+v0.2.2
+----------------------------------------
+- added support browsing of favourite tracks, moods, genres and playlists (thanks to SERVCUBED)
+
+
 v0.2.1
 ----------------------------------------
 - implemented get_images method
