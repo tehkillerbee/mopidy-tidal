@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @SearchCache
 def tidal_search(session, query, exact):
     logger.info('Searching Tidal for: %s %r', "Exact" if exact else "", query)
-    for (field, values) in query.iteritems():
+    for (field, values) in query.items():
         if not hasattr(values, '__iter__'):
             values = [values]
 

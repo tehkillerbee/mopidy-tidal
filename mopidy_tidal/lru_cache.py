@@ -37,7 +37,7 @@ class LruCache(OrderedDict):
     def _check_limit(self):
         while len(self) > self._max_size:
             # delete oldest entries
-            k = self.keys()[0]
+            k = list(self)[0]
             del self[k]
 
 
@@ -61,7 +61,7 @@ class SearchCache(LruCache):
 class SearchKey(object):
     def __init__(self, **kwargs):
         fixed_query = self.fix_query(kwargs["query"])
-        self._query = tuple(sorted(fixed_query.iteritems()))
+        self._query = tuple(sorted(fixed_query.items()))
         self._exact = kwargs["exact"]
         self._hash = None
 
