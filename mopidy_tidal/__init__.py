@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import sys
 
 from mopidy import config, ext
 
@@ -11,6 +12,8 @@ __version__ = '0.2.2'
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
 
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
 
 class Extension(ext.Extension):
 
