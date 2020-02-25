@@ -66,7 +66,7 @@ Credits
 =======
 
 - Original author: `mones88 <https://github.com/mones88>`__
-- Current maintainer: `mones88 <https://github.com/tehkillerbee>`__
+- Current maintainer: `tehkillerbee <https://github.com/tehkillerbee>`__
 - `Contributors <https://github.com/tehkillerbee/mopidy-tidal/graphs/contributors>`_
 
 
