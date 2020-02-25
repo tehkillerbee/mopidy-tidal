@@ -30,8 +30,7 @@ def create_mopidy_album(tidal_album, artist):
 
     return Album(uri="tidal:album:" + str(tidal_album.id),
                  name=tidal_album.name,
-                 artists=[artist],
-                 images=[tidal_album.image])
+                 artists=[artist])
 
 
 def create_mopidy_tracks(tidal_tracks):
