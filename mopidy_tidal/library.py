@@ -179,6 +179,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def lookup(self, uris=None):
         logger.info("Lookup uris %r", uris)
         session = self.backend._session
+        if isinstance(uris, str):
+            uris = [uris]
         if not hasattr(uris, '__iter__'):
             uris = [uris]
 
