@@ -58,20 +58,24 @@ This is mandatory to be able to play m4a streams.
 Project resources
 =================
 
-- `Source code <https://github.com/mones88/mopidy-tidal>`_
-- `Issue tracker <https://github.com/mones88/mopidy-tidal/issues>`_
+- `Source code <https://github.com/tehkillerbee/mopidy-tidal>`_
+- `Issue tracker <https://github.com/tehkillerbee/mopidy-tidal/issues>`_
 
 
 Credits
 =======
 
 - Original author: `mones88 <https://github.com/mones88>`__
-- Current maintainer: `mones88 <https://github.com/mones88>`__
-- `Contributors <https://github.com/mones88/mopidy-tidal/graphs/contributors>`_
+- Current maintainer: `mones88 <https://github.com/tehkillerbee>`__
+- `Contributors <https://github.com/tehkillerbee/mopidy-tidal/graphs/contributors>`_
 
 
 Changelog
 =========
+
+v0.2.3
+----------------------------------------
+- fixed python 3 compatibility issues
 
 v0.2.2
 ----------------------------------------
