@@ -6,7 +6,7 @@ from mopidy import backend
 
 from pykka import ThreadingActor
 
-from tidalapi4mopidy import Config, Session
+from tidalapi import Config, Session, Quality
 
 from mopidy_tidal import library, playback, playlists
 
@@ -30,7 +30,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
     def on_start(self):
         quality = self._config['tidal']['quality']
         logger.info("Connecting to TIDAL.. Quality = %s" % quality)
-        config = Config(quality=quality)
+        config = Config(quality=Quality(quality))
         self._session = Session(config)
         if self._session.login(self._username, self._password):
             logger.info("TIDAL Login OK")
