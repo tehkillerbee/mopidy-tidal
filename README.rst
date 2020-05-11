@@ -76,6 +76,7 @@ Changelog
 v0.2.3
 ----------------------------------------
 - fixed python 3 compatibility issues
+- Change dependency tidalapi4mopidy back to tidalapi (thanks to stevedenman)
 
 v0.2.2
 ----------------------------------------
