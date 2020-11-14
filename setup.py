@@ -23,12 +23,16 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     zip_safe=False,
     include_package_data=True,
+    dependency_links=[
+        'git+https://github.com/quodrum-glas/python-tidal.git#egg=python-tidal-0.6.7',
+    ],
     install_requires=[
         'setuptools',
         'Mopidy >= 1.0',
         'Pykka >= 1.1',
-        'tidalapi >= 0.6.4,<0.7.0',
+        'tidalapi == 0.6.7',
         'requests >= 2.0.0',
+        'mutagen >= 1.36',
     ],
     entry_points={
         'mopidy.ext': [

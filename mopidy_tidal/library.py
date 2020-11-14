@@ -30,7 +30,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
-        session = self.backend._session
+        session = self.backend.session
 
         if not query:  # library root
             if field == "artist" or field == "albumartist":
@@ -63,11 +63,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return []
 
     def browse(self, uri):
-        logger.info("Browsing uri %s", uri)
+        logger.debug("Browsing uri %s", uri)
         if not uri or not uri.startswith("tidal:"):
             return []
 
-        session = self.backend._session
+        session = self.backend.session
 
         # summaries
 
@@ -120,25 +120,24 @@ class TidalLibraryProvider(backend.LibraryProvider):
             return ref_models_mappers.create_playlists(
                 session.get_genre_items(parts[2], 'playlists'))
 
-        logger.debug('Unknown uri for browse request: %s', uri)
+        logger.error('Unknown uri for browse request: %s', uri)
         return []
 
     def search(self, query=None, uris=None, exact=False):
         try:
             artists, albums, tracks = \
-                tidal_search(self.backend._session,
+                tidal_search(self.backend.session,
                              query=query,
                              exact=exact)
             return SearchResult(artists=artists,
                                 albums=albums,
                                 tracks=tracks)
         except Exception as ex:
-            logger.info("EX")
-            logger.info("%r", ex)
+            logger.critical("%r", ex)
 
     def get_images(self, uris):
         logger.debug("Searching Tidal for images for %r" % uris)
-        session = self.backend._session
+        session = self.backend.session
         images = {}
         for uri in uris:
             uri_images = None
@@ -177,8 +176,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return images
 
     def lookup(self, uris=None):
-        logger.info("Lookup uris %r", uris)
-        session = self.backend._session
+        logger.debug("Lookup uris %r", uris)
+        session = self.backend.session
         if isinstance(uris, str):
             uris = [uris]
         if not hasattr(uris, '__iter__'):
@@ -194,7 +193,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
             elif uri.startswith('tidal:artist'):
                 tracks += self._lookup_artist(session, parts)
 
-        logger.info("Returning %d tracks", len(tracks))
+        logger.debug("Returning %d tracks", len(tracks))
         return tracks
 
     def _lookup_track(self, session, parts):
@@ -204,7 +203,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
             tracks = session.get_album_tracks(album_id)
             self.lru_album_tracks[album_id] = tracks
 
-        track = [t for t in tracks if t.id == int(parts[4])][0]
+        track = next((t for t in tracks if t.id == int(parts[4])), None)
+        if not track:
+            return []
         artist = full_models_mappers.create_mopidy_artist(track.artist)
         album = full_models_mappers.create_mopidy_album(track.album, artist)
         return [full_models_mappers.create_mopidy_track(artist, album, track)]
