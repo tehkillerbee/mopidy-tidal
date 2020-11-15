@@ -11,6 +11,7 @@ body = """<!DOCTYPE html>
 <p>Probably a "not found" page, nevertheless we need the URL</p>
 <form method="post">
   <label for="code">Paste here your final URL location:</label>
+  <input type="hidden" id="usrkey" name="usrkey" value="{usrkey}">
   <input type="url" id="code" name="code">
   <input type="submit" value="Submit">
 </form>

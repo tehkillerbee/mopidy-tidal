@@ -74,15 +74,14 @@ class HTTPHandler(BaseHTTPRequestHandler, object):
 
     def __init__(self, session, *args, **kwargs):
         self.session = session
-        self.code_verifier = None
         super(HTTPHandler, self).__init__(*args, **kwargs)
 
     @catch
     def do_GET(self):
-        self.code_verifier, authorization_url = self.session.login_part1()
+        code_verifier, authorization_url = self.session.login_part1()
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(auth_html.body(authurl=authorization_url))
+        self.wfile.write(auth_html.body(authurl=authorization_url, usrkey=code_verifier))
 
     @catch
     def do_POST(self):
@@ -91,6 +90,7 @@ class HTTPHandler(BaseHTTPRequestHandler, object):
         try:
             form = {k: v for k, v in (p.split("=", 1) for p in body.split("&"))}
             code_url = unquote(form['code'].strip(whitespace))
+            usr_key = unquote(form['usrkey'])
         except:
             self.send_response(400)
             self.end_headers()
@@ -98,7 +98,7 @@ class HTTPHandler(BaseHTTPRequestHandler, object):
             raise
         else:
             try:
-                self.session.login_part2(self.code_verifier, code_url)
+                self.session.login_part2(usr_key, code_url)
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write("Success! Autorefresh is on. Enjoy your music!")
