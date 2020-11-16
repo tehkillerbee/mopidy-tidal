@@ -7,6 +7,7 @@ from mopidy.models import Album, Artist, Track
 
 from mopidy_tidal.backend import Quality
 from mopidy_tidal.display import master_title, lossless_title, high_title, low_title
+from mopidy_tidal.lru_cache import cache_track
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +38,11 @@ def create_mopidy_album(tidal_album, artist):
 
 
 def create_mopidy_tracks(tidal_tracks):
-    return [create_mopidy_track(None, None, t) for t in tidal_tracks]
+    return [create_mopidy_track(t) for t in tidal_tracks]
 
 
-def create_mopidy_track(artist, album, tidal_track):
+@cache_track
+def create_mopidy_track(tidal_track, artist=None, album=None):
     uri = "tidal:track:{0}:{1}:{2}".format(tidal_track.artist.id,
                                            tidal_track.album.id,
                                            tidal_track.id)

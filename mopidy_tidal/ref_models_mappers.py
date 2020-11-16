@@ -4,6 +4,8 @@ import logging
 
 from mopidy.models import Ref
 
+from full_models_mappers import create_mopidy_track
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,4 +71,5 @@ def create_track(tidal_track):
     uri = "tidal:track:{0}:{1}:{2}".format(tidal_track.artist.id,
                                            tidal_track.album.id,
                                            tidal_track.id)
+    create_mopidy_track(tidal_track)  # For caching
     return Ref.track(uri=uri, name=tidal_track.name)

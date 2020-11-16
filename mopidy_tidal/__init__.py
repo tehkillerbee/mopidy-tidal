@@ -29,7 +29,8 @@ class Extension(ext.Extension):
         schema = super(Extension, self).get_config_schema()
         schema['token'] = config.Secret()
         schema['oauth'] = config.String()
-        schema['oauth_port'] = config.Integer(choices=range(8000, 10000))
+        schema['oauth_port'] = config.Integer(optional=True, choices=range(8000, 10000))
+        schema['disable_images'] = config.Boolean()
         schema['quality'] = config.String(choices=["HI_RES", "LOSSLESS", "HIGH", "LOW"])
         return schema
 

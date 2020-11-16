@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from collections import OrderedDict
+from functools import wraps
 
 
 logger = logging.getLogger(__name__)
@@ -89,3 +90,28 @@ class SearchKey(object):
         """
         query.pop("track_no", None)
         return query
+
+
+track_cache = LruCache(max_size=1024*16)
+image_cache = LruCache(max_size=1024*16)
+
+
+def cache_track(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        item = func(*args, **kwargs)
+        track_cache[item.uri] = item
+        return item
+    return wrapper
+
+
+def with_cache(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        uri = args[-1]
+        track = track_cache.hit(uri)
+        if track is not None:
+            logger.debug("Found cached: %s", uri)
+            return [track]
+        return func(*args, **kwargs)
+    return wrapper
