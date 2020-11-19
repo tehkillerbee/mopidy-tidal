@@ -45,7 +45,7 @@ Mopidy-Tidal to your Mopidy configuration file::
     token = ${X-Tidal-Token}  # /Android/data/com.aspiro.tidal/cache/okhttp found in some of the files ending .0
     oauth = /var/lib/mopidy/tidal.cred # or any location where credentials to be stored after going through OAuth Flow
     oauth_port = 8000 - 9999  # Optional, for HTTP server to assist in creating oauth credentials stored above.
-    disable_images = true     # takes a lot of extra requests to have images
+    image_search = false      # image location should be cached from browsing. Set 'true' to search if cache item not found
     quality = LOSSLESS        # with Android token this can be HI_RES (Master)
 
 
