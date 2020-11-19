@@ -27,7 +27,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self._token = config['tidal']['token']
         self._oauth = config['tidal']['oauth']
         self._oauth_port = config['tidal'].get('oauth_port')
-        self.disable_images = config['tidal']['disable_images']
+        self.image_search = config['tidal']['image_search']
         self.quality = self._config['tidal']['quality']
         self.playback = playback.TidalPlaybackProvider(audio=audio,
                                                        backend=self)

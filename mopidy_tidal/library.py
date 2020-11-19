@@ -45,7 +45,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                                              exact=True)
                 if len(artists) > 0:
                     artist = artists[0]
-                    artist_id = artist.uri.split(":")[2]
+                    artist_id = artist.uri.split(":")[3]
                     return [apply_watermark(a.name) for a in
                             self.backend.session.get_artist_albums(artist_id)]
             elif field == "track":
@@ -88,9 +88,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         parts = uri.split(':')
         nr_of_parts = len(parts)
 
-        if nr_of_parts == 3 and parts[1] == "album":
+        if nr_of_parts == 4 and parts[1] == "album":
             return ref_models_mappers.create_tracks(
-                self.backend.session.get_album_tracks(parts[2]))
+                self.backend.session.get_album_tracks(parts[3]))
 
         if nr_of_parts == 3 and parts[1] == "artist":
             top_10_tracks = self.backend.session.get_artist_top_tracks(parts[2])[:10]
@@ -128,25 +128,23 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def get_images(self, uris):
         logger.debug("Searching Tidal for images for %r" % uris)
-        return {} if self.backend.disable_images else {uri: self._get_images(uri) for uri in uris}
+        return {uri: self._get_images(uri) for uri in uris}
 
     def _get_images(self, uri):
-        uri_images = image_cache.hit(uri)
-        if uri_images is not None:
-            return uri_images
         parts = uri.split(':')
-        if parts[1] == 'artist':
-            artist = self.backend.session.get_artist(artist_id=parts[2])
-            uri_images = [Image(uri=artist.image, width=512, height=512)]
-        elif parts[1] == 'album':
-            album = self.backend.session.get_album(album_id=parts[2])
-            uri_images = [Image(uri=album.image, width=512, height=512)]
-        elif parts[1] == 'track':
-            album = self.backend.session.get_album(album_id=parts[3])
-            uri_images = [Image(uri=album.image, width=512, height=512)]
-        uri_images = uri_images or ()
-        image_cache[uri] = uri_images
-        return uri_images
+        if parts[1] == 'track':
+            uri = '{0}:album:{2}:{3}'.format(*parts)
+            parts = uri.split(':')
+        uri_image = image_cache.hit(uri)
+        if uri_image is None and self.backend.image_search:
+            logger.info('CACHE HIT MISS: %s', uri)
+            if parts[1] == 'artist':
+                uri_image = self.backend.session.get_artist(artist_id=parts[2]).image
+            elif parts[1] == 'album':
+                uri_image = self.backend.session.get_album(album_id=parts[3]).image
+            logger.info("Setting image cache (%s) with %s = %s", len(image_cache), uri, uri_image)
+            image_cache[uri] = uri_image
+        return [Image(uri=uri_image, width=512, height=512)] if uri_image else ()
 
     def lookup(self, uris=None):
         logger.debug("Lookup uris %r", uris)
@@ -162,7 +160,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if uri.startswith('tidal:track:'):
             return self._lookup_track(track_id=parts[4])
         elif uri.startswith('tidal:album:'):
-            return self._lookup_album(album_id=parts[2])
+            return self._lookup_album(album_id=parts[3])
         elif uri.startswith('tidal:artist:'):
             return self._lookup_artist(artist_id=parts[2])
 

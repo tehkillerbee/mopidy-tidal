@@ -10,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class LruCache(OrderedDict):
-    def __init__(self, max_size=1024):
+    def __init__(self, max_size=1024, default_value=''):
         if max_size <= 0:
             raise ValueError('Invalid size')
         OrderedDict.__init__(self)
         self._max_size = max_size
         self._check_limit()
+        self._default_value = default_value
 
     def get_max_size(self):
         return self._max_size
@@ -32,7 +33,7 @@ class LruCache(OrderedDict):
     def __setitem__(self, key, value):
         if key in self:
             del self[key]
-        OrderedDict.__setitem__(self, key, value)
+        OrderedDict.__setitem__(self, key, self._default_value if value is None else value)
         self._check_limit()
 
     def _check_limit(self):
@@ -101,6 +102,15 @@ def cache_track(func):
     def wrapper(*args, **kwargs):
         item = func(*args, **kwargs)
         track_cache[item.uri] = item
+        return item
+    return wrapper
+
+
+def cache_image(func):
+    @wraps(func)
+    def wrapper(tidal_item, *args, **kwargs):
+        item = func(tidal_item, *args, **kwargs)
+        image_cache[item.uri] = tidal_item.image
         return item
     return wrapper
 

@@ -30,7 +30,7 @@ class Extension(ext.Extension):
         schema['token'] = config.Secret()
         schema['oauth'] = config.String()
         schema['oauth_port'] = config.Integer(optional=True, choices=range(8000, 10000))
-        schema['disable_images'] = config.Boolean()
+        schema['image_search'] = config.Boolean()
         schema['quality'] = config.String(choices=["HI_RES", "LOSSLESS", "HIGH", "LOW"])
         return schema
 
