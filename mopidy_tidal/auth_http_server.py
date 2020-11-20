@@ -73,7 +73,7 @@ class HTTPHandler(BaseHTTPRequestHandler, object):
                 self.session.login_part2(usr_key, code_url)
                 self.send_response(200)
                 self.end_headers()
-                self.wfile.write("Success! Autorefresh is on. Enjoy your music!")
+                self.wfile.write("Success! Credentials autorefresh is on. Enjoy your music!")
             except:
                 self.send_response(401)
                 self.end_headers()

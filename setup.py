@@ -12,13 +12,15 @@ def get_version(filename):
 
 
 setup(
-    name='Mopidy-Tidal',
+    name='Mopidy-TidalOAuth',
     version=get_version('mopidy_tidal/__init__.py'),
-    url='https://github.com/mones88/mopidy-tidal',
+    url='https://github.com/quodrum-glas/mopidy-tidal',
     license='Apache License, Version 2.0',
     author='Simone Fantini',
     author_email='mones88@gmail.com',
     description='Tidal music service integration',
+    maintainer='quodrumglas',
+    maintainer_email='quodrumglas@email.com',
     long_description=open('README.rst').read(),
     packages=find_packages(exclude=['tests', 'tests.*']),
     zip_safe=False,

@@ -1,22 +1,14 @@
 ****************************
-Mopidy-Tidal
+Mopidy-TidalOAuth
 ****************************
 
-.. image:: https://img.shields.io/pypi/v/Mopidy-Tidal.svg?style=flat
-    :target: https://pypi.python.org/pypi/Mopidy-Tidal/
+.. image:: https://img.shields.io/pypi/v/Mopidy-TidalOAuth.svg?style=flat
+    :target: https://pypi.python.org/pypi/Mopidy-TidalOAuth/
     :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/pypi/dm/Mopidy-Tidal.svg?style=flat
-    :target: https://pypi.python.org/pypi/Mopidy-Tidal/
+.. image:: https://img.shields.io/pypi/dm/Mopidy-TidalOAuth.svg?style=flat
+    :target: https://pypi.python.org/pypi/Mopidy-TidalOAuth/
     :alt: Number of PyPI downloads
-
-.. image:: https://img.shields.io/travis/mones88/mopidy-tidal/master.svg?style=flat
-    :target: https://travis-ci.org/mones88/mopidy-tidal
-    :alt: Travis CI build status
-
-.. image:: https://img.shields.io/coveralls/mones88/mopidy-tidal/master.svg?style=flat
-   :target: https://coveralls.io/r/mones88/mopidy-tidal
-   :alt: Test coverage
 
 Tidal music service integration.
 
@@ -27,7 +19,7 @@ Installation
 
 Install by running::
 
-    pip install Mopidy-Tidal
+    pip install Mopidy-TidalOAuth
 
 Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
 <http://apt.mopidy.com/>`_.
@@ -47,6 +39,13 @@ Mopidy-Tidal to your Mopidy configuration file::
     image_search = false      # image location should be cached from browsing. Set 'true' to search if cache item not found
     quality = LOSSLESS        # with Android token this can be HI_RES (Master)
 
+You need to set an ``oauth_port`` value and browse to ``http://MOPIDY_SERVER_IP:oauth_port`` web-page and do **ONCE** the OAuth Login Flow.
+
+Please follow the information found on the web-page. You will be redirected to TIDAL service for authentication.
+
+At the end of the process, credential autorefresh will be on indefinitely.
+
+=====
 
 Quality can be set to HI_RES (Master), LOSSLESS, HIGH or LOW.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
@@ -60,16 +59,17 @@ This is mandatory to be able to play m4a streams.
 Project resources
 =================
 
-- `Source code <https://github.com/tehkillerbee/mopidy-tidal>`_
-- `Issue tracker <https://github.com/tehkillerbee/mopidy-tidal/issues>`_
+- `Source code <https://github.com/quodrum-glas/mopidy-tidal>`_
+- `Issue tracker <https://github.com/quodrum-glas/mopidy-tidal/issues>`_
 
 
 Credits
 =======
 
 - Original author: `mones88 <https://github.com/mones88>`__
-- Current maintainer: `tehkillerbee <https://github.com/tehkillerbee>`__
-- `Contributors <https://github.com/tehkillerbee/mopidy-tidal/graphs/contributors>`_
+- Original author: `tehkillerbee <https://github.com/tehkillerbee>`__
+- Current maintainer: `quodrumglas <https://github.com/quodrum-glas>`__
+- `Contributors <https://github.com/quodrum-glas/mopidy-tidal/graphs/contributors>`_
 
 
 Changelog
@@ -84,30 +84,4 @@ v0.3.0
 
 v0.2.3
 ----------------------------------------
-- fixed python 3 compatibility issues
-- Change dependency tidalapi4mopidy back to tidalapi (thanks to stevedenman)
-
-
-v0.2.2
-----------------------------------------
-- added support browsing of favourite tracks, moods, genres and playlists (thanks to SERVCUBED)
-
-
-v0.2.1
-----------------------------------------
-- implemented get_images method
-- updated tidal's api key
-
-
-v0.2.0
-----------------------------------------
-- playlist support (read-only)
-- implemented artists lookup
-- high and low quality streams should now work correctly
-- cache search results (to be improved in next releases)
-
-
-v0.1.0
-----------------------------------------
-
-- Initial release.
+- Fork from Mopidy-Tidal
