@@ -41,12 +41,14 @@ Mopidy-Tidal to your Mopidy configuration file::
 
     [tidal]
     enabled = true
-    username = YOUR_TIDAL_USERNAME
-    password = YOUR_TIDAL_PASSWORD
-    quality = LOSSLESS
+    token = ${X-Tidal-Token}  # /Android/data/com.aspiro.tidal/cache/okhttp found in some of the files ending .0
+    oauth = /var/lib/mopidy/tidal.cred # or any location where credentials to be stored after going through OAuth Flow
+    oauth_port = 8000 - 9999  # Optional, for HTTP server to assist in creating oauth credentials stored above.
+    image_search = false      # image location should be cached from browsing. Set 'true' to search if cache item not found
+    quality = LOSSLESS        # with Android token this can be HI_RES (Master)
 
 
-Quality can be set to LOSSLESS, HIGH or LOW.
+Quality can be set to HI_RES (Master), LOSSLESS, HIGH or LOW.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 For High and Low quality be sure to have installed gstreamer bad-plugins, for eg::
 
@@ -73,10 +75,18 @@ Credits
 Changelog
 =========
 
+v0.3.0
+----------------------------------------
+- Using updated tidal api for OAuth credentials
+- HTTP server to assist with creating auto-refresh OAuth credentials
+- Improved caching for much faster browsing experience
+
+
 v0.2.3
 ----------------------------------------
 - fixed python 3 compatibility issues
 - Change dependency tidalapi4mopidy back to tidalapi (thanks to stevedenman)
+
 
 v0.2.2
 ----------------------------------------
@@ -95,6 +105,7 @@ v0.2.0
 - implemented artists lookup
 - high and low quality streams should now work correctly
 - cache search results (to be improved in next releases)
+
 
 v0.1.0
 ----------------------------------------
