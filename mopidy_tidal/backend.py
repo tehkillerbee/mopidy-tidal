@@ -11,7 +11,7 @@ from mopidy import backend
 
 from pykka import ThreadingActor
 
-from tidalapi import Config, Session, Quality
+from tidaloauth4mopidy import Config, Session, Quality
 
 from mopidy_tidal import library, playback, playlists
 from mopidy_tidal.auth_http_server import start_oauth_deamon

@@ -30,9 +30,8 @@ setup(
         'setuptools',
         'Mopidy >= 1.0',
         'Pykka >= 1.1',
-        'tidalapi == 0.6.7',
+        'tidaloauth4mopidy == 0.2.0',
         'requests >= 2.0.0',
-        'mutagen >= 1.36',
     ],
     entry_points={
         'mopidy.ext': [
