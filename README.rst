@@ -27,8 +27,7 @@ Installation
 
 Install by running::
 
-    pip install --upgrade -e git+https://github.com/quodrum-glas/python-tidal.git#egg=python-tidal-0.6.7
-    pip install --upgrade -e git+https://github.com/quodrum-glas/mopidy-tidal.git#egg=mopidy-tidal
+    pip install Mopidy-Tidal
 
 Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
 <http://apt.mopidy.com/>`_.
