@@ -1,11 +1,11 @@
 import logging
 import threading
-import traceback
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from functools import partial, wraps
+from functools import partial
 from string import whitespace
 
 from backend import unquote
+from utils import catch
 
 logger = logging.getLogger(__name__)
 
@@ -40,21 +40,6 @@ def start_oauth_deamon(session, port):
     )
     daemon.setDaemon(True)  # Set as a daemon so it will be killed once the main thread is dead.
     daemon.start()
-
-
-def catch(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            logger.error('%s: %s', e.__class__.__name__, e)
-            logger.error('%s(%s, %s)', func.__name__,
-                         ', '.join(str(a) for a in args),
-                         ', '.join('{}={}'.format(str(k), str(v)) for k, v in kwargs.items()))
-            raise
-    return wrapper
 
 
 class HTTPHandler(BaseHTTPRequestHandler, object):

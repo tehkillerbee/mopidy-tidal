@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import logging
 import operator
-from threading import Thread
 
 from mopidy import backend
 from mopidy.models import Playlist, Ref

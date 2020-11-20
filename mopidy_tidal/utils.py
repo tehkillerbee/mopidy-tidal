@@ -1,3 +1,10 @@
+import inspect
+import logging
+import traceback
+from functools import wraps
+
+logger = logging.getLogger(__name__)
+
 watermark = " [TIDAL]"
 
 
@@ -23,3 +30,23 @@ def get_query_param(query, param, should_remove_watermark=True):
             val = next(iter(val))
 
     return remove_watermark(val) if should_remove_watermark else val
+
+
+def catch(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error('%s: %s', e.__class__.__name__, e)
+            logger.error('%s(%s, %s)', func.__name__,
+                         ', '.join(str(a) for a in args),
+                         ', '.join('{}={}'.format(str(k), str(v)) for k, v in kwargs.items()))
+            raise
+    return wrapper
+
+
+def inspect_stack(*args, **kwargs):
+    return ''.join('{}\n{}'.format(':'.join(str(x) for x in i[1:-2]), ''.join(i[-2]))
+                   for i in inspect.stack(*args, **kwargs))
