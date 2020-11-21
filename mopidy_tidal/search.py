@@ -4,12 +4,12 @@ import logging
 
 from threading import Thread
 
-from lru_cache import SearchCache
+from mopidy_tidal.lru_cache import SearchCache
 
 from mopidy_tidal.full_models_mappers import create_mopidy_albums, \
     create_mopidy_artists, create_mopidy_tracks
 
-from mopidy_tidal.utils import remove_watermark
+from mopidy_tidal.utils import remove_watermark, catch
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,7 @@ class TidalSearchThread(Thread):
         self.keyword = keyword
         self.kind = kind
 
+    @catch
     def run(self):
         if self.kind == "artist":
             artists = self.session.search("artist", self.keyword).artists
@@ -79,6 +80,7 @@ class TidalExactSearchThread(TidalSearchThread):
         self.tracks = []
         self.results = [], [], []
 
+    @catch
     def run(self):
         if self.kind == "album":
             self.search_album()

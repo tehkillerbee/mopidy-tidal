@@ -6,6 +6,7 @@ import operator
 from mopidy import backend
 from mopidy.models import Playlist, Ref
 
+from mopidy_tidal import display
 from mopidy_tidal import full_models_mappers
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,10 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return [Ref.track(uri=t.uri, name=t.name) for t in playlist.tracks]
 
     def create(self, name):
-        pass  # TODO
+        raise NotImplementedError
 
     def delete(self, uri):
-        pass  # TODO
+        raise NotImplementedError
 
     def lookup(self, uri):
         return self._playlists.get(uri)
@@ -48,11 +49,11 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
     def refresh(self):
         logger.debug("Refreshing TIDAL playlists..")
         playlists = {}
-        session = self.backend._session
+        session = self.backend.session
 
         plists = session.user.favorites.playlists()
         for pl in plists:
-            pl.name = "* " + pl.name
+            pl.name = display.fav_item(pl.name)
         # Append favourites to end to keep the tagged name if there are
         # duplicates
         plists = session.user.playlists() + plists
@@ -61,8 +62,9 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             uri = "tidal:playlist:" + pl.id
             pl_tracks = session.get_playlist_tracks(pl.id)
             tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
+            pl_name = pl.name
             playlists[uri] = Playlist(uri=uri,
-                                      name=pl.name,
+                                      name=display.tidal_item(pl_name),
                                       tracks=tracks,
                                       last_modified=pl.last_updated)
 
@@ -70,4 +72,4 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         backend.BackendListener.send('playlists_loaded')
 
     def save(self, playlist):
-        pass  # TODO
+        raise NotImplementedError

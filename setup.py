@@ -27,7 +27,7 @@ setup(
         'setuptools',
         'Mopidy >= 1.0',
         'Pykka >= 1.1',
-        'tidalapi >= 0.6.4,<0.7.0',
+        'tidaloauth4mopidy == 0.2.0',
         'requests >= 2.0.0',
     ],
     entry_points={

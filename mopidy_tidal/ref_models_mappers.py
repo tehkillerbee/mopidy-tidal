@@ -4,6 +4,8 @@ import logging
 
 from mopidy.models import Ref
 
+from mopidy_tidal.full_models_mappers import create_mopidy_track, create_mopidy_album, create_mopidy_artist
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +23,8 @@ def create_artists(tidal_artists):
 
 
 def create_artist(tidal_artist):
-    return Ref.artist(uri="tidal:artist:" + str(tidal_artist.id),
+    create_mopidy_artist(tidal_artist)
+    return Ref.artist(uri="tidal:artist:{0}".format(tidal_artist.id),
                       name=tidal_artist.name)
 
 
@@ -30,7 +33,7 @@ def create_playlists(tidal_playlists):
 
 
 def create_playlist(tidal_playlist):
-    return Ref.playlist(uri="tidal:playlist:" + str(tidal_playlist.id),
+    return Ref.playlist(uri="tidal:playlist:{0}".format(tidal_playlist.id),
                         name=tidal_playlist.name)
 
 
@@ -39,7 +42,7 @@ def create_moods(tidal_moods):
 
 
 def create_mood(tidal_mood):
-    return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
+    return Ref.playlist(uri="tidal:mood:{0}".format(tidal_mood.id),
                         name=tidal_mood.name)
 
 
@@ -48,7 +51,7 @@ def create_genres(tidal_genres):
 
 
 def create_genre(tidal_genre):
-    return Ref.playlist(uri="tidal:genre:" + str(tidal_genre.id),
+    return Ref.playlist(uri="tidal:genre:{0}".format(tidal_genre.id),
                         name=tidal_genre.name)
 
 
@@ -57,7 +60,9 @@ def create_albums(tidal_albums):
 
 
 def create_album(tidal_album):
-    return Ref.album(uri="tidal:album:" + str(tidal_album.id),
+    create_mopidy_album(tidal_album)
+    return Ref.album(uri="tidal:album:{0}:{1}".format(tidal_album.artist.id,
+                                                      tidal_album.id),
                      name=tidal_album.name)
 
 
@@ -69,4 +74,5 @@ def create_track(tidal_track):
     uri = "tidal:track:{0}:{1}:{2}".format(tidal_track.artist.id,
                                            tidal_track.album.id,
                                            tidal_track.id)
+    create_mopidy_track(tidal_track)  # For caching
     return Ref.track(uri=uri, name=tidal_track.name)
