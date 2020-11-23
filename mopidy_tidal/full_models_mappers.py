@@ -69,4 +69,5 @@ def create_mopidy_track(tidal_track, artist=None, album=None):
                  artists=[artist],
                  album=album,
                  length=track_len,
-                 disc_no=tidal_track.disc_num)
+                 disc_no=tidal_track.disc_num,
+                 genre=tidal_track.quality)
