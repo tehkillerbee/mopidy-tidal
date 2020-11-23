@@ -91,9 +91,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         parts = uri.split(':')
         nr_of_parts = len(parts)
 
-        if nr_of_parts == 3 and parts[1] == "album":
+        if nr_of_parts == 4 and parts[1] == "album":
             return ref_models_mappers.create_tracks(
-                    session.get_album_tracks(parts[2]))
+                    session.get_album_tracks(parts[3]))
 
         if nr_of_parts == 3 and parts[1] == "artist":
             top_10_tracks = session.get_artist_top_tracks(parts[2])[:10]
