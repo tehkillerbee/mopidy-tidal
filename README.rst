@@ -10,14 +10,6 @@ Mopidy-Tidal
     :target: https://pypi.python.org/pypi/Mopidy-Tidal/
     :alt: Number of PyPI downloads
 
-.. image:: https://img.shields.io/travis/mones88/mopidy-tidal/master.svg?style=flat
-    :target: https://travis-ci.org/mones88/mopidy-tidal
-    :alt: Travis CI build status
-
-.. image:: https://img.shields.io/coveralls/mones88/mopidy-tidal/master.svg?style=flat
-   :target: https://coveralls.io/r/mones88/mopidy-tidal
-   :alt: Test coverage
-
 Tidal music service integration.
 
 
@@ -28,6 +20,8 @@ Installation
 Install by running::
 
     pip install Mopidy-Tidal
+    or
+    pip3 install Mopidy-Tidal
 
 Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
 <http://apt.mopidy.com/>`_.
@@ -50,8 +44,8 @@ Quality can be set to LOSSLESS, HIGH or LOW.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 For High and Low quality be sure to have installed gstreamer bad-plugins, for eg::
 
-    sudo pacman -S gstreamer0.10-bad-plugins
-    
+    sudo apt-get install gstreamer1.0-plugins-bad
+
 
 This is mandatory to be able to play m4a streams.
 
