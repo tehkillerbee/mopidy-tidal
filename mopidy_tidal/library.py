@@ -193,9 +193,16 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 tracks += self._lookup_album(session, parts)
             elif uri.startswith('tidal:artist'):
                 tracks += self._lookup_artist(session, parts)
+            elif uri.startswith('tidal:playlist'):
+                pass
+                tracks += self._lookup_playlist(session, parts)
 
         logger.info("Returning %d tracks", len(tracks))
         return tracks
+
+    def _lookup_playlist(self, session, parts):
+        tracks = session.get_playlist_tracks(parts[2])
+        return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
