@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 import logging
 
 from mopidy import backend, models
@@ -16,9 +18,10 @@ from mopidy_tidal.search import tidal_search
 
 from mopidy_tidal.utils import apply_watermark
 
+
 logger = logging.getLogger(__name__)
 
-class Cache(dict): 
+class Cache(OrderedDict): 
     '''cache class, requires python3 style (ordered) dicts'''
     max_items = 1000
     def __setitem__(self, key, value):
@@ -30,12 +33,8 @@ class Cache(dict):
         self.__prune()
 
     def __prune(self):
-        if(len(self) > self.max_items):
-            k = list(self.keys())
-            rem = set(k) - set(k[-self.max_items:])
-            logger.info(f'pruning {len(rem)} entries from track cache')
-            for i in rem:
-                del self[i]
+        while(len(self) > self.max_items):
+            self.popitem(last = False)
 
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri='tidal:directory', name='Tidal')
@@ -208,10 +207,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
             parts = uri.split(':')
             if uri.startswith('tidal:track:'):
                 if uri in self.track_cache:
-                    logger.info(f'track cache hit (cache size is {len(self.track_cache)}')
                     tracks.append(self.track_cache[uri])
                 else:
-                    logger.info(f'track cache miss (cache size is {len(self.track_cache)})')
                     tracks += self._lookup_track(session, parts)
             elif uri.startswith('tidal:album'):
                 tracks += self._lookup_album(session, parts)
