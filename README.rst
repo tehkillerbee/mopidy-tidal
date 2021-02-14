@@ -40,7 +40,7 @@ Mopidy-Tidal to your Mopidy configuration file::
     quality = LOSSLESS
 
 
-Quality can be set to LOSSLESS, HIGH or LOW.
+Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 For High and Low quality be sure to have installed gstreamer bad-plugins, for eg::
 
@@ -66,6 +66,10 @@ Credits
 
 Changelog
 =========
+
+v0.2.4
+----------------------------------------
+- Added track caching (thanks to MrSurly and kingosticks)
 
 v0.2.3
 ----------------------------------------
