@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 import logging
 
 from mopidy import backend, models
@@ -16,8 +18,23 @@ from mopidy_tidal.search import tidal_search
 
 from mopidy_tidal.utils import apply_watermark
 
+
 logger = logging.getLogger(__name__)
 
+class Cache(OrderedDict): 
+    '''cache class, requires python3 style (ordered) dicts'''
+    max_items = 1000
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.__prune()
+
+    def update(self, d):
+        super().update(d)
+        self.__prune()
+
+    def __prune(self):
+        while(len(self) > self.max_items):
+            self.popitem(last = False)
 
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri='tidal:directory', name='Tidal')
@@ -27,6 +44,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_album_tracks = LruCache(max_size=10)
         self.lru_artist_img = LruCache()
         self.lru_album_img = LruCache()
+        self.track_cache = Cache()
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
@@ -188,14 +206,24 @@ class TidalLibraryProvider(backend.LibraryProvider):
         for uri in uris:
             parts = uri.split(':')
             if uri.startswith('tidal:track:'):
-                tracks += self._lookup_track(session, parts)
+                if uri in self.track_cache:
+                    tracks.append(self.track_cache[uri])
+                else:
+                    tracks += self._lookup_track(session, parts)
             elif uri.startswith('tidal:album'):
                 tracks += self._lookup_album(session, parts)
             elif uri.startswith('tidal:artist'):
                 tracks += self._lookup_artist(session, parts)
+            elif uri.startswith('tidal:playlist'):
+                tracks += self._lookup_playlist(session, parts)
 
         logger.info("Returning %d tracks", len(tracks))
+        self.track_cache.update({track.uri:track for track in tracks})
         return tracks
+
+    def _lookup_playlist(self, session, parts):
+        tracks = session.get_playlist_tracks(parts[2])
+        return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
