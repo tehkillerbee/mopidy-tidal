@@ -25,7 +25,10 @@ class TidalBackend(ThreadingActor, backend.Backend):
                                                        backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
         self.playlists = playlists.TidalPlaylistsProvider(backend=self)
-        self.uri_schemes = ['tidal']
+        if config['tidal']['spotify_proxy']:
+            self.uri_schemes = ['tidal', 'spotify']
+        else:
+            self.uri_schemes = ['tidal']
 
     def on_start(self):
         quality = self._config['tidal']['quality']

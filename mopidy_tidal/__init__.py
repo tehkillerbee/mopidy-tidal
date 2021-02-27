@@ -30,6 +30,9 @@ class Extension(ext.Extension):
         schema['username'] = config.String()
         schema['password'] = config.Secret()
         schema['quality'] = config.String(choices=["LOSSLESS", "HIGH", "LOW"])
+        schema['spotify_proxy'] = config.Boolean(optional=True)
+        schema['spotify_client_id'] = config.String(optional=True)
+        schema['spotify_client_secret'] = config.String(optional=True)
         return schema
 
     def setup(self, registry):

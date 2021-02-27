@@ -18,6 +18,7 @@ from mopidy_tidal.search import tidal_search
 
 from mopidy_tidal.utils import apply_watermark
 
+from mopidy_tidal.spotify_proxy import SpotifyProxy
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_artist_img = LruCache()
         self.lru_album_img = LruCache()
         self.track_cache = Cache()
+        self.config = kwargs["backend"]._config
+        if self.config["tidal"]["spotify_proxy"]:
+            self.spotify_proxy = SpotifyProxy(str(self.config["tidal"]["spotify_client_id"]), 
+                                              str(self.config["tidal"]["spotify_client_secret"]))
+            
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
@@ -88,7 +94,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
         session = self.backend._session
 
         # summaries
-
         if uri == self.root_directory.uri:
             return ref_models_mappers.create_root()
 
@@ -205,6 +210,13 @@ class TidalLibraryProvider(backend.LibraryProvider):
         tracks = []
         for uri in uris:
             parts = uri.split(':')
+            logger.info('URI: %s', uri)
+            if uri.startswith('spotify:track:'):
+                info = self.spotify_proxy.get_song_info(uri)
+                if info is not None:
+                    result = self.search(query={"track_name": [info["title"] + " " + " ".join(info["artists"])]})
+                    if len(result.tracks) > 0:
+                        tracks.append(result.tracks[0])
             if uri.startswith('tidal:track:'):
                 if uri in self.track_cache:
                     tracks.append(self.track_cache[uri])
