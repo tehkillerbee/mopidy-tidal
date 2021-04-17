@@ -53,10 +53,12 @@ This is mandatory to be able to play m4a streams.
 OAuth Flow
 ----------
 
-Using the new OAuth flow, you now have to visit a link to connect the app to your login.
-When you restart the Mopidy server, check the latest systemd logs and find a line like:
+Using the new OAuth flow, you now have to visit a link to connect the mopidy app to your login.
+When you restart the Mopidy server, check the latest systemd logs and find a line like::
 
-    ``Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
+    journalctl -u mopidy | tail -5
+    ...
+    Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
 
 Go to that link in your browser, approve it, and that should be it. Note that this is a **blocking** action, so Mopidy will not load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. However, it will be necessary to perform these steps again if/when the session expires.

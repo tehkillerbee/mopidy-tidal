@@ -48,7 +48,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         logger.info("Connecting to TIDAL.. Quality = %s" % quality)
         config = Config(quality=Quality(quality))
         self._session = Session(config)
-        oauth_file = os.path.join(os.getenv("HOME"), '.config/', 'oauth.json')
+        oauth_file = os.path.join(os.getenv("HOME"), '.config/', 'tidal-oauth.json')
         try:
             # attempt to reload existing session from file
             with open(oauth_file) as f:
