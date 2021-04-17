@@ -12,22 +12,19 @@ Mopidy-Tidal
 
 Tidal music service integration.
 
-
-
 Installation
 ============
 
 Install by running::
-```
-pip install Mopidy-Tidal
-(or)
-pip3 install Mopidy-Tidal
-```
 
-In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root.
-```
-sudo python3 setup.py install --force
-```
+    pip install Mopidy-Tidal
+    or
+    pip3 install Mopidy-Tidal
+
+In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root::
+
+    sudo python3 setup.py install --force
+
 
 
 
@@ -36,20 +33,20 @@ Configuration
 
 Before starting Mopidy, you must add configuration for
 Mopidy-Tidal to your Mopidy configuration file::
-```
-[tidal]
-enabled = true
-username = YOUR_TIDAL_USERNAME
-password = YOUR_TIDAL_PASSWORD
-quality = LOSSLESS
-```
+
+    [tidal]
+    enabled = true
+    username = YOUR_TIDAL_USERNAME
+    password = YOUR_TIDAL_PASSWORD
+    quality = LOSSLESS
+
 
 Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
+
 For High and Low quality be sure to have installed gstreamer bad-plugins, eg. ::
-```
-sudo apt-get install gstreamer1.0-plugins-bad
-```
+
+    sudo apt-get install gstreamer1.0-plugins-bad
 
 This is mandatory to be able to play m4a streams.
 
