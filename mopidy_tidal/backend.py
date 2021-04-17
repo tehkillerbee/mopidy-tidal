@@ -32,7 +32,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         logger.info("Connecting to TIDAL.. Quality = %s" % quality)
         config = Config(quality=Quality(quality))
         self._session = Session(config)
-        if self._session.login(self._username, self._password):
+        if self._session.login_oauth_simple(function=logger.info):
             logger.info("TIDAL Login OK")
         else:
             logger.info("TIDAL Login KO")

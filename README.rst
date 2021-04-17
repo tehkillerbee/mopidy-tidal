@@ -49,6 +49,15 @@ For High and Low quality be sure to have installed gstreamer bad-plugins, for eg
 
 This is mandatory to be able to play m4a streams.
 
+OAuth Flow
+----------
+
+Using the new OAuth flow, you now have to visit a link to connect the app to your login. When you restart the Mopidy server, check the logs and find a line like:
+
+    ``Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
+
+Go to that link in your browser, approve it, and that should be it. Note that this is a **blocking** action, so Mopidy will not load until you approve the application. You will also have to do this every time Mopidy restarts.
+
 Project resources
 =================
 
