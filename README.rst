@@ -18,13 +18,17 @@ Installation
 ============
 
 Install by running::
+```
+pip install Mopidy-Tidal
+(or)
+pip3 install Mopidy-Tidal
+```
 
-    pip install Mopidy-Tidal
-    or
-    pip3 install Mopidy-Tidal
+In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root.
+```
+sudo python3 setup.py install --force
+```
 
-Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
-<http://apt.mopidy.com/>`_.
 
 
 Configuration
@@ -32,31 +36,33 @@ Configuration
 
 Before starting Mopidy, you must add configuration for
 Mopidy-Tidal to your Mopidy configuration file::
-
-    [tidal]
-    enabled = true
-    username = YOUR_TIDAL_USERNAME
-    password = YOUR_TIDAL_PASSWORD
-    quality = LOSSLESS
-
+```
+[tidal]
+enabled = true
+username = YOUR_TIDAL_USERNAME
+password = YOUR_TIDAL_PASSWORD
+quality = LOSSLESS
+```
 
 Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
-For High and Low quality be sure to have installed gstreamer bad-plugins, for eg::
-
-    sudo apt-get install gstreamer1.0-plugins-bad
-
+For High and Low quality be sure to have installed gstreamer bad-plugins, eg. ::
+```
+sudo apt-get install gstreamer1.0-plugins-bad
+```
 
 This is mandatory to be able to play m4a streams.
 
 OAuth Flow
 ----------
 
-Using the new OAuth flow, you now have to visit a link to connect the app to your login. When you restart the Mopidy server, check the logs and find a line like:
+Using the new OAuth flow, you now have to visit a link to connect the app to your login.
+When you restart the Mopidy server, check the latest systemd logs and find a line like:
 
     ``Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
 
-Go to that link in your browser, approve it, and that should be it. Note that this is a **blocking** action, so Mopidy will not load until you approve the application. You will also have to do this every time Mopidy restarts.
+Go to that link in your browser, approve it, and that should be it. Note that this is a **blocking** action, so Mopidy will not load until you approve the application.
+The OAuth session will be reloaded automatically when Mopidy is restarted. However, it will be necessary to perform these steps again if/when the session expires.
 
 Project resources
 =================
@@ -75,6 +81,11 @@ Credits
 
 Changelog
 =========
+
+v0.2.5
+----------------------------------------
+- Reload existing OAuth session on Mopidy restart
+- Added OAuth login support from tidalapi (thanks to greggilbert)
 
 v0.2.4
 ----------------------------------------
