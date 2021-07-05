@@ -22,8 +22,6 @@ class TidalBackend(ThreadingActor, backend.Backend):
         super(TidalBackend, self).__init__()
         self._session = None
         self._config = config
-        self._username = config['tidal']['username']
-        self._password = config['tidal']['password']
         self.playback = playback.TidalPlaybackProvider(audio=audio,
                                                        backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
