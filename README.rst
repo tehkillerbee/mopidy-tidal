@@ -36,8 +36,6 @@ Mopidy-Tidal to your Mopidy configuration file::
 
     [tidal]
     enabled = true
-    username = YOUR_TIDAL_USERNAME
-    password = YOUR_TIDAL_PASSWORD
     quality = LOSSLESS
 
 
@@ -80,6 +78,11 @@ Credits
 
 Changelog
 =========
+
+v0.2.6
+----------------------------------------
+- Removed username/pass, as it is not needed by OAuth (thanks tbjep)
+- 
 
 v0.2.5
 ----------------------------------------
