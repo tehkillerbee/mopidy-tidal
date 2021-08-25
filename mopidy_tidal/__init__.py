@@ -28,6 +28,9 @@ class Extension(ext.Extension):
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
         schema['quality'] = config.String(choices=["LOSSLESS", "HIGH", "LOW"])
+        schema['spotify_proxy'] = config.Boolean(optional=True)
+        schema['spotify_client_id'] = config.String(optional=True)
+        schema['spotify_client_secret'] = config.String(optional=True)
         return schema
 
     def setup(self, registry):
