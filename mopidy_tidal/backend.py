@@ -50,7 +50,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
         if (client_id and not client_secret) or (client_secret and not client_id):
             logger.warn("Connecting to TIDAL.. always provide client_id and client_secret together")
-            logger.info("Connecting to TIDAL.. client id & client secret from pyhtontidal are used")
+            logger.info("Connecting to TIDAL.. using default client id & client secret from python-tidal")
         
         if client_id and client_secret:
             logger.info("Connecting to TIDAL.. client id & client secret from config section are used")
@@ -59,10 +59,12 @@ class TidalBackend(ThreadingActor, backend.Backend):
             config.client_secret=client_secret
 
         if not client_id and not client_secret:
-            logger.info("Connecting to TIDAL.. client id & client secret from pyhtontidal are used")
+            logger.info("Connecting to TIDAL.. using default client id & client secret from python-tidal")
 
         self._session = Session(config)
-        oauth_file = os.path.join(os.getenv("HOME"), '.config/', 'tidal-oauth.json')
+        # Always store tidal-oauth cache in mopidy core config data_dir
+        data_dir = self._config['core']['data_dir']
+        oauth_file = os.path.join(data_dir, 'tidal-oauth.json')
         try:
             # attempt to reload existing session from file
             with open(oauth_file) as f:
