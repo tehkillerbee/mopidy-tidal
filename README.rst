@@ -32,17 +32,23 @@ Configuration
 =============
 
 Before starting Mopidy, you must add configuration for
-Mopidy-Tidal to your Mopidy configuration file::
+Mopidy-Tidal to your Mopidy configuration file, if it is not already present.
+
+The configuration is usually stored in `/etc/mopidy/mopidy.conf` or possibly `~/.config/mopidy/mopidy.conf`, depending on your system configuration ::
 
     [tidal]
     enabled = true
     quality = LOSSLESS
+    #client_id =
+    #client_secret =
 
 
 Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 
-For High and Low quality be sure to have installed gstreamer bad-plugins, eg. ::
+Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
+
+When using High and Low quality, be sure to install gstreamer bad-plugins, eg. ::
 
     sudo apt-get install gstreamer1.0-plugins-bad
 
@@ -81,8 +87,9 @@ Changelog
 
 v0.2.6
 ----------------------------------------
+- Improved reliability of OAuth cache file generation.
+- Added optional client_id & client_secret to [tidal] in mopidy config (Glog78)
 - Removed username/pass, as it is not needed by OAuth (thanks tbjep)
-- 
 
 v0.2.5
 ----------------------------------------
