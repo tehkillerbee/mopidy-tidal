@@ -47,15 +47,20 @@ class TidalBackend(ThreadingActor, backend.Backend):
         config = Config(quality=Quality(quality))
         client_id = self._config['tidal']['client_id']
         client_secret = self._config['tidal']['client_secret']
-        if client_id and client_id.strip():
-            logger.info("Connecting to TIDAL.. Client ID read from config .. Client ID = %s" % client_id)
+
+        if (client_id and not client_secret) or (client_secret and not client_id):
+            logger.warn("Connecting to TIDAL.. always provide client_id and client_secret together")
+            logger.info("Connecting to TIDAL.. client id & client secret from pyhtontidal are used")
+        
+        if client_id and client_secret:
+            logger.info("Connecting to TIDAL.. client id & client secret from config section are used")
             config.client_id=client_id
             config.api_token=client_id
-            if client_secret and client_secret.strip():
-                logger.info("Connecting to TIDAL.. Client Secret read from config .. Client Secret = %s" % client_secret)
-                config.client_secret=client_secret
-            else:
-                logger.warn("Connecting to TIDAL.. client_id without client_secret will fail")
+            config.client_secret=client_secret
+
+        if not client_id and not client_secret:
+            logger.info("Connecting to TIDAL.. client id & client secret from pyhtontidal are used")
+
         self._session = Session(config)
         oauth_file = os.path.join(os.getenv("HOME"), '.config/', 'tidal-oauth.json')
         try:
