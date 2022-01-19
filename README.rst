@@ -88,7 +88,7 @@ Changelog
 v0.2.6
 ----------------------------------------
 - Improved reliability of OAuth cache file generation.
-- Added optional client_id & client_secret to [tidal] in mopidy config (Glog78)
+- Added optional client_id & client_secret to [tidal] in mopidy config (thanks Glog78)
 - Removed username/pass, as it is not needed by OAuth (thanks tbjep)
 
 v0.2.5
