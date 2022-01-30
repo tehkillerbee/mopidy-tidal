@@ -94,6 +94,7 @@ v0.2.7
 ----------------------------------------
 - Use path extension for Tidal OAuth cache file
 - Improved error handling for missing images, unplayable albums
+- Improved playlist browsing
 
 v0.2.6
 ----------------------------------------
