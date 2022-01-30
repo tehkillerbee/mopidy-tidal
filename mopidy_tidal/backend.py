@@ -11,7 +11,7 @@ from pykka import ThreadingActor
 
 from tidalapi import Config, Session, Quality
 
-from mopidy_tidal import library, playback, playlists
+from mopidy_tidal import library, playback, playlists, Extension
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
         self._session = Session(config)
         # Always store tidal-oauth cache in mopidy core config data_dir
-        data_dir = self._config['core']['data_dir']
+        data_dir = Extension.get_data_dir(self._config)
         oauth_file = os.path.join(data_dir, 'tidal-oauth.json')
         try:
             # attempt to reload existing session from file

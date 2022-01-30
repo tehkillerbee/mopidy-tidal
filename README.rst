@@ -28,6 +28,14 @@ In case you are upgrading your Mopidy-Tidal installation from the latest git sou
 
 
 
+Dependencies
+=============
+When using High and Low quality, be sure to install gstreamer bad-plugins, eg. ::
+
+    sudo apt-get install gstreamer1.0-plugins-bad
+
+This is mandatory to be able to play m4a streams.
+
 Configuration
 =============
 
@@ -46,26 +54,23 @@ The configuration is usually stored in `/etc/mopidy/mopidy.conf` or possibly `~/
 Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 
-Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
-
-When using High and Low quality, be sure to install gstreamer bad-plugins, eg. ::
-
-    sudo apt-get install gstreamer1.0-plugins-bad
-
-This is mandatory to be able to play m4a streams.
+Optional: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
 OAuth Flow
 ----------
 
-Using the new OAuth flow, you now have to visit a link to connect the mopidy app to your login.
-When you restart the Mopidy server, check the latest systemd logs and find a line like::
+Using the new OAuth flow, you have to visit a link to connect the mopidy app to your login.
+
+1. When you restart the Mopidy server, check the latest systemd logs and find a line like::
 
     journalctl -u mopidy | tail -5
     ...
     Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
 
-Go to that link in your browser, approve it, and that should be it. Note that this is a **blocking** action, so Mopidy will not load until you approve the application.
-The OAuth session will be reloaded automatically when Mopidy is restarted. However, it will be necessary to perform these steps again if/when the session expires.
+2. Go to that link in your browser, approve it, and that should be it.
+
+Note that the login process is a **blocking** action, so Mopidy will not load until you approve the application.
+The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
 
 Project resources
 =================
@@ -84,6 +89,10 @@ Credits
 
 Changelog
 =========
+
+v0.2.7
+----------------------------------------
+- Use extension for OAuth cache file
 
 v0.2.6
 ----------------------------------------
