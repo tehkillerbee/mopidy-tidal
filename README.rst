@@ -92,7 +92,8 @@ Changelog
 
 v0.2.7
 ----------------------------------------
-- Use extension for OAuth cache file
+- Use path extension for Tidal OAuth cache file
+- Improved error handling for missing images, unplayable albums
 
 v0.2.6
 ----------------------------------------
