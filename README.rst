@@ -26,16 +26,16 @@ In case you are upgrading your Mopidy-Tidal installation from the latest git sou
     sudo python3 setup.py install --force
 
 
-Mopidy-Tidal
+Python-Tidal
 =============
-Mopidy-Tidal requires the Python-Tidal API to function. This should usually be installed automatically.
+Mopidy-Tidal requires the Python-Tidal API to function. This is usually installed automatically.
 In some cases, Python-Tidal stops working due to Tidal changing their API keys.
 
 When this happens, it will usually be necessary to upgrade the Python-Tidal API plugin manually ::
 
     sudo pip3 install --upgrade tidalapi
 
-After upgrading tidalapi, it will usually be necessary to delete the existing json file and restart mopidy.
+After upgrading tidalapi, it will often be necessary to delete the existing json file and restart mopidy.
 The path will vary, depending on your install method::
 
     rm /var/lib/mopidy/tidal/tidal-oauth.json
