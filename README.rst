@@ -26,7 +26,19 @@ In case you are upgrading your Mopidy-Tidal installation from the latest git sou
     sudo python3 setup.py install --force
 
 
+Mopidy-Tidal
+=============
+Mopidy-Tidal requires the Python-Tidal API to function. This should usually be installed automatically.
+In some cases, Python-Tidal stops working due to Tidal changing their API keys.
 
+When this happens, it will usually be necessary to upgrade the Python-Tidal API plugin manually ::
+
+    sudo pip3 install --upgrade tidalapi
+
+After upgrading tidalapi, it will usually be necessary to delete the existing json file and restart mopidy.
+The path will vary, depending on your install method::
+
+    rm /var/lib/mopidy/tidal/tidal-oauth.json
 
 Dependencies
 =============
@@ -57,7 +69,7 @@ Lossless quality (FLAC) requires Tidal HiFi Subscription.
 Optional: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
 OAuth Flow
-----------
+=================
 
 Using the new OAuth flow, you have to visit a link to connect the mopidy app to your login.
 
@@ -72,11 +84,19 @@ Using the new OAuth flow, you have to visit a link to connect the mopidy app to 
 Note that the login process is a **blocking** action, so Mopidy will not load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
 
+Contributions
+=================
+Source contributions, suggestions and pull requests are very welcome.
+
+If you are experiencing playback issues, please report this to the Mopidy-Tidal issue tracker and/or check Python-Tidal for relevant issues.
+
 Project resources
 =================
 
 - `Source code <https://github.com/tehkillerbee/mopidy-tidal>`_
 - `Issue tracker <https://github.com/tehkillerbee/mopidy-tidal/issues>`_
+- `Python-Tidal repository <https://github.com/tamland/python-tidal>`_
+- `Python-Tidal issue tracker <https://github.com/tamland/python-tidal/issues>`_
 
 
 Credits
