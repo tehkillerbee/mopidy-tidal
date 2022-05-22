@@ -18,10 +18,9 @@ logger = logging.getLogger(__name__)
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
-    def __init__(self, backend, *args, **kwargs):
-        super(TidalPlaylistsProvider, self).__init__(backend, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
         self._playlists = None
-        self._backend = backend
 
     def as_list(self):
         if self._playlists is None:
@@ -89,7 +88,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     @property
     def _cache_dir(self) -> str:
-        data_dir = Extension.get_data_dir(self._backend._config)
+        data_dir = Extension.get_data_dir(self.backend._config)
         cache_dir = os.path.join(data_dir, 'cache', 'playlists')
         pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
         return cache_dir
