@@ -161,7 +161,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'album':
                         album_id = parts[2]
-                        img_uri = self.lru_album_img.get(album_id)
+                        img_uri = self.lru_album_img.get(uri)
+
                         if img_uri is None:
                             album = session.get_album(album_id)
                             img_uri = album.image
@@ -170,7 +171,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'playlist':
                         playlist_id = parts[2]
-                        img_uri = self.lru_playlist_img.get(playlist_id)
+                        img_uri = self.lru_playlist_img.get(uri)
                         if img_uri is None:
                             playlist = session.get_playlist(playlist_id)
                             img_uri = playlist.image
@@ -179,20 +180,20 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'track':
                         album_id = parts[3]
-                        img_uri = self.lru_album_img.get(album_id)
+                        img_uri = self.lru_album_img.get(uri)
+
                         if img_uri is None:
                             album = session.get_album(album_id)
                             img_uri = album.image
                             self.lru_album_img[album_id] = img_uri
 
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
-                        pass
 
                 images[uri] = uri_images or ()
             except AttributeError:
                 logger.error("AttributeError when processing URI %r" % uri)
             except HTTPError as err:
-                logger.error("HTTPError when processing URI %r" % uri)
+                logger.error("HTTPError when processing URI %r: %s", uri, err)
 
         return images
 
@@ -224,7 +225,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
             except AttributeError:
                 logger.error("AttributeError when processing URI %r" % uri)
             except HTTPError as err:
-                logger.error("HTTPError when processing URI %r" % uri)
+                logger.error("HTTPError when processing URI %r: %s", uri, err)
 
         logger.info("Returning %d tracks", len(tracks))
         self.track_cache.update({track.uri:track for track in tracks})
@@ -237,6 +238,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def _lookup_track(self, session, parts):
         album_id = parts[3]
         album_uri = f'tidal:album:{parts[2]}:{album_id}'
+
         tracks = self.lru_album_tracks.get(album_uri)
         if tracks is None:
             tracks = session.get_album_tracks(album_id)
