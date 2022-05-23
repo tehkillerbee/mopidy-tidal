@@ -25,7 +25,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self._config = config
         cache_dir = self._config['tidal'].get('cache_dir')
         if not cache_dir:
-            cache_dir = os.path.join(Extension.get_data_dir(self._config), 'cache')
+            cache_dir = Extension.get_cache_dir(self._config)
 
         self.cache_dir = cache_dir
         self.playback = playback.TidalPlaybackProvider(audio=audio,
