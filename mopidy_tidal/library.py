@@ -29,11 +29,12 @@ logger = logging.getLogger(__name__)
 class TracksCache(OrderedDict):
     '''cache class, requires python3 style (ordered) dicts'''
 
-    def __init__(self, *args, backend, max_items=1000, **kwargs):
+    def __init__(self, *args, backend, max_items=1000, sync_fs_on_delete=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.backend = backend
         self.max_items = max_items
         self.cache_dir = os.path.join(self.backend.cache_dir, 'tracks')
+        self._sync_fs_on_delete = sync_fs_on_delete
         pathlib.Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
 
     def _cache_filename(self, key) -> str:
@@ -69,10 +70,11 @@ class TracksCache(OrderedDict):
 
     def __delitem__(self, key, *args, **kwargs):
         super().__delitem__(key, *args, **kwargs)
-        # Remove the entry also from the filesystem cache
-        cache_file = self._cache_filename(key)
-        if os.path.isfile(cache_file):
-            os.unlink(cache_file)
+        if self._sync_fs_on_delete:
+            # Remove the entry also from the filesystem cache
+            cache_file = self._cache_filename(key)
+            if os.path.isfile(cache_file):
+                os.unlink(cache_file)
 
     def update(self, d):
         super().update(d)
@@ -91,7 +93,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_artist_img = LruCache()
         self.lru_album_img = LruCache()
         self.lru_playlist_img = LruCache()
-        self.track_cache = TracksCache(backend=self.backend)
+        self.track_cache = TracksCache(backend=self.backend, sync_fs_on_delete=False)
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
