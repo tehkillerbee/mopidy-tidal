@@ -3,6 +3,9 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 
 import logging
+import os
+import pathlib
+import pickle
 
 from requests.exceptions import HTTPError
 
@@ -23,12 +26,53 @@ from mopidy_tidal.utils import apply_watermark
 
 logger = logging.getLogger(__name__)
 
-class Cache(OrderedDict): 
+class TracksCache(OrderedDict):
     '''cache class, requires python3 style (ordered) dicts'''
-    max_items = 1000
+
+    def __init__(self, *args, backend, max_items=1000, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.backend = backend
+        self.max_items = max_items
+        self.cache_dir = os.path.join(self.backend.cache_dir, 'tracks')
+        pathlib.Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
+
+    def _cache_filename(self, key) -> str:
+        return os.path.join(self.cache_dir, f'{key}.cache')
+
+    def __getitem__(self, key, *args, **kwargs):
+        try:
+            return super().__getitem__(key, *args, **kwargs)
+        except KeyError as e:
+            err = e
+
+        cache_file = self._cache_filename(key)
+        if os.path.isfile(cache_file):
+            # Cache hit on the filesystem
+            with open(cache_file, 'rb') as f:
+                value = pickle.load(f)
+
+            # Store the item on the memory cache
+            self.__setitem__(key, value)
+            logger.debug(f'Filesystem cache hit for {key}')
+            return value
+
+        raise err
+
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
+        # Update filesystem cache
+        cache_file = self._cache_filename(key)
+        with open(cache_file, 'wb') as f:
+            pickle.dump(value, f)
+
         self.__prune()
+
+    def __delitem__(self, key, *args, **kwargs):
+        super().__delitem__(key, *args, **kwargs)
+        # Remove the entry also from the filesystem cache
+        cache_file = self._cache_filename(key)
+        if os.path.isfile(cache_file):
+            os.unlink(cache_file)
 
     def update(self, d):
         super().update(d)
@@ -47,7 +91,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_artist_img = LruCache()
         self.lru_album_img = LruCache()
         self.lru_playlist_img = LruCache()
-        self.track_cache = Cache()
+        self.track_cache = TracksCache(backend=self.backend)
 
     def get_distinct(self, field, query=None):
         logger.debug("Browsing distinct %s with query %r", field, query)
@@ -225,9 +269,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
             try:
                 parts = uri.split(':')
                 if uri.startswith('tidal:track:'):
-                    if uri in self.track_cache:
+                    try:
                         tracks.append(self.track_cache[uri])
-                    else:
+                    except KeyError:
                         tracks += self._lookup_track(session, parts)
                 elif uri.startswith('tidal:album'):
                     tracks += self._lookup_album(session, parts)
