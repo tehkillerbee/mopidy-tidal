@@ -24,9 +24,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def __init__(self, *args, **kwargs):
         super(TidalLibraryProvider, self).__init__(*args, **kwargs)
         self.lru_album_tracks = LruCache(max_size=10)
-        self.lru_artist_img = LruCache()
-        self.lru_album_img = LruCache()
-        self.lru_playlist_img = LruCache()
+        self.lru_artist_img = LruCache(persist=False)
+        self.lru_album_img = LruCache(persist=False)
+        self.lru_playlist_img = LruCache(persist=False)
         self.track_cache = LruCache()
 
     def get_distinct(self, field, query=None):
