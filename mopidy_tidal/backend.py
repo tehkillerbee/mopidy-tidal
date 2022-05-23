@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import json
+import pathlib
 
 from mopidy import backend
 
@@ -22,6 +23,11 @@ class TidalBackend(ThreadingActor, backend.Backend):
         super(TidalBackend, self).__init__()
         self._session = None
         self._config = config
+        cache_dir = self._config['tidal'].get('cache_dir')
+        if not cache_dir:
+            cache_dir = os.path.join(Extension.get_data_dir(self._config), 'cache')
+
+        self.cache_dir = cache_dir
         self.playback = playback.TidalPlaybackProvider(audio=audio,
                                                        backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
@@ -47,11 +53,12 @@ class TidalBackend(ThreadingActor, backend.Backend):
         config = Config(quality=Quality(quality))
         client_id = self._config['tidal']['client_id']
         client_secret = self._config['tidal']['client_secret']
+        pathlib.Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
 
         if (client_id and not client_secret) or (client_secret and not client_id):
             logger.warn("Connecting to TIDAL.. always provide client_id and client_secret together")
             logger.info("Connecting to TIDAL.. using default client id & client secret from python-tidal")
-        
+
         if client_id and client_secret:
             logger.info("Connecting to TIDAL.. client id & client secret from config section are used")
             config.client_id=client_id

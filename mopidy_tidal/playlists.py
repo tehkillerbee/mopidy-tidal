@@ -88,13 +88,12 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     @property
     def _cache_dir(self) -> str:
-        data_dir = Extension.get_data_dir(self.backend._config)
-        cache_dir = os.path.join(data_dir, 'cache', 'playlists')
+        cache_dir = os.path.join(self.backend.cache_dir, 'playlists')
         pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
         return cache_dir
 
     def _get_cached_playlist(self, playlist: TidalPlaylist) -> Optional[MopidyPlaylist]:
-        playlist_cache = os.path.join(self._cache_dir, playlist.id + '.cache')
+        playlist_cache = os.path.join(self._cache_dir, f'{playlist.id}.cache')
         if not os.path.isfile(playlist_cache):
             return
 
