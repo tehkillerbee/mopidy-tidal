@@ -1,11 +1,6 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
 import logging
-import os
-import pathlib
-import pickle
 
 from requests.exceptions import HTTPError
 
@@ -13,76 +8,15 @@ from mopidy import backend, models
 
 from mopidy.models import Image, SearchResult
 
-from mopidy_tidal import full_models_mappers
-
-from mopidy_tidal import ref_models_mappers
+from mopidy_tidal import full_models_mappers, ref_models_mappers
 
 from mopidy_tidal.lru_cache import LruCache
-
-from mopidy_tidal.search import tidal_search
 
 from mopidy_tidal.utils import apply_watermark
 
 
 logger = logging.getLogger(__name__)
 
-class TracksCache(OrderedDict):
-    '''cache class, requires python3 style (ordered) dicts'''
-
-    def __init__(self, *args, backend, max_items=1000, sync_fs_on_delete=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.backend = backend
-        self.max_items = max_items
-        self.cache_dir = os.path.join(self.backend.cache_dir, 'tracks')
-        self._sync_fs_on_delete = sync_fs_on_delete
-        pathlib.Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
-
-    def _cache_filename(self, key) -> str:
-        return os.path.join(self.cache_dir, f'{key}.cache')
-
-    def __getitem__(self, key, *args, **kwargs):
-        try:
-            return super().__getitem__(key, *args, **kwargs)
-        except KeyError as e:
-            err = e
-
-        cache_file = self._cache_filename(key)
-        if os.path.isfile(cache_file):
-            # Cache hit on the filesystem
-            with open(cache_file, 'rb') as f:
-                value = pickle.load(f)
-
-            # Store the item on the memory cache
-            self.__setitem__(key, value)
-            logger.debug(f'Filesystem cache hit for {key}')
-            return value
-
-        raise err
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        # Update filesystem cache
-        cache_file = self._cache_filename(key)
-        with open(cache_file, 'wb') as f:
-            pickle.dump(value, f)
-
-        self.__prune()
-
-    def __delitem__(self, key, *args, **kwargs):
-        super().__delitem__(key, *args, **kwargs)
-        if self._sync_fs_on_delete:
-            # Remove the entry also from the filesystem cache
-            cache_file = self._cache_filename(key)
-            if os.path.isfile(cache_file):
-                os.unlink(cache_file)
-
-    def update(self, d):
-        super().update(d)
-        self.__prune()
-
-    def __prune(self):
-        while(len(self) > self.max_items):
-            self.popitem(last = False)
 
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri='tidal:directory', name='Tidal')
@@ -93,9 +27,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_artist_img = LruCache()
         self.lru_album_img = LruCache()
         self.lru_playlist_img = LruCache()
-        self.track_cache = TracksCache(backend=self.backend, sync_fs_on_delete=False)
+        self.track_cache = LruCache()
 
     def get_distinct(self, field, query=None):
+        from mopidy_tidal.search import tidal_search
+
         logger.debug("Browsing distinct %s with query %r", field, query)
         session = self.backend._session
 
@@ -191,6 +127,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return []
 
     def search(self, query=None, uris=None, exact=False):
+        from mopidy_tidal.search import tidal_search
+
         try:
             artists, albums, tracks = \
                 tidal_search(self.backend._session,
@@ -214,7 +152,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     parts = uri.split(':')
                     if parts[1] == 'artist':
                         artist_id = parts[2]
-                        img_uri = self.lru_artist_img.hit(artist_id)
+                        img_uri = self.lru_artist_img.get(artist_id)
                         if img_uri is None:
                             artist = session.get_artist(artist_id)
                             img_uri = artist.image
@@ -223,7 +161,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'album':
                         album_id = parts[2]
-                        img_uri = self.lru_album_img.hit(album_id)
+                        img_uri = self.lru_album_img.get(album_id)
                         if img_uri is None:
                             album = session.get_album(album_id)
                             img_uri = album.image
@@ -232,7 +170,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'playlist':
                         playlist_id = parts[2]
-                        img_uri = self.lru_playlist_img.hit(playlist_id)
+                        img_uri = self.lru_playlist_img.get(playlist_id)
                         if img_uri is None:
                             playlist = session.get_playlist(playlist_id)
                             img_uri = playlist.image
@@ -241,7 +179,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'track':
                         album_id = parts[3]
-                        img_uri = self.lru_album_img.hit(album_id)
+                        img_uri = self.lru_album_img.get(album_id)
                         if img_uri is None:
                             album = session.get_album(album_id)
                             img_uri = album.image
@@ -270,6 +208,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         for uri in uris:
             try:
                 parts = uri.split(':')
+                # TODO General-purpose logic based on `tidal:<type>`
                 if uri.startswith('tidal:track:'):
                     try:
                         tracks.append(self.track_cache[uri])
@@ -297,10 +236,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
-        tracks = self.lru_album_tracks.hit(album_id)
+        album_uri = f'tidal:album:{parts[2]}:{album_id}'
+        tracks = self.lru_album_tracks.get(album_uri)
         if tracks is None:
             tracks = session.get_album_tracks(album_id)
-            self.lru_album_tracks[album_id] = tracks
+            self.lru_album_tracks[album_uri] = tracks
 
         track = [t for t in tracks if t.id == int(parts[4])][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
