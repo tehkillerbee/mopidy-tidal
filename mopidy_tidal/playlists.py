@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import datetime
 import logging
 import operator
 from typing import Union
@@ -11,20 +10,11 @@ from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist, Ref
 
 from mopidy_tidal import full_models_mappers
+from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
 
 
 logger = logging.getLogger(__name__)
-
-
-def _to_timestamp(dt):
-    if not dt:
-        return 0
-    if isinstance(dt, str):
-        dt = datetime.datetime.fromisoformat(dt)
-    if isinstance(dt, datetime.datetime):
-        dt = dt.timestamp()
-    return int(dt)
 
 
 class PlaylistCache(LruCache):
@@ -41,8 +31,8 @@ class PlaylistCache(LruCache):
         playlist = super().__getitem__(uri, *args, **kwargs)
         if (
             playlist and isinstance(key, TidalPlaylist) and
-            _to_timestamp(key.last_updated) >
-            _to_timestamp(playlist.last_modified)
+            to_timestamp(key.last_updated) >
+            to_timestamp(playlist.last_modified)
         ):
             # The playlist has been updated since last time:
             # we should refresh the associated cache entry
@@ -110,7 +100,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 uri=uri,
                 name=pl.name,
                 tracks=tracks,
-                last_modified=_to_timestamp(pl.last_updated),
+                last_modified=to_timestamp(pl.last_updated),
             )
 
         backend.BackendListener.send('playlists_loaded')
