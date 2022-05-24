@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import datetime
 import logging
 import operator
 from typing import Union
@@ -16,26 +17,36 @@ from mopidy_tidal.lru_cache import LruCache
 logger = logging.getLogger(__name__)
 
 
+def _to_timestamp(dt):
+    if not dt:
+        return 0
+    if isinstance(dt, str):
+        dt = datetime.datetime.fromisoformat(dt)
+    if isinstance(dt, datetime.datetime):
+        dt = dt.timestamp()
+    return int(dt)
+
+
 class PlaylistCache(LruCache):
     def __getitem__(
             self, key: Union[str, TidalPlaylist], *args, **kwargs
     ) -> MopidyPlaylist:
-        if isinstance(key, TidalPlaylist):
-            uri = key.id
-        else:
-            uri = (
-                f'tidal:playlist:{key}'
-                if not key.startswith('tidal:playlist:')
-                else key
-            )
+        uri = key.id if isinstance(key, TidalPlaylist) else key
+        uri = (
+            f'tidal:playlist:{uri}'
+            if not uri.startswith('tidal:playlist:')
+            else uri
+        )
 
         playlist = super().__getitem__(uri, *args, **kwargs)
         if (
             playlist and isinstance(key, TidalPlaylist) and
-            (key.last_updated or 0) > (playlist.last_modified or 0)
+            _to_timestamp(key.last_updated) >
+            _to_timestamp(playlist.last_modified)
         ):
             # The playlist has been updated since last time:
             # we should refresh the associated cache entry
+            logger.info('The playlist "%s" has been updated: refresh forced', key.name)
             raise KeyError(uri)
 
         return playlist
@@ -89,7 +100,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         for pl in plists:
             uri = "tidal:playlist:" + pl.id
             # Cache hit case
-            if uri in self._playlists:
+            if pl in self._playlists:
                 continue
 
             # Cache miss case
@@ -99,7 +110,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 uri=uri,
                 name=pl.name,
                 tracks=tracks,
-                last_modified=pl.last_updated
+                last_modified=_to_timestamp(pl.last_updated),
             )
 
         backend.BackendListener.send('playlists_loaded')
