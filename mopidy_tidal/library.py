@@ -6,11 +6,15 @@ from requests.exceptions import HTTPError
 
 from mopidy import backend, models
 
-from mopidy.models import Image, SearchResult
+from mopidy.models import Image, Playlist, SearchResult
 
 from mopidy_tidal import full_models_mappers, ref_models_mappers
 
 from mopidy_tidal.lru_cache import LruCache
+
+from mopidy_tidal.helpers import to_timestamp
+
+from mopidy_tidal.playlists import PlaylistCache
 
 from mopidy_tidal.utils import apply_watermark
 
@@ -27,7 +31,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self.lru_artist_img = LruCache(persist=False)
         self.lru_album_img = LruCache(persist=False)
         self.lru_playlist_img = LruCache(persist=False)
+        self.lru_artist_tracks = LruCache(persist=False)
         self.track_cache = LruCache()
+        self.playlist_cache = PlaylistCache()
 
     def get_distinct(self, field, query=None):
         from mopidy_tidal.search import tidal_search
@@ -141,6 +147,13 @@ class TidalLibraryProvider(backend.LibraryProvider):
             logger.info("EX")
             logger.info("%r", ex)
 
+    @staticmethod
+    def _get_image_uri(obj):
+        try:
+            return obj.image
+        except AttributeError:
+            pass
+
     def get_images(self, uris):
         logger.info("Searching Tidal for images for %r" % uris)
         session = self.backend._session
@@ -155,8 +168,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         img_uri = self.lru_artist_img.get(artist_id)
                         if img_uri is None:
                             artist = session.get_artist(artist_id)
-                            img_uri = artist.image
-                            self.lru_artist_img[artist.id] = img_uri
+                            img_uri = self._get_image_uri(artist)
+                            if img_uri:
+                                self.lru_artist_img[artist.id] = img_uri
 
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'album':
@@ -165,8 +179,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
                         if img_uri is None:
                             album = session.get_album(album_id)
-                            img_uri = album.image
-                            self.lru_album_img[album_id] = img_uri
+                            img_uri = self._get_image_uri(album)
+                            if img_uri:
+                                self.lru_album_img[album_id] = img_uri
 
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'playlist':
@@ -174,8 +189,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         img_uri = self.lru_playlist_img.get(uri)
                         if img_uri is None:
                             playlist = session.get_playlist(playlist_id)
-                            img_uri = playlist.image
-                            self.lru_playlist_img[playlist_id] = img_uri
+                            img_uri = self._get_image_uri(playlist)
+                            if img_uri:
+                                self.lru_playlist_img[playlist_id] = img_uri
 
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
                     elif parts[1] == 'track':
@@ -184,14 +200,15 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
                         if img_uri is None:
                             album = session.get_album(album_id)
-                            img_uri = album.image
-                            self.lru_album_img[album_id] = img_uri
+                            img_uri = self._get_image_uri(album)
+                            if img_uri:
+                                self.lru_album_img[album_id] = img_uri
 
                         uri_images = [Image(uri=img_uri, width=512, height=512)]
 
                 images[uri] = uri_images or ()
-            except AttributeError:
-                logger.error("AttributeError when processing URI %r" % uri)
+            except AttributeError as err:
+                logger.error("AttributeError when processing URI %r: %s", uri, err)
             except HTTPError as err:
                 logger.error("HTTPError when processing URI %r: %s", uri, err)
 
@@ -209,21 +226,31 @@ class TidalLibraryProvider(backend.LibraryProvider):
         for uri in uris:
             try:
                 parts = uri.split(':')
-                # TODO General-purpose logic based on `tidal:<type>`
-                if uri.startswith('tidal:track:'):
-                    try:
-                        tracks.append(self.track_cache[uri])
-                    except KeyError:
-                        tracks += self._lookup_track(session, parts)
-                elif uri.startswith('tidal:album'):
-                    tracks += self._lookup_album(session, parts)
-                elif uri.startswith('tidal:artist'):
-                    tracks += self._lookup_artist(session, parts)
-                elif uri.startswith('tidal:playlist'):
-                    tracks += self._lookup_playlist(session, parts)
+                cache = None
+                lookup = None
 
-            except AttributeError:
-                logger.error("AttributeError when processing URI %r" % uri)
+                if uri.startswith('tidal:track:'):
+                    cache = self.track_cache
+                    lookup = self._lookup_track
+                elif uri.startswith('tidal:album'):
+                    cache = self.lru_album_tracks
+                    lookup = self._lookup_album
+                elif uri.startswith('tidal:artist'):
+                    cache = self.lru_artist_tracks
+                    lookup = self._lookup_artist
+                elif uri.startswith('tidal:playlist'):
+                    cache = self.playlist_cache
+                    lookup = self._lookup_playlist
+
+                if cache is not None and lookup:
+                    try:
+                        tracks.append(cache[uri])
+                    except KeyError:
+                        tracks += lookup(session, parts)
+                else:
+                    logger.debug('Unknown URI type: %s', uri)
+            except AttributeError as err:
+                logger.error("AttributeError when processing URI %r: %s" % uri, err)
             except HTTPError as err:
                 logger.error("HTTPError when processing URI %r: %s", uri, err)
 
@@ -232,12 +259,24 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return tracks
 
     def _lookup_playlist(self, session, parts):
-        tracks = session.get_playlist_tracks(parts[2])
+        playlist_uri = ':'.join(parts)
+        tracks = self.playlist_cache.get(playlist_uri)
+
+        if tracks is None:
+            pl = session.get_playlist(playlist_uri)
+            tracks = session.get_playlist_tracks(parts[2])
+            self.playlist_cache[playlist_uri] = Playlist(
+                uri=playlist_uri,
+                name=pl.name,
+                tracks=tracks,
+                last_modified=to_timestamp(pl.last_updated),
+            )
+
         return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
-        album_uri = f'tidal:album:{parts[2]}:{album_id}'
+        album_uri = ':'.join(parts)
 
         tracks = self.lru_album_tracks.get(album_uri)
         if tracks is None:
@@ -251,10 +290,22 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def _lookup_album(self, session, parts):
         album_id = parts[2]
-        tracks = session.get_album_tracks(album_id)
+        album_uri = ':'.join(parts)
+
+        tracks = self.lru_album_tracks.get(album_uri)
+        if tracks is None:
+            tracks = session.get_album_tracks(album_id)
+            self.lru_album_tracks[album_uri] = tracks
+
         return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_artist(self, session, parts):
         artist_id = parts[2]
-        artist_tracks = session.get_artist_top_tracks(artist_id)
-        return full_models_mappers.create_mopidy_tracks(artist_tracks)
+        artist_uri = ':'.join(parts)
+
+        tracks = self.playlist_cache.get(artist_uri)
+        if tracks is None:
+            tracks = session.get_artist_top_tracks(artist_id)
+            self.lru_artist_tracks[artist_uri] = tracks
+
+        return full_models_mappers.create_mopidy_tracks(tracks)
