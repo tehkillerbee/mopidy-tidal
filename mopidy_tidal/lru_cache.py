@@ -15,10 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class LruCache(OrderedDict):
-    def __init__(self, max_size: Optional[int] = 1024, persist=True):
+    def __init__(self, max_size: Optional[int] = 1024, persist=True, directory=''):
         """
-        :param max_size: Max size of the cache. Set 0 or None for no limit
-            (default: 1024)
+        :param max_size: Max size of the cache in memory. Set 0 or None for no
+            limit (default: 1024)
+        :param persist: Whether the cache should be persisted to disk
+            (default: True)
+        :param directory: If `persist=True`, store the cached entries in this
+            subfolder of the cache directory (default: '')
         """
         super().__init__(self)
         if max_size:
@@ -27,7 +31,7 @@ class LruCache(OrderedDict):
             )
 
         self._max_size = max_size or 0
-        self._cache_dir = Extension.get_cache_dir(context.get_config())
+        self._cache_dir = os.path.join(Extension.get_cache_dir(context.get_config()), directory)
         self._persist = persist
         if persist:
             pathlib.Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
