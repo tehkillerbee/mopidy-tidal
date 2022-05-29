@@ -2,7 +2,9 @@ from __future__ import unicode_literals
 
 import logging
 
-from mopidy.models import Album, Artist, Track
+from mopidy.models import Album, Artist, Playlist, Track
+
+from mopidy_tidal.helpers import to_timestamp
 
 
 logger = logging.getLogger(__name__)
@@ -54,3 +56,12 @@ def create_mopidy_track(artist, album, tidal_track):
                  album=album,
                  length=track_len,
                  disc_no=tidal_track.disc_num)
+
+
+def create_mopidy_playlist(tidal_playlist, tidal_tracks):
+    return Playlist(
+        uri=f'tidal:playlist:{tidal_playlist.id}',
+        name=tidal_playlist.name,
+        tracks=tidal_tracks,
+        last_modified=to_timestamp(tidal_playlist.last_updated),
+    )
