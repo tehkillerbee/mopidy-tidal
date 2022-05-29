@@ -187,8 +187,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         img_uri = self._get_image_uri(item)
         if not img_uri:
+            logger.debug('%r has no associated images', uri)
             return None
 
+        logger.debug('Image URL for %r: %r', uri, img_uri)
         return [Image(uri=img_uri, width=320, height=320)]
 
     def get_images(self, uris):
