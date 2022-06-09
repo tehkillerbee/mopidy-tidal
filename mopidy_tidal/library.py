@@ -156,10 +156,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         try:
             return obj.picture(width=750, height=750)
         except AttributeError:
-            logger.debug(
-                'Could not find images for tidal:%s:%r',
-                obj.type, obj.id
-            )
+            pass
 
     def _get_image(self, uri) -> Optional[List[Image]]:
         assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
