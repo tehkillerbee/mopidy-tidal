@@ -285,7 +285,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         track = [t for t in tracks if t.id == int(parts[4])][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
         album = full_models_mappers.create_mopidy_album(track.album, artist)
-        return [full_models_mappers.create_mopidy_track(artist, album, track)], None
+        return [full_models_mappers.create_mopidy_track(artist, album, track)]
 
     def _lookup_album(self, session, parts):
         album_id = parts[2]
@@ -295,8 +295,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if tracks is None:
             tracks = session.get_album_tracks(album_id)
 
-        album = full_models_mappers.create_mopidy_tracks(tracks)
-        return album, album
+        return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_artist(self, session, parts):
         artist_id = parts[2]
@@ -306,5 +305,4 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if tracks is None:
             tracks = session.get_artist_top_tracks(artist_id)
 
-        artist = full_models_mappers.create_mopidy_tracks(tracks)
-        return artist, artist
+        return full_models_mappers.create_mopidy_tracks(tracks)
