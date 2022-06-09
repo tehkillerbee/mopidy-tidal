@@ -261,14 +261,18 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def _lookup_playlist(self, session, parts):
         playlist_uri = ':'.join(parts)
+        playlist_id = parts[2]
         playlist = self._playlist_cache.get(playlist_uri)
+        if playlist:
+            return playlist.tracks
 
-        if playlist is None:
-            pl = session.get_playlist(playlist_uri)
-            tracks = session.get_playlist_tracks(parts[2])
-            playlist = full_models_mappers.create_mopidy_playlist(pl, tracks)
-
-        return full_models_mappers.create_mopidy_tracks(playlist.tracks), playlist
+        tidal_playlist = session.get_playlist(playlist_id)
+        tidal_tracks = session.get_playlist_tracks(playlist_id)
+        pl_tracks = full_models_mappers.create_mopidy_tracks(tidal_tracks)
+        pl = full_models_mappers.create_mopidy_playlist(tidal_playlist, pl_tracks)
+        # We need both the list of tracks and the mapped playlist object for
+        # caching purposes
+        return pl_tracks, pl
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
