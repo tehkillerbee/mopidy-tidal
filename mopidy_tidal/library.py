@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
-from typing import Optional, List
+from typing import List
 
 from requests.exceptions import HTTPError
 
@@ -158,7 +158,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         except AttributeError:
             pass
 
-    def _get_image(self, uri) -> Optional[List[Image]]:
+    def _get_images(self, uri) -> List[Image]:
         assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
 
         parts = uri.split(':')
@@ -183,12 +183,12 @@ class TidalLibraryProvider(backend.LibraryProvider):
         item = getter(item_id)
         if not item:
             logger.debug('%r is not available on the backend', uri)
-            return None
+            return []
 
         img_uri = self._get_image_uri(item)
         if not img_uri:
             logger.debug('%r has no associated images', uri)
-            return None
+            return []
 
         logger.debug('Image URL for %r: %r', uri, img_uri)
         return [Image(uri=img_uri, width=320, height=320)]
@@ -199,7 +199,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         for uri in uris:
             try:
-                images[uri] = self._get_image(uri)
+                images[uri] = self._get_images(uri)
             except (AssertionError, AttributeError, HTTPError) as err:
                 logger.error(
                     "%s when processing URI %r: %s",
