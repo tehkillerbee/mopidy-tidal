@@ -222,20 +222,34 @@ class TidalLibraryProvider(backend.LibraryProvider):
             data = []
             try:
                 parts = uri.split(':')
+                item_type = parts[1]
                 cache_name = f'_{parts[1]}_cache'
-                cache = getattr(self, cache_name)
-                lookup = getattr(self, f'_lookup_{parts[1]}')
+                cache_miss = True
 
                 try:
-                    data = cache[uri]
-                except KeyError:
-                    data, parent = lookup(self._session, parts)
-                    if parent:
-                        cache_updates[cache_name] = cache_updates.get(cache_name, {})
-                        cache_updates[cache_name][uri] = parent
+                    data = getattr(self, cache_name)[uri]
+                    cache_miss = not bool(data)
+                except (AttributeError, KeyError):
+                    pass
+
+                if cache_miss:
+                    try:
+                        lookup = getattr(self, f'_lookup_{parts[1]}')
+                    except AttributeError:
+                        continue
+
+                    data = cache_data = lookup(self._session, parts)
+                    cache_updates[cache_name] = cache_updates.get(cache_name, {})
+                    if item_type == 'playlist':
+                        # Playlists should be persisted on the cache as objects,
+                        # not as lists of tracks. Therefore, _lookup_playlist
+                        # returns a tuple that we need to unpack
+                        data, cache_data = data
+
+                    cache_updates[cache_name][uri] = cache_data
 
                 tracks += data if hasattr(data, '__iter__') else [data]
-            except (AttributeError, HTTPError) as err:
+            except HTTPError as err:
                 logger.error("%s when processing URI %r: %s", type(err), uri, err)
 
         for cache_name, new_data in cache_updates.items():
