@@ -86,6 +86,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         # Append favourites to end to keep the tagged name if there are
         # duplicates
         plists = session.user.playlists() + plists
+        mapped_playlists = {}
 
         for pl in plists:
             uri = "tidal:playlist:" + pl.id
@@ -96,13 +97,14 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             # Cache miss case
             pl_tracks = session.get_playlist_tracks(pl.id)
             tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
-            self._playlists[uri] = MopidyPlaylist(
+            mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,
                 name=pl.name,
                 tracks=tracks,
                 last_modified=to_timestamp(pl.last_updated),
             )
 
+        self._playlists.update(mapped_playlists)
         backend.BackendListener.send('playlists_loaded')
         logger.info("TIDAL playlists refreshed")
 

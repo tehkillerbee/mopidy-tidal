@@ -219,24 +219,33 @@ class TidalLibraryProvider(backend.LibraryProvider):
             uris = [uris]
 
         tracks = []
+        cache_updates = {}
+
         for uri in (uris or []):
             data = []
             try:
                 parts = uri.split(':')
-                cache = getattr(self, f'_{parts[1]}_cache')
+                cache_name = f'_{parts[1]}_cache'
+                cache = getattr(self, cache_name)
                 lookup = getattr(self, f'_lookup_{parts[1]}')
 
                 try:
                     data = cache[uri]
                 except KeyError:
-                    data = lookup(self._session, parts)
+                    data, parent = lookup(self._session, parts)
+                    if parent:
+                        cache_updates[cache_name] = cache_updates.get(cache_name, {})
+                        cache_updates[cache_name][uri] = parent
 
                 tracks += data if hasattr(data, '__iter__') else [data]
             except (AttributeError, HTTPError) as err:
                 logger.error("%s when processing URI %r: %s", type(err), uri, err)
 
-        logger.info("Returning %d tracks", len(tracks))
+        for cache_name, new_data in cache_updates.items():
+            getattr(self, cache_name).update(new_data)
+
         self._track_cache.update({track.uri:track for track in tracks})
+        logger.info("Returning %d tracks", len(tracks))
         return tracks
 
     def _lookup_playlist(self, session, parts):
@@ -246,11 +255,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if playlist is None:
             pl = session.get_playlist(playlist_uri)
             tracks = session.get_playlist_tracks(parts[2])
-            playlist = self._playlist_cache[playlist_uri] = (
-                full_models_mappers.create_mopidy_playlist(pl, tracks)
-            )
+            playlist = full_models_mappers.create_mopidy_playlist(pl, tracks)
 
-        return full_models_mappers.create_mopidy_tracks(playlist.tracks)
+        return full_models_mappers.create_mopidy_tracks(playlist.tracks), playlist
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
@@ -263,7 +270,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         track = [t for t in tracks if t.id == int(parts[4])][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
         album = full_models_mappers.create_mopidy_album(track.album, artist)
-        return [full_models_mappers.create_mopidy_track(artist, album, track)]
+        return [full_models_mappers.create_mopidy_track(artist, album, track)], None
 
     def _lookup_album(self, session, parts):
         album_id = parts[2]
@@ -273,8 +280,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if tracks is None:
             tracks = session.get_album_tracks(album_id)
 
-        self._album_cache[album_uri] = full_models_mappers.create_mopidy_tracks(tracks)
-        return self._album_cache[album_uri]
+        album = full_models_mappers.create_mopidy_tracks(tracks)
+        return album, album
 
     def _lookup_artist(self, session, parts):
         artist_id = parts[2]
@@ -284,5 +291,5 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if tracks is None:
             tracks = session.get_artist_top_tracks(artist_id)
 
-        self._artist_cache[artist_uri] = full_models_mappers.create_mopidy_tracks(tracks)
-        return self._artist_cache[artist_uri]
+        artist = full_models_mappers.create_mopidy_tracks(tracks)
+        return artist, artist
