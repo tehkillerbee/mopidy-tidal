@@ -115,6 +115,25 @@ class LruCache(OrderedDict):
         except KeyError:
             return default
 
+    def prune(self, *keys):
+        """
+        Delete the specified keys both from memory and disk.
+        """
+        for key in keys:
+            logger.debug(
+                'Pruning key %r from cache %s',
+                key, self.__class__.__name__
+            )
+
+            self._reset_stored_entry(key)
+            self.pop(key, None)
+
+    def prune_all(self):
+        """
+        Prune all the keys in the cache.
+        """
+        self.prune(*[*self.keys()])
+
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
         self._check_limit()
