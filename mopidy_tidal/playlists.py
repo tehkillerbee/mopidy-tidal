@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import operator
-from typing import Union, Tuple, Collection
+from typing import Optional, Union, Tuple, Collection
 
 from tidalapi.models import Playlist as TidalPlaylist
 
@@ -70,6 +70,29 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
         return added_ids, removed_ids
 
+    def _has_changes(self, playlist: MopidyPlaylist):
+        upstream_playlist = self.backend._session.get_playlist(playlist.uri.split(':')[-1])
+        if not upstream_playlist:
+            return True
+
+        upstream_last_updated_at = to_timestamp(getattr(upstream_playlist, 'last_updated', None))
+        local_last_updated_at = to_timestamp(playlist.last_modified)
+
+        if not upstream_last_updated_at:
+            logger.warning(
+                'You are using a version of python-tidal that does not '
+                'support last_updated on playlist objects'
+            )
+            return True
+
+        if upstream_last_updated_at > local_last_updated_at:
+            logger.info(
+                'The playlist "%s" has been updated: refresh forced', playlist.name
+            )
+            return True
+
+        return False
+
     def as_list(self):
         added_ids, _ = self._calculate_added_and_removed_playlist_ids()
         if added_ids:
@@ -81,13 +104,22 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             for pl in self._playlists.values()]
         return sorted(refs, key=operator.attrgetter('name'))
 
-    def get_items(self, uri):
+    def _get_or_refresh_playlist(self, uri) -> Optional[MopidyPlaylist]:
         if not self._playlists:
             self.refresh()
 
         playlist = self._playlists.get(uri)
         if playlist is None:
+            return None
+        if self._has_changes(playlist):
+            self.refresh()
+        return self._playlists.get(uri)
+
+    def get_items(self, uri):
+        playlist = self._get_or_refresh_playlist(uri)
+        if not playlist:
             return []
+
         return [Ref.track(uri=t.uri, name=t.name) for t in playlist.tracks]
 
     def create(self, name):
@@ -97,7 +129,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         pass  # TODO
 
     def lookup(self, uri):
-        return self._playlists.get(uri)
+        return self._get_or_refresh_playlist(uri)
 
     def refresh(self):
         logger.info("Refreshing TIDAL playlists..")
