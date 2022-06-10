@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import operator
-from typing import Union
+from typing import Union, Tuple, Collection
 
 from tidalapi.models import Playlist as TidalPlaylist
 
@@ -48,8 +48,31 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
         self._playlists = PlaylistCache()
 
-    def as_list(self):
+    def _calculate_added_and_removed_playlist_ids(self) \
+            -> Tuple[Collection[str], Collection[str]]:
+        session = self.backend._session
+        updated_playlists = [
+            *session.user.favorites.playlists(),
+            *session.user.playlists(),
+        ]
+
+        updated_ids = set(pl.id for pl in updated_playlists)
         if not self._playlists:
+            return updated_ids, set()
+
+        current_ids = set(uri.split(':')[-1] for uri in self._playlists.keys())
+        added_ids = updated_ids.difference(current_ids)
+        removed_ids = current_ids.difference(updated_ids)
+        self._playlists.prune(*[
+            uri for uri in self._playlists.keys()
+            if uri.split(':')[-1] in removed_ids
+        ])
+
+        return added_ids, removed_ids
+
+    def as_list(self):
+        added_ids, _ = self._calculate_added_and_removed_playlist_ids()
+        if added_ids:
             self.refresh()
 
         logger.debug("Listing TIDAL playlists..")
