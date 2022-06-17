@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import sys
 import json
 
 from mopidy import backend
@@ -11,7 +10,7 @@ from pykka import ThreadingActor
 
 from tidalapi import Config, Session, Quality
 
-from mopidy_tidal import library, playback, playlists, Extension
+from mopidy_tidal import context, library, playback, playlists, Extension
 
 
 logger = logging.getLogger(__name__)
@@ -22,6 +21,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         super(TidalBackend, self).__init__()
         self._session = None
         self._config = config
+        context.set_config(self._config)
         self.playback = playback.TidalPlaybackProvider(audio=audio,
                                                        backend=self)
         self.library = library.TidalLibraryProvider(backend=self)
@@ -51,7 +51,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         if (client_id and not client_secret) or (client_secret and not client_id):
             logger.warn("Connecting to TIDAL.. always provide client_id and client_secret together")
             logger.info("Connecting to TIDAL.. using default client id & client secret from python-tidal")
-        
+
         if client_id and client_secret:
             logger.info("Connecting to TIDAL.. client id & client secret from config section are used")
             config.client_id=client_id

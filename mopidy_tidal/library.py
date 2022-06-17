@@ -1,8 +1,7 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
 import logging
+from typing import List
 
 from requests.exceptions import HTTPError
 
@@ -10,48 +9,41 @@ from mopidy import backend, models
 
 from mopidy.models import Image, SearchResult
 
-from mopidy_tidal import full_models_mappers
-
-from mopidy_tidal import ref_models_mappers
+from mopidy_tidal import (
+    full_models_mappers,
+    ref_models_mappers,
+)
 
 from mopidy_tidal.lru_cache import LruCache
 
-from mopidy_tidal.search import tidal_search
+from mopidy_tidal.playlists import PlaylistCache
 
 from mopidy_tidal.utils import apply_watermark
 
 
 logger = logging.getLogger(__name__)
 
-class Cache(OrderedDict): 
-    '''cache class, requires python3 style (ordered) dicts'''
-    max_items = 1000
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        self.__prune()
-
-    def update(self, d):
-        super().update(d)
-        self.__prune()
-
-    def __prune(self):
-        while(len(self) > self.max_items):
-            self.popitem(last = False)
 
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri='tidal:directory', name='Tidal')
 
     def __init__(self, *args, **kwargs):
         super(TidalLibraryProvider, self).__init__(*args, **kwargs)
-        self.lru_album_tracks = LruCache(max_size=10)
-        self.lru_artist_img = LruCache()
-        self.lru_album_img = LruCache()
-        self.lru_playlist_img = LruCache()
-        self.track_cache = Cache()
+        self._artist_cache = LruCache()
+        self._album_cache = LruCache()
+        self._track_cache = LruCache()
+        self._playlist_cache = PlaylistCache()
+        self._image_cache = LruCache(directory='image')
+
+    @property
+    def _session(self):
+        return self.backend._session   # type: ignore
 
     def get_distinct(self, field, query=None):
+        from mopidy_tidal.search import tidal_search
+
         logger.debug("Browsing distinct %s with query %r", field, query)
-        session = self.backend._session
+        session = self._session
 
         if not query:  # library root
             if field == "artist" or field == "albumartist":
@@ -88,7 +80,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if not uri or not uri.startswith("tidal:"):
             return []
 
-        session = self.backend._session
+        session = self._session
 
         # summaries
 
@@ -145,9 +137,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return []
 
     def search(self, query=None, uris=None, exact=False):
+        from mopidy_tidal.search import tidal_search
+
         try:
             artists, albums, tracks = \
-                tidal_search(self.backend._session,
+                tidal_search(self._session,
                              query=query,
                              exact=exact)
             return SearchResult(artists=artists,
@@ -157,104 +151,136 @@ class TidalLibraryProvider(backend.LibraryProvider):
             logger.info("EX")
             logger.info("%r", ex)
 
+    @staticmethod
+    def _get_image_uri(obj):
+        try:
+            return obj.picture(width=750, height=750)
+        except AttributeError:
+            pass
+
+    def _get_images(self, uri) -> List[Image]:
+        assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
+
+        parts = uri.split(':')
+        item_type = parts[1]
+        if item_type == 'track':
+            # For tracks, retrieve the artwork of the associated album
+            item_type = 'album'
+            item_id = parts[3]
+            uri = ':'.join([parts[0], 'album', parts[3]])
+        else:
+            item_id = parts[2]
+
+        if uri in self._image_cache:
+            # Cache hit
+            return self._image_cache[uri]
+
+        logger.debug('Retrieving %r from the API', uri)
+        getter_name = f'get_{item_type}'
+        getter = getattr(self._session, getter_name, None)
+        assert getter, f'No such session method: {getter_name}'
+
+        item = getter(item_id)
+        if not item:
+            logger.debug('%r is not available on the backend', uri)
+            return []
+
+        img_uri = self._get_image_uri(item)
+        if not img_uri:
+            logger.debug('%r has no associated images', uri)
+            return []
+
+        logger.debug('Image URL for %r: %r', uri, img_uri)
+        return [Image(uri=img_uri, width=320, height=320)]
+
     def get_images(self, uris):
         logger.info("Searching Tidal for images for %r" % uris)
-        session = self.backend._session
         images = {}
+
         for uri in uris:
             try:
-                uri_images = None
-                if uri.startswith('tidal:'):
-                    parts = uri.split(':')
-                    if parts[1] == 'artist':
-                        artist_id = parts[2]
-                        img_uri = self.lru_artist_img.hit(artist_id)
-                        if img_uri is None:
-                            artist = session.get_artist(artist_id)
-                            img_uri = artist.image
-                            self.lru_artist_img[artist.id] = img_uri
+                images[uri] = self._get_images(uri)
+            except (AssertionError, AttributeError, HTTPError) as err:
+                logger.error(
+                    "%s when processing URI %r: %s",
+                    type(err), uri, err)
 
-                        uri_images = [Image(uri=img_uri, width=512, height=512)]
-                    elif parts[1] == 'album':
-                        album_id = parts[2]
-                        img_uri = self.lru_album_img.hit(album_id)
-                        if img_uri is None:
-                            album = session.get_album(album_id)
-                            img_uri = album.image
-                            self.lru_album_img[album_id] = img_uri
-
-                        uri_images = [Image(uri=img_uri, width=512, height=512)]
-                    elif parts[1] == 'playlist':
-                        playlist_id = parts[2]
-                        img_uri = self.lru_playlist_img.hit(playlist_id)
-                        if img_uri is None:
-                            playlist = session.get_playlist(playlist_id)
-                            img_uri = playlist.image
-                            self.lru_playlist_img[playlist_id] = img_uri
-
-                        uri_images = [Image(uri=img_uri, width=512, height=512)]
-                    elif parts[1] == 'track':
-                        album_id = parts[3]
-                        img_uri = self.lru_album_img.hit(album_id)
-                        if img_uri is None:
-                            album = session.get_album(album_id)
-                            img_uri = album.image
-                            self.lru_album_img[album_id] = img_uri
-
-                        uri_images = [Image(uri=img_uri, width=512, height=512)]
-                        pass
-
-                images[uri] = uri_images or ()
-            except AttributeError:
-                logger.error("AttributeError when processing URI %r" % uri)
-            except HTTPError as err:
-                logger.error("HTTPError when processing URI %r" % uri)
-
+        self._image_cache.update(images)
         return images
 
     def lookup(self, uris=None):
         logger.info("Lookup uris %r", uris)
-        session = self.backend._session
         if isinstance(uris, str):
             uris = [uris]
         if not hasattr(uris, '__iter__'):
             uris = [uris]
 
         tracks = []
-        for uri in uris:
+        cache_updates = {}
+
+        for uri in (uris or []):
+            data = []
             try:
                 parts = uri.split(':')
-                if uri.startswith('tidal:track:'):
-                    if uri in self.track_cache:
-                        tracks.append(self.track_cache[uri])
-                    else:
-                        tracks += self._lookup_track(session, parts)
-                elif uri.startswith('tidal:album'):
-                    tracks += self._lookup_album(session, parts)
-                elif uri.startswith('tidal:artist'):
-                    tracks += self._lookup_artist(session, parts)
-                elif uri.startswith('tidal:playlist'):
-                    tracks += self._lookup_playlist(session, parts)
+                item_type = parts[1]
+                cache_name = f'_{parts[1]}_cache'
+                cache_miss = True
 
-            except AttributeError:
-                logger.error("AttributeError when processing URI %r" % uri)
+                try:
+                    data = getattr(self, cache_name)[uri]
+                    cache_miss = not bool(data)
+                except (AttributeError, KeyError):
+                    pass
+
+                if cache_miss:
+                    try:
+                        lookup = getattr(self, f'_lookup_{parts[1]}')
+                    except AttributeError:
+                        continue
+
+                    data = cache_data = lookup(self._session, parts)
+                    cache_updates[cache_name] = cache_updates.get(cache_name, {})
+                    if item_type == 'playlist':
+                        # Playlists should be persisted on the cache as objects,
+                        # not as lists of tracks. Therefore, _lookup_playlist
+                        # returns a tuple that we need to unpack
+                        data, cache_data = data
+
+                    cache_updates[cache_name][uri] = cache_data
+
+                tracks += data if hasattr(data, '__iter__') else [data]
             except HTTPError as err:
-                logger.error("HTTPError when processing URI %r" % uri)
+                logger.error("%s when processing URI %r: %s", type(err), uri, err)
 
+        for cache_name, new_data in cache_updates.items():
+            getattr(self, cache_name).update(new_data)
+
+        self._track_cache.update({track.uri:track for track in tracks})
         logger.info("Returning %d tracks", len(tracks))
-        self.track_cache.update({track.uri:track for track in tracks})
         return tracks
 
     def _lookup_playlist(self, session, parts):
-        tracks = session.get_playlist_tracks(parts[2])
-        return full_models_mappers.create_mopidy_tracks(tracks)
+        playlist_uri = ':'.join(parts)
+        playlist_id = parts[2]
+        playlist = self._playlist_cache.get(playlist_uri)
+        if playlist:
+            return playlist.tracks
+
+        tidal_playlist = session.get_playlist(playlist_id)
+        tidal_tracks = session.get_playlist_tracks(playlist_id)
+        pl_tracks = full_models_mappers.create_mopidy_tracks(tidal_tracks)
+        pl = full_models_mappers.create_mopidy_playlist(tidal_playlist, pl_tracks)
+        # We need both the list of tracks and the mapped playlist object for
+        # caching purposes
+        return pl_tracks, pl
 
     def _lookup_track(self, session, parts):
         album_id = parts[3]
-        tracks = self.lru_album_tracks.hit(album_id)
+        album_uri = ':'.join(['tidal', 'album', album_id])
+
+        tracks = self._album_cache.get(album_uri)
         if tracks is None:
             tracks = session.get_album_tracks(album_id)
-            self.lru_album_tracks[album_id] = tracks
 
         track = [t for t in tracks if t.id == int(parts[4])][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
@@ -263,10 +289,20 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def _lookup_album(self, session, parts):
         album_id = parts[2]
-        tracks = session.get_album_tracks(album_id)
+        album_uri = ':'.join(parts)
+
+        tracks = self._album_cache.get(album_uri)
+        if tracks is None:
+            tracks = session.get_album_tracks(album_id)
+
         return full_models_mappers.create_mopidy_tracks(tracks)
 
     def _lookup_artist(self, session, parts):
         artist_id = parts[2]
-        artist_tracks = session.get_artist_top_tracks(artist_id)
-        return full_models_mappers.create_mopidy_tracks(artist_tracks)
+        artist_uri = ':'.join(parts)
+
+        tracks = self._artist_cache.get(artist_uri)
+        if tracks is None:
+            tracks = session.get_artist_top_tracks(artist_id)
+
+        return full_models_mappers.create_mopidy_tracks(tracks)
