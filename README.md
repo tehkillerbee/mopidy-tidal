@@ -1,7 +1,7 @@
 # Mopidy-Tidal
 
-![Latest PyPI version](https://img.shields.io/pypi/v/Mopidy-Tidal.svg?style=flat)
-![Number of PyPI downloads](https://img.shields.io/pypi/dm/Mopidy-Tidal.svg?style=flat)
+[![Latest PyPI version](https://img.shields.io/pypi/v/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
+[![Number of PyPI downloads](https://img.shields.io/pypi/dm/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
 
 Mopidy Extension for Tidal music service integration.
 
