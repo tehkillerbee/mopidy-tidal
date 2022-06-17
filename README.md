@@ -95,7 +95,7 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 ### Changelog
 
 #### v0.2.8
-- Major caching improvements to avoid slow intialization at startup. (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
+- Major caching improvements to avoid slow intialization at startup. Code cleanup, bugfixes and refactoring (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
 - Reduced default album art, author and track image size.
 - Improved Iris integration
 
