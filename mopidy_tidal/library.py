@@ -248,7 +248,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
                     cache_updates[cache_name][uri] = cache_data
 
-                tracks += data if hasattr(data, '__iter__') else [data]
+                if item_type == 'playlist' and not cache_miss:
+                    tracks += data.tracks
+                else:
+                    tracks += data if hasattr(data, '__iter__') else [data]
             except HTTPError as err:
                 logger.error("%s when processing URI %r: %s", type(err), uri, err)
 
