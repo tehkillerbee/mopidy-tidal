@@ -4,7 +4,12 @@ import logging
 import operator
 from typing import Optional, Union, Tuple, Collection
 
-from tidalapi.models import Playlist as TidalPlaylist
+try:
+    # tidalapi >= 0.7.0
+    from tidalapi.playlist import Playlist as TidalPlaylist
+except ImportError:
+    # tidalapi < 0.7.0
+    from tidalapi.models import Playlist as TidalPlaylist
 
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist, Ref
@@ -22,6 +27,7 @@ class PlaylistCache(LruCache):
             self, key: Union[str, TidalPlaylist], *args, **kwargs
     ) -> MopidyPlaylist:
         uri = key.id if isinstance(key, TidalPlaylist) else key
+        assert uri
         uri = (
             f'tidal:playlist:{uri}'
             if not uri.startswith('tidal:playlist:')
@@ -30,7 +36,8 @@ class PlaylistCache(LruCache):
 
         playlist = super().__getitem__(uri, *args, **kwargs)
         if (
-            playlist and isinstance(key, TidalPlaylist) and
+            playlist and
+            isinstance(key, TidalPlaylist) and
             to_timestamp(key.last_updated) >
             to_timestamp(playlist.last_modified)
         ):
@@ -71,7 +78,13 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return added_ids, removed_ids
 
     def _has_changes(self, playlist: MopidyPlaylist):
-        upstream_playlist = self.backend._session.get_playlist(playlist.uri.split(':')[-1])
+        pl_getter = (
+            self.backend._session.get_playlist
+            if hasattr(self.backend._session, 'get_playlist')
+            else self.backend._session.playlist
+        )
+
+        upstream_playlist = pl_getter(playlist.uri.split(':')[-1])
         if not upstream_playlist:
             return True
 
@@ -142,6 +155,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
         mapped_playlists = {}
 
+        # TODO playlists refresh can be done in parallel
         for pl in plists:
             uri = "tidal:playlist:" + pl.id
             # Cache hit case
@@ -149,7 +163,13 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 continue
 
             # Cache miss case
-            pl_tracks = session.get_playlist_tracks(pl.id)
+            if hasattr(session, 'get_playlist_tracks'):
+                # tidalapi < 0.7.0
+                pl_tracks = session.get_playlist_tracks(pl.id)
+            else:
+                # tidalapi >= 0.7.0
+                pl_tracks = pl.tracks()
+
             tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
             mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,

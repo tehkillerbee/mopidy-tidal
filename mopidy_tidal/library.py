@@ -153,10 +153,23 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_image_uri(obj):
-        try:
-            return obj.picture(width=750, height=750)
-        except AttributeError:
-            pass
+        return (
+            # tidalapi < 0.7.0
+            obj.picture(width=750, height=750)
+            if hasattr(obj, 'picture')
+            # tidalapi >= 0.7.0
+            else obj.image(640)
+        )
+
+    def _get_api_getter(self, item_type):
+        tidal_lt_0_7_getter_name = f'get_{item_type}'
+        return (
+            # tidalapi < 0.7.0
+            getattr(self._session, tidal_lt_0_7_getter_name)
+            if hasattr(self._session, tidal_lt_0_7_getter_name)
+            # tidalapi >= 0.7.0
+            else getattr(self._session, item_type)
+        )
 
     def _get_images(self, uri) -> List[Image]:
         assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
@@ -176,9 +189,13 @@ class TidalLibraryProvider(backend.LibraryProvider):
             return self._image_cache[uri]
 
         logger.debug('Retrieving %r from the API', uri)
-        getter_name = f'get_{item_type}'
-        getter = getattr(self._session, getter_name, None)
-        assert getter, f'No such session method: {getter_name}'
+        getter = self._get_api_getter(item_type)
+        if not getter:
+            logger.warning(
+                'The API item type %s has no session getters',
+                item_type
+            )
+            return []
 
         item = getter(item_id)
         if not item:
@@ -277,13 +294,27 @@ class TidalLibraryProvider(backend.LibraryProvider):
         # caching purposes
         return pl_tracks, pl
 
+    @staticmethod
+    def _get_album_tracks(session, album_id):
+        if hasattr(session, 'get_album_tracks'):
+            # tidalapi < 0.7.0
+            return session.get_album_tracks(album_id)
+
+        # tidalapi >= 0.7.0
+        album = session.album(album_id)
+        if not album:
+            logger.warning('No such album: %s', album_id)
+            return []
+
+        return album.tracks()
+
     def _lookup_track(self, session, parts):
         album_id = parts[3]
         album_uri = ':'.join(['tidal', 'album', album_id])
 
         tracks = self._album_cache.get(album_uri)
         if tracks is None:
-            tracks = session.get_album_tracks(album_id)
+            tracks = self._get_album_tracks(session, album_id)
 
         track = [t for t in tracks if t.id == int(parts[4])][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
@@ -296,7 +327,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         tracks = self._album_cache.get(album_uri)
         if tracks is None:
-            tracks = session.get_album_tracks(album_id)
+            tracks = self._get_album_tracks(session, album_id)
 
         return full_models_mappers.create_mopidy_tracks(tracks)
 
