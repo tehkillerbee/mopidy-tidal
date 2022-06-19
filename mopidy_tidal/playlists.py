@@ -135,12 +135,11 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         logger.info("Refreshing TIDAL playlists..")
         session = self.backend._session
 
-        plists = session.user.favorites.playlists()
-        for pl in plists:
-            pl.name = "* " + pl.name
-        # Append favourites to end to keep the tagged name if there are
-        # duplicates
-        plists = session.user.playlists() + plists
+        plists = (
+            *session.user.playlists(),
+            *session.user.favorites.playlists(),
+        )
+
         mapped_playlists = {}
 
         for pl in plists:
