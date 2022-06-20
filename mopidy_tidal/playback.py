@@ -13,6 +13,14 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
         logger.info("TIDAL uri: %s", uri)
         parts = uri.split(':')
         track_id = int(parts[4])
-        newurl = self.backend._session.get_media_url(track_id)
+        session = self.backend._session
+
+        if hasattr(session, 'get_media_url'):
+            # tidalapi < 0.7.0
+            newurl = session.get_media_url(track_id)
+        else:
+            # tidalapi >= 0.7.0
+            newurl = session.track(track_id).get_url()
+
         logger.info("transformed into %s", newurl)
         return newurl

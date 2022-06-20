@@ -48,7 +48,13 @@ def create_genres(tidal_genres):
 
 
 def create_genre(tidal_genre):
-    return Ref.playlist(uri="tidal:genre:" + str(tidal_genre.id),
+    if hasattr(tidal_genre, 'id'):
+        # tidalapi < 0.7.0
+        genre_id = str(tidal_genre.id)
+    else:
+        genre_id = tidal_genre.path
+
+    return Ref.playlist(uri="tidal:genre:" + genre_id,
                         name=tidal_genre.name)
 
 

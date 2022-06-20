@@ -15,10 +15,9 @@ from mopidy_tidal import (
 )
 
 from mopidy_tidal.lru_cache import LruCache
-
 from mopidy_tidal.playlists import PlaylistCache
-
 from mopidy_tidal.utils import apply_watermark
+from mopidy_tidal.workers import get_items
 
 
 logger = logging.getLogger(__name__)
@@ -89,22 +88,28 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         elif uri == "tidal:my_artists":
             return ref_models_mappers.create_artists(
-                    session.user.favorites.artists())
+                    get_items(session.user.favorites.artists))
         elif uri == "tidal:my_albums":
             return ref_models_mappers.create_albums(
-                    session.user.favorites.albums())
+                    get_items(session.user.favorites.albums))
         elif uri == "tidal:my_playlists":
             return ref_models_mappers.create_playlists(
-                    session.user.favorites.playlists())
+                    get_items(session.user.favorites.playlists))
         elif uri == "tidal:my_tracks":
             return ref_models_mappers.create_tracks(
-                    session.user.favorites.tracks())
+                    get_items(session.user.favorites.tracks))
         elif uri == "tidal:moods":
             return ref_models_mappers.create_moods(
                     session.get_moods())
         elif uri == "tidal:genres":
-            return ref_models_mappers.create_genres(
-                    session.get_genres())
+            if hasattr(session, 'get_genres'):
+                # tidalapi < 0.7.0
+                getter = getattr(session, 'get_genres')
+            else:
+                # tidalapi >= 0.7.0
+                getter = getattr(session, 'genre').get_genres
+
+            return ref_models_mappers.create_genres(getter())
 
         # details
 
@@ -116,7 +121,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     session.get_album_tracks(parts[2]))
 
         if nr_of_parts == 3 and parts[1] == "artist":
-            top_10_tracks = session.get_artist_top_tracks(parts[2])[:10]
+            top_10_tracks = self._get_artist_top_tracks(session, parts[2])[:10]
             albums = ref_models_mappers.create_albums(
                     session.get_artist_albums(parts[2]))
             return albums + ref_models_mappers.create_tracks(top_10_tracks)
@@ -130,8 +135,20 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 session.get_mood_playlists(parts[2]))
 
         if nr_of_parts == 3 and parts[1] == "genre":
-            return ref_models_mappers.create_playlists(
-                session.get_genre_items(parts[2], 'playlists'))
+            if hasattr(session, 'get_genre_items'):
+                # tidalapi < 0.7.0
+                items = session.get_genre_items(parts[2], 'playlists')
+            else:
+                # tidalapi >= 0.7.0
+                from tidalapi.playlist import Playlist
+
+                filtered_genres = [g for g in session.genre.get_genres() if parts[2] == g.path]
+                if filtered_genres:
+                    items = filtered_genres[0].items(Playlist)
+                else:
+                    items = []
+
+            return ref_models_mappers.create_playlists(items)
 
         logger.debug('Unknown uri for browse request: %s', uri)
         return []
@@ -153,13 +170,12 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_image_uri(obj):
-        return (
-            # tidalapi < 0.7.0
-            obj.picture(width=750, height=750)
-            if hasattr(obj, 'picture')
+        if hasattr(obj, 'image'):
             # tidalapi >= 0.7.0
-            else obj.image(640)
-        )
+            return obj.image(640)
+
+        # tidalapi < 0.7.0
+        return obj.picture(width=750, height=750)
 
     def _get_api_getter(self, item_type):
         tidal_lt_0_7_getter_name = f'get_{item_type}'
@@ -279,6 +295,29 @@ class TidalLibraryProvider(backend.LibraryProvider):
         logger.info("Returning %d tracks", len(tracks))
         return tracks
 
+    @staticmethod
+    def _get_playlist(session, playlist_id):
+        if hasattr(session, 'get_playlist'):
+            # tidalapi < 0.7.0
+            return session.get_playlist(playlist_id)
+
+        # tidalapi >= 0.7.0
+        return session.playlist(playlist_id)
+
+    @classmethod
+    def _get_playlist_tracks(cls, session, playlist_id):
+        if hasattr(session, 'get_playlist_tracks'):
+            # tidalapi < 0.7.0
+            getter = session.get_playlist_tracks
+            getter_args = (playlist_id,)
+        else:
+            # tidalapi >= 0.7.0
+            pl = cls._get_playlist(session, playlist_id)
+            getter = pl.tracks
+            getter_args = tuple()
+
+        return get_items(getter, *getter_args)
+
     def _lookup_playlist(self, session, parts):
         playlist_uri = ':'.join(parts)
         playlist_id = parts[2]
@@ -286,8 +325,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if playlist:
             return playlist.tracks
 
-        tidal_playlist = session.get_playlist(playlist_id)
-        tidal_tracks = session.get_playlist_tracks(playlist_id)
+        tidal_playlist = self._get_playlist(session, playlist_id)
+        tidal_tracks = self._get_playlist_tracks(session, playlist_id)
         pl_tracks = full_models_mappers.create_mopidy_tracks(tidal_tracks)
         pl = full_models_mappers.create_mopidy_playlist(tidal_playlist, pl_tracks)
         # We need both the list of tracks and the mapped playlist object for
@@ -331,12 +370,21 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         return full_models_mappers.create_mopidy_tracks(tracks)
 
+    @staticmethod
+    def _get_artist_top_tracks(session, artist_id):
+        if hasattr(session, 'get_artist_top_tracks'):
+            # tidalapi < 0.7.0
+            return session.get_artist_top_tracks(artist_id)
+
+        # tidalapi >= 0.7.0
+        return session.artist(artist_id).get_top_tracks()
+
     def _lookup_artist(self, session, parts):
         artist_id = parts[2]
         artist_uri = ':'.join(parts)
 
         tracks = self._artist_cache.get(artist_uri)
         if tracks is None:
-            tracks = session.get_artist_top_tracks(artist_id)
+            tracks = self._get_artist_top_tracks(session, artist_id)
 
         return full_models_mappers.create_mopidy_tracks(tracks)

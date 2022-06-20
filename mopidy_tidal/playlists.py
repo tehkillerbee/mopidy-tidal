@@ -17,6 +17,7 @@ from mopidy.models import Playlist as MopidyPlaylist, Ref
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
+from mopidy_tidal.workers import get_items
 
 
 logger = logging.getLogger(__name__)
@@ -163,13 +164,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 continue
 
             # Cache miss case
-            if hasattr(session, 'get_playlist_tracks'):
-                # tidalapi < 0.7.0
-                pl_tracks = session.get_playlist_tracks(pl.id)
-            else:
-                # tidalapi >= 0.7.0
-                pl_tracks = pl.tracks()
-
+            pl_tracks = self._retrieve_api_tracks(session, pl)
             tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
             mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,
@@ -181,6 +176,18 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self._playlists.update(mapped_playlists)
         backend.BackendListener.send('playlists_loaded')
         logger.info("TIDAL playlists refreshed")
+
+    def _retrieve_api_tracks(self, session, playlist):
+        if hasattr(session, 'get_playlist_tracks'):
+            # tidalapi < 0.7.0
+            getter = session.get_playlist_tracks
+            getter_args = (playlist.id,)
+        else:
+            # tidalapi >= 0.7.0
+            getter = playlist.tracks
+            getter_args = tuple()
+
+        return get_items(getter, *getter_args)
 
     def save(self, playlist):
         pass  # TODO
