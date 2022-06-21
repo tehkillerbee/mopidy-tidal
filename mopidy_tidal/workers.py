@@ -3,9 +3,7 @@ from typing import Callable
 
 
 def func_wrapper(args):
-    f = args[0]
-    offset = args[1]
-    args = args[2:]
+    (f, offset, *args) = args
     items = f(*args)
     return list(
         (i + offset, item)
