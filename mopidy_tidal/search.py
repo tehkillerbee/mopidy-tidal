@@ -6,6 +6,11 @@ from threading import Thread
 
 from lru_cache import SearchCache
 
+from tidalapi.album import Album
+from tidalapi.artist import Artist
+from tidalapi.media import Track
+
+import mopidy_tidal.full_models_mappers as mappers
 from mopidy_tidal.full_models_mappers import create_mopidy_albums, \
     create_mopidy_artists, create_mopidy_tracks
 
@@ -24,27 +29,15 @@ def tidal_search(session, query, exact):
         search_val = remove_watermark(values[0])
         if field in ['track_name', 'album', 'artist', 'albumartist', 'any']:
             if exact:
-                exact_search = TidalExactSearchThread(session, search_val,
-                                                      field)
+                exact_search = TidalExactSearchThread(session, search_val, field)
                 exact_search.start()
                 exact_search.join()
                 results = exact_search.results
             else:
-                artist_search = TidalSearchThread(session, search_val,
-                                                  "artist")
-                artist_search.start()
-                album_search = TidalSearchThread(session, search_val,
-                                                 "album")
-                album_search.start()
-                track_search = TidalSearchThread(session, search_val,
-                                                 "track")
-                track_search.start()
-                artist_search.join()
-                album_search.join()
-                track_search.join()
-                results = artist_search.results, \
-                    album_search.results, \
-                    track_search.results
+                search = TidalSearchThread(session, search_val)
+                search.start()
+                search.join()
+                results = search.results
 
             return results
 
@@ -52,7 +45,7 @@ def tidal_search(session, query, exact):
 
 
 class TidalSearchThread(Thread):
-    def __init__(self, session, keyword, kind):
+    def __init__(self, session, keyword, kind='any'):
         super(TidalSearchThread, self).__init__()
         self.results = []
         self.session = session
@@ -60,14 +53,23 @@ class TidalSearchThread(Thread):
         self.kind = kind
 
     def run(self):
-        if self.kind == "artist":
-            artists = self.session.search("artist", self.keyword).artists
+        if self.kind == "any":
+            results = self.session.search(self.keyword)
+            for field in ('artists', 'albums', 'tracks'):
+                field_results = []
+                if results.get(field):
+                    builder = getattr(mappers, 'create_mopidy_' + field)
+                    field_results = builder(results[field])
+
+                self.results.append(field_results)
+        elif self.kind == "artist":
+            artists = self.session.search(self.keyword, models=[Artist]).get('artists', [])
             self.results = create_mopidy_artists(artists)
         elif self.kind == "album":
-            albums = self.session.search("album", self.keyword).albums
+            albums = self.session.search(self.keyword, models=[Album]).get('albums', [])
             self.results = create_mopidy_albums(albums)
         elif self.kind == "track":
-            tracks = self.session.search("track", self.keyword).tracks
+            tracks = self.session.search(self.keyword, models=[Track]).get('tracks', [])
             self.results = create_mopidy_tracks(tracks)
 
 
@@ -88,7 +90,7 @@ class TidalExactSearchThread(TidalSearchThread):
         self.results = self.artists, self.albums, self.tracks
 
     def search_album(self):
-        res = self.session.search("album", self.keyword).albums
+        res = self.session.search(self.keyword, models=[Album]).get('albums', [])
         album = next((a for a in res
                       if a.name.lower() == self.keyword.lower()), None)
         logger.info("Album not found" if album is None else "Album found OK")
@@ -99,7 +101,7 @@ class TidalExactSearchThread(TidalSearchThread):
             logger.info("Found %d tracks for album", len(self.tracks))
 
     def search_artist(self):
-        res = self.session.search("artist", self.keyword).artists
+        res = self.session.search(self.keyword, models=[Artist]).get('artists', [])
         logger.info("Found %d artists", len(res))
         for artist in res:
             if artist.name.lower() == self.keyword.lower():
