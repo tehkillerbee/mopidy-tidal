@@ -18,7 +18,7 @@ def _get_release_date(obj):
             break
 
     if d:
-        return d.year
+        return str(d.year)
 
 
 def create_mopidy_artists(tidal_artists):
