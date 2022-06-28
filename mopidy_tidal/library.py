@@ -170,9 +170,16 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_image_uri(obj):
+        if not obj.picture:
+            logger.debug(f'No images available for {type(obj).__name__} "{obj.name}"')
+            return
+
         if hasattr(obj, 'image'):
             # tidalapi >= 0.7.0
-            return obj.image(640)
+            try:
+                return obj.image(750)
+            except ValueError:
+                return obj.image(480)
 
         # tidalapi < 0.7.0
         return obj.picture(width=750, height=750)
