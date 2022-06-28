@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 
 import logging
-from typing import List
+import multiprocessing
+from typing import List, Tuple
 
 from requests.exceptions import HTTPError
 
@@ -23,6 +24,105 @@ from mopidy_tidal.workers import get_items
 logger = logging.getLogger(__name__)
 
 
+class ImagesGetter:
+    def __init__(self, session):
+        self._session = session
+        self._image_cache = LruCache(directory='image')
+
+    @staticmethod
+    def _log_image_not_found(obj):
+        logger.debug('No images available for %s "%s"', type(obj).__name__, obj.name)
+
+    @classmethod
+    def _get_image_uri(cls, obj):
+        method, tidal_lt_0_7 = None, False
+
+        # tidalapi >= 0.7.0
+        if hasattr(obj, 'image'):
+            # Handle artists with missing images
+            if hasattr(obj, 'picture') and getattr(obj, 'picture', None) is None:
+                cls._log_image_not_found(obj)
+                return
+
+            method = obj.image
+
+        # tidalapi < 0.7.0
+        else:
+            method = obj.picture
+            tidal_lt_0_7 = True
+
+        dimensions = (750, 640, 480)
+        for dim in dimensions:
+            args = (dim, dim) if tidal_lt_0_7 else (dim,)
+            try:
+                return method(*args)
+            except ValueError:
+                pass
+
+        cls._log_image_not_found(obj)
+
+    def _get_api_getter(self, item_type: str):
+        tidal_lt_0_7_getter_name = f'get_{item_type}'
+        return (
+            # tidalapi < 0.7.0
+            getattr(self._session, tidal_lt_0_7_getter_name)
+            if hasattr(self._session, tidal_lt_0_7_getter_name)
+            # tidalapi >= 0.7.0
+            else getattr(self._session, item_type)
+        )
+
+    def _get_images(self, uri) -> List[Image]:
+        assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
+
+        parts = uri.split(':')
+        item_type = parts[1]
+        if item_type == 'track':
+            # For tracks, retrieve the artwork of the associated album
+            item_type = 'album'
+            item_id = parts[3]
+            uri = ':'.join([parts[0], 'album', parts[3]])
+        else:
+            item_id = parts[2]
+
+        if uri in self._image_cache:
+            # Cache hit
+            return self._image_cache[uri]
+
+        logger.debug('Retrieving %r from the API', uri)
+        getter = self._get_api_getter(item_type)
+        if not getter:
+            logger.warning(
+                'The API item type %s has no session getters',
+                item_type
+            )
+            return []
+
+        item = getter(item_id)
+        if not item:
+            logger.debug('%r is not available on the backend', uri)
+            return []
+
+        img_uri = self._get_image_uri(item)
+        if not img_uri:
+            logger.debug('%r has no associated images', uri)
+            return []
+
+        logger.debug('Image URL for %r: %r', uri, img_uri)
+        return [Image(uri=img_uri, width=320, height=320)]
+
+    def __call__(self, uri: str) -> Tuple[str, List[Image]]:
+        try:
+            return uri, self._get_images(uri)
+        except (AssertionError, AttributeError, HTTPError) as err:
+            logger.error(
+                "%s when processing URI %r: %s",
+                type(err), uri, err)
+            return uri, []
+
+    def cache_update(self, images):
+        self._image_cache.update(images)
+
+
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri='tidal:directory', name='Tidal')
 
@@ -32,7 +132,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self._album_cache = LruCache()
         self._track_cache = LruCache()
         self._playlist_cache = PlaylistCache()
-        self._image_cache = LruCache(directory='image')
 
     @property
     def _session(self):
@@ -168,84 +267,19 @@ class TidalLibraryProvider(backend.LibraryProvider):
             logger.info("EX")
             logger.info("%r", ex)
 
-    @staticmethod
-    def _get_image_uri(obj):
-        if not obj.picture:
-            logger.debug(f'No images available for {type(obj).__name__} "{obj.name}"')
-            return
-
-        if hasattr(obj, 'image'):
-            # tidalapi >= 0.7.0
-            try:
-                return obj.image(750)
-            except ValueError:
-                return obj.image(480)
-
-        # tidalapi < 0.7.0
-        return obj.picture(width=750, height=750)
-
-    def _get_api_getter(self, item_type):
-        tidal_lt_0_7_getter_name = f'get_{item_type}'
-        return (
-            # tidalapi < 0.7.0
-            getattr(self._session, tidal_lt_0_7_getter_name)
-            if hasattr(self._session, tidal_lt_0_7_getter_name)
-            # tidalapi >= 0.7.0
-            else getattr(self._session, item_type)
-        )
-
-    def _get_images(self, uri) -> List[Image]:
-        assert uri.startswith('tidal:'), f'Invalid TIDAL URI: {uri}'
-
-        parts = uri.split(':')
-        item_type = parts[1]
-        if item_type == 'track':
-            # For tracks, retrieve the artwork of the associated album
-            item_type = 'album'
-            item_id = parts[3]
-            uri = ':'.join([parts[0], 'album', parts[3]])
-        else:
-            item_id = parts[2]
-
-        if uri in self._image_cache:
-            # Cache hit
-            return self._image_cache[uri]
-
-        logger.debug('Retrieving %r from the API', uri)
-        getter = self._get_api_getter(item_type)
-        if not getter:
-            logger.warning(
-                'The API item type %s has no session getters',
-                item_type
-            )
-            return []
-
-        item = getter(item_id)
-        if not item:
-            logger.debug('%r is not available on the backend', uri)
-            return []
-
-        img_uri = self._get_image_uri(item)
-        if not img_uri:
-            logger.debug('%r has no associated images', uri)
-            return []
-
-        logger.debug('Image URL for %r: %r', uri, img_uri)
-        return [Image(uri=img_uri, width=320, height=320)]
-
     def get_images(self, uris):
         logger.info("Searching Tidal for images for %r" % uris)
-        images = {}
+        images_getter = ImagesGetter(self._session)
 
-        for uri in uris:
-            try:
-                images[uri] = self._get_images(uri)
-            except (AssertionError, AttributeError, HTTPError) as err:
-                logger.error(
-                    "%s when processing URI %r: %s",
-                    type(err), uri, err)
+        with multiprocessing.Pool(4) as pool:
+            pool_res = pool.map(images_getter, uris)
 
-        self._image_cache.update(images)
+        images = {
+            uri: item_images
+            for uri, item_images in pool_res
+        }
+
+        images_getter.cache_update(images)
         return images
 
     def lookup(self, uris=None):
