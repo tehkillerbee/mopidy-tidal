@@ -193,7 +193,14 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     get_items(session.user.favorites.albums))
         elif uri == "tidal:my_playlists":
             return ref_models_mappers.create_playlists(
-                    get_items(session.user.favorites.playlists))
+                {
+                    pl.id: pl
+                    for pl in [
+                        *session.user.playlists(),
+                        *get_items(session.user.favorites.playlists),
+                    ]
+                }.values()
+            )
         elif uri == "tidal:my_tracks":
             return ref_models_mappers.create_tracks(
                     get_items(session.user.favorites.tracks))
