@@ -1,4 +1,4 @@
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 
@@ -27,7 +27,10 @@ def get_items(
     offsets = [-chunk_size]
     remaining = chunk_size * processes
 
-    with multiprocessing.Pool(processes=processes) as pool:
+    with ThreadPoolExecutor(
+        processes,
+        thread_name_prefix=f'mopidy-tidal-{func.__name__}-'
+    ) as pool:
         while remaining == chunk_size * processes:
             offsets = [
                 offsets[-1] + chunk_size * (i + 1)

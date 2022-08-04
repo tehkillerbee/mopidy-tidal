@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 import logging
-import multiprocessing
 
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import (
@@ -145,7 +145,7 @@ def _expand_results_tracks(
     artists = results_[0]
     albums = results_[1]
 
-    with multiprocessing.Pool(4) as pool:
+    with ThreadPoolExecutor(4, thread_name_prefix='mopidy-tidal-search-') as pool:
         pool_res = pool.map(_expand_artist_top_tracks, artists)
         for tracks in pool_res:
             results_[2].extend(tracks)

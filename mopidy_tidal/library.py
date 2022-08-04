@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Tuple
 
 from requests.exceptions import HTTPError
@@ -278,7 +278,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         logger.info("Searching Tidal for images for %r" % uris)
         images_getter = ImagesGetter(self._session)
 
-        with multiprocessing.Pool(4) as pool:
+        with ThreadPoolExecutor(
+            4, thread_name_prefix='mopidy-tidal-images-'
+        ) as pool:
             pool_res = pool.map(images_getter, uris)
 
         images = {
