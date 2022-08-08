@@ -4,6 +4,8 @@ import logging
 import operator
 import os
 import pathlib
+from concurrent.futures import ThreadPoolExecutor
+from threading import Timer, Event
 from typing import Optional, Union, Tuple, Collection
 
 try:
@@ -68,15 +70,28 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
         self._playlists_metadata = PlaylistMetadataCache()
         self._playlists = PlaylistCache()
+        self._current_tidal_playlists = []
+        self._playlists_loaded_event = Event()
 
     def _calculate_added_and_removed_playlist_ids(self) \
             -> Tuple[Collection[str], Collection[str]]:
-        session = self.backend._session
-        updated_playlists = [
-            *session.user.favorites.playlists(),
-            *session.user.playlists(),
-        ]
+        logger.info("Calculating playlist updates..")
+        session = self.backend._session  # type: ignore
+        updated_playlists = []
 
+        with ThreadPoolExecutor(
+            2,
+            thread_name_prefix='mopidy-tidal-playlists-refresh-'
+        ) as pool:
+            pool_res = pool.map(lambda func: func(), [
+                session.user.favorites.playlists,
+                session.user.playlists,
+            ])
+
+            for playlists in pool_res:
+                updated_playlists += playlists
+
+        self._current_tidal_playlists = updated_playlists
         updated_ids = set(pl.id for pl in updated_playlists)
         if not self._playlists_metadata:
             return updated_ids, set()
@@ -121,9 +136,10 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return False
 
     def as_list(self):
-        added_ids, _ = self._calculate_added_and_removed_playlist_ids()
-        if added_ids:
-            self.refresh(include_items=False)
+        if not self._playlists_loaded_event.is_set():
+            added_ids, _ = self._calculate_added_and_removed_playlist_ids()
+            if added_ids:
+                self.refresh(include_items=False)
 
         logger.debug("Listing TIDAL playlists..")
         refs = [
@@ -147,14 +163,13 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return self._get_or_refresh_playlist(uri)
 
     def refresh(self, *uris, include_items: bool = True):
-        logger.info("Refreshing TIDAL playlists..")
+        if uris:
+            logger.info("Looking up playlists: %r", uris)
+        else:
+            logger.info("Refreshing TIDAL playlists..")
+
         session = self.backend._session
-
-        plists = (
-            *session.user.playlists(),
-            *session.user.favorites.playlists(),
-        )
-
+        plists = self._current_tidal_playlists
         mapped_playlists = {}
         playlist_cache = (
             self._playlists if include_items
@@ -182,6 +197,13 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 last_modified=to_timestamp(pl.last_updated),
             )
 
+        # When we trigger a playlists_loaded event the backend may call as_list
+        # again. Set an event for 5 minutes to ensure that we don't perform
+        # another playlist sync.
+        self._playlists_loaded_event.set()
+        Timer(300, lambda: self._playlists_loaded_event.clear())
+
+        # Update the right playlist cache and send the playlists_loaded event.
         playlist_cache.update(mapped_playlists)
         backend.BackendListener.send('playlists_loaded')
         logger.info("TIDAL playlists refreshed")
