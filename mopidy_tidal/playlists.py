@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import logging
 import operator
+import os
+import pathlib
 from typing import Optional, Union, Tuple, Collection
 
 try:
@@ -12,7 +14,7 @@ except ImportError:
     from tidalapi.models import Playlist as TidalPlaylist
 
 from mopidy import backend
-from mopidy.models import Playlist as MopidyPlaylist, Ref
+from mopidy.models import Playlist as MopidyPlaylist, Ref, Track
 
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp
@@ -50,10 +52,21 @@ class PlaylistCache(LruCache):
         return playlist
 
 
+class PlaylistMetadataCache(PlaylistCache):
+    def _cache_filename(self, key: str) -> str:
+        parts = key.split(':')
+        assert len(parts) > 2, f'Invalid TIDAL ID: {key}'
+        parts[1] += '_metadata'
+        cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
+        pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        return os.path.join(cache_dir, f'{key}.cache')
+
+
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def __init__(self, *args, **kwargs):
         super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
+        self._playlists_metadata = PlaylistMetadataCache()
         self._playlists = PlaylistCache()
 
     def _calculate_added_and_removed_playlist_ids(self) \
@@ -65,14 +78,14 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         ]
 
         updated_ids = set(pl.id for pl in updated_playlists)
-        if not self._playlists:
+        if not self._playlists_metadata:
             return updated_ids, set()
 
-        current_ids = set(uri.split(':')[-1] for uri in self._playlists.keys())
+        current_ids = set(uri.split(':')[-1] for uri in self._playlists_metadata.keys())
         added_ids = updated_ids.difference(current_ids)
         removed_ids = current_ids.difference(updated_ids)
-        self._playlists.prune(*[
-            uri for uri in self._playlists.keys()
+        self._playlists_metadata.prune(*[
+            uri for uri in self._playlists_metadata.keys()
             if uri.split(':')[-1] in removed_ids
         ])
 
@@ -110,31 +123,19 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
     def as_list(self):
         added_ids, _ = self._calculate_added_and_removed_playlist_ids()
         if added_ids:
-            self.refresh()
+            self.refresh(include_items=False)
 
         logger.debug("Listing TIDAL playlists..")
         refs = [
             Ref.playlist(uri=pl.uri, name=pl.name)
-            for pl in self._playlists.values()]
+            for pl in self._playlists_metadata.values()]
         return sorted(refs, key=operator.attrgetter('name'))
 
     def _get_or_refresh_playlist(self, uri) -> Optional[MopidyPlaylist]:
-        if not self._playlists:
-            self.refresh()
-
         playlist = self._playlists.get(uri)
-        if playlist is None:
-            return None
-        if self._has_changes(playlist):
-            self.refresh()
+        if (playlist is None) or (playlist and self._has_changes(playlist)):
+            self.refresh(uri, include_items=True)
         return self._playlists.get(uri)
-
-    def get_items(self, uri):
-        playlist = self._get_or_refresh_playlist(uri)
-        if not playlist:
-            return []
-
-        return [Ref.track(uri=t.uri, name=t.name) for t in playlist.tracks]
 
     def create(self, name):
         pass  # TODO
@@ -145,7 +146,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
     def lookup(self, uri):
         return self._get_or_refresh_playlist(uri)
 
-    def refresh(self):
+    def refresh(self, *uris, include_items: bool = True):
         logger.info("Refreshing TIDAL playlists..")
         session = self.backend._session
 
@@ -155,17 +156,25 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         )
 
         mapped_playlists = {}
+        playlist_cache = (
+            self._playlists if include_items
+            else self._playlists_metadata
+        )
 
         # TODO playlists refresh can be done in parallel
         for pl in plists:
             uri = "tidal:playlist:" + pl.id
-            # Cache hit case
-            if pl in self._playlists:
+            # Skip or cache hit case
+            if (uris and uri not in uris) or pl in playlist_cache:
                 continue
 
             # Cache miss case
-            pl_tracks = self._retrieve_api_tracks(session, pl)
-            tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
+            if include_items:
+                pl_tracks = self._retrieve_api_tracks(session, pl)
+                tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
+            else:
+                tracks = [Track(artists=[], name=None)] * pl.num_tracks
+
             mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,
                 name=pl.name,
@@ -173,7 +182,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 last_modified=to_timestamp(pl.last_updated),
             )
 
-        self._playlists.update(mapped_playlists)
+        playlist_cache.update(mapped_playlists)
         backend.BackendListener.send('playlists_loaded')
         logger.info("TIDAL playlists refreshed")
 

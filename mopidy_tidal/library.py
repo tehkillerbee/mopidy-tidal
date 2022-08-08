@@ -16,7 +16,7 @@ from mopidy_tidal import (
 )
 
 from mopidy_tidal.lru_cache import LruCache
-from mopidy_tidal.playlists import PlaylistCache
+from mopidy_tidal.playlists import PlaylistMetadataCache
 from mopidy_tidal.utils import apply_watermark
 from mopidy_tidal.workers import get_items
 
@@ -131,7 +131,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         self._artist_cache = LruCache()
         self._album_cache = LruCache()
         self._track_cache = LruCache()
-        self._playlist_cache = PlaylistCache()
+        self._playlist_cache = PlaylistMetadataCache()
 
     @property
     def _session(self):
