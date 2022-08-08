@@ -83,10 +83,15 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             2,
             thread_name_prefix='mopidy-tidal-playlists-refresh-'
         ) as pool:
-            pool_res = pool.map(lambda func: func(), [
-                session.user.favorites.playlists,
-                session.user.playlists,
-            ])
+            pool_res = pool.map(
+                lambda func: get_items(func)
+                if func == session.user.favorites.playlists
+                else func(),
+                [
+                    session.user.favorites.playlists,
+                    session.user.playlists,
+                ]
+            )
 
             for playlists in pool_res:
                 updated_playlists += playlists
@@ -176,7 +181,6 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             else self._playlists_metadata
         )
 
-        # TODO playlists refresh can be done in parallel
         for pl in plists:
             uri = "tidal:playlist:" + pl.id
             # Skip or cache hit case
@@ -188,7 +192,11 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 pl_tracks = self._retrieve_api_tracks(session, pl)
                 tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
             else:
-                tracks = [Track(artists=[], name=None)] * pl.num_tracks
+                tracks = [Track(
+                    uri='tidal:track:0:0:0',
+                    artists=[],
+                    name=None
+                )] * pl.num_tracks
 
             mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,
