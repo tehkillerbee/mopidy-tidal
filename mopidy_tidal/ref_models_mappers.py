@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 def create_root():
     return [Ref.directory(uri="tidal:genres", name="Genres"),
             Ref.directory(uri="tidal:moods", name="Moods"),
+            Ref.directory(uri="tidal:mixes", name="Mixes"),
             Ref.directory(uri="tidal:my_artists", name="My Artists"),
             Ref.directory(uri="tidal:my_albums", name="My Albums"),
             Ref.directory(uri="tidal:my_playlists", name="My Playlists"),
@@ -63,6 +64,15 @@ def create_genre(tidal_genre):
 
     return Ref.directory(uri="tidal:genre:" + genre_id,
                          name=tidal_genre.name)
+
+
+def create_mixes(tidal_mixes):
+    return [create_mix(m) for m in tidal_mixes]
+
+
+def create_mix(tidal_mix):
+    return Ref.playlist(uri="tidal:mix:" + tidal_mix.id,
+                        name=tidal_mix.title)
 
 
 def create_albums(tidal_albums):
