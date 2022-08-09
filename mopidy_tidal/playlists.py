@@ -6,7 +6,7 @@ import os
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from threading import Timer, Event
-from typing import Optional, Union, Tuple, Collection
+from typing import Optional, Union, List, Tuple, Collection
 
 try:
     # tidalapi >= 0.7.0
@@ -18,7 +18,7 @@ except ImportError:
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist, Ref, Track
 
-from mopidy_tidal import full_models_mappers
+from mopidy_tidal import full_models_mappers, ref_models_mappers
 from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.workers import get_items
@@ -192,6 +192,9 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 pl_tracks = self._retrieve_api_tracks(session, pl)
                 tracks = full_models_mappers.create_mopidy_tracks(pl_tracks)
             else:
+                # Create as many mock tracks as the number of items in the playlist.
+                # Playlist metadata is concerned only with the number of tracks, not
+                # the actual list.
                 tracks = [Track(
                     uri='tidal:track:0:0:0',
                     artists=[],
@@ -209,12 +212,22 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         # again. Set an event for 5 minutes to ensure that we don't perform
         # another playlist sync.
         self._playlists_loaded_event.set()
-        Timer(300, lambda: self._playlists_loaded_event.clear())
+        Timer(300, lambda: self._playlists_loaded_event.clear()).start()
 
         # Update the right playlist cache and send the playlists_loaded event.
         playlist_cache.update(mapped_playlists)
         backend.BackendListener.send('playlists_loaded')
         logger.info("TIDAL playlists refreshed")
+
+    def get_items(self, uri) -> Optional[List[Ref]]:
+        playlist = self._get_or_refresh_playlist(uri)
+        if not playlist:
+            return
+
+        return [
+            Ref.track(uri=t.uri, name=t.name)
+            for t in playlist.tracks
+        ]
 
     def _retrieve_api_tracks(self, session, playlist):
         if hasattr(session, 'get_playlist_tracks'):
