@@ -198,16 +198,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     get_items(session.user.favorites.tracks))
         elif uri == "tidal:moods":
             return ref_models_mappers.create_moods(
-                    session.get_moods())
+                    self._get_moods(session))
         elif uri == "tidal:genres":
-            if hasattr(session, 'get_genres'):
-                # tidalapi < 0.7.0
-                getter = getattr(session, 'get_genres')
-            else:
-                # tidalapi >= 0.7.0
-                getter = getattr(session, 'genre').get_genres
-
-            return ref_models_mappers.create_genres(getter())
+            return ref_models_mappers.create_genres(self._get_genres(session))
 
         # details
 
@@ -231,27 +224,17 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         if nr_of_parts == 3 and parts[1] == "playlist":
             return ref_models_mappers.create_tracks(
-                session.get_playlist_tracks(parts[2]))
+                self._get_playlist_tracks(session, parts[2])
+            )
 
         if nr_of_parts == 3 and parts[1] == "mood":
             return ref_models_mappers.create_playlists(
-                session.get_mood_playlists(parts[2]))
+                self._get_mood_items(session, parts[2]))
 
         if nr_of_parts == 3 and parts[1] == "genre":
-            if hasattr(session, 'get_genre_items'):
-                # tidalapi < 0.7.0
-                items = session.get_genre_items(parts[2], 'playlists')
-            else:
-                # tidalapi >= 0.7.0
-                from tidalapi.playlist import Playlist
-
-                filtered_genres = [g for g in session.genre.get_genres() if parts[2] == g.path]
-                if filtered_genres:
-                    items = filtered_genres[0].items(Playlist)
-                else:
-                    items = []
-
-            return ref_models_mappers.create_playlists(items)
+            return ref_models_mappers.create_playlists(
+                self._get_genre_items(session, parts[2])
+            )
 
         logger.debug('Unknown uri for browse request: %s', uri)
         return []
@@ -364,6 +347,55 @@ class TidalLibraryProvider(backend.LibraryProvider):
             getter_args = tuple()
 
         return get_items(getter, *getter_args)
+
+    @staticmethod
+    def _get_genres(session):
+        if hasattr(session, 'get_genres'):
+            # tidalapi < 0.7.0
+            return session.get_genres()
+
+        # tidalapi >= 0.7.0
+        return session.genre.get_genres()
+
+    @staticmethod
+    def _get_moods(session):
+        if hasattr(session, 'get_moods'):
+            # tidalapi < 0.7.0
+            return session.get_moods()
+
+        # tidalapi >= 0.7.0
+        return session.moods()
+
+    @staticmethod
+    def _get_genre_items(session, genre_id):
+        if hasattr(session, 'get_genre_items'):
+            # tidalapi < 0.7.0
+            return session.get_genre_items(genre_id, 'playlists')
+
+        # tidalapi >= 0.7.0
+        from tidalapi.playlist import Playlist
+
+        filtered_genres = [g for g in session.genre.get_genres() if genre_id == g.path]
+        if filtered_genres:
+            return filtered_genres[0].items(Playlist)
+        return []
+
+    @staticmethod
+    def _get_mood_items(session, mood_id):
+        if hasattr(session, 'get_mood_playlists'):
+            # tidalapi < 0.7.0
+            return session.get_mood_playlists(mood_id, 'playlists')
+
+        # tidalapi >= 0.7.0
+        filtered_moods = [
+            m for m in session.moods()
+            if mood_id == m.api_path.split('/')[-1]
+        ]
+
+        if filtered_moods:
+            mood = filtered_moods[0].get()
+            return [p for p in mood]
+        return []
 
     def _lookup_playlist(self, session, parts):
         playlist_uri = ':'.join(parts)

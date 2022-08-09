@@ -39,8 +39,15 @@ def create_moods(tidal_moods):
 
 
 def create_mood(tidal_mood):
-    return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
-                        name=tidal_mood.name)
+    # tidalapi < 0.7.0
+    if hasattr(tidal_mood, "id"):
+        return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
+                            name=tidal_mood.name)
+
+    # tidalapi >= 0.7.0
+    mood_id = tidal_mood.api_path.split("/")[-1]
+    return Ref.directory(uri="tidal:mood:" + mood_id,
+                         name=tidal_mood.title)
 
 
 def create_genres(tidal_genres):
@@ -54,8 +61,8 @@ def create_genre(tidal_genre):
     else:
         genre_id = tidal_genre.path
 
-    return Ref.playlist(uri="tidal:genre:" + genre_id,
-                        name=tidal_genre.name)
+    return Ref.directory(uri="tidal:genre:" + genre_id,
+                         name=tidal_genre.name)
 
 
 def create_albums(tidal_albums):
