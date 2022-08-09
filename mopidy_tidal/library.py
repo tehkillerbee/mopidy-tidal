@@ -165,7 +165,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     artist = artists[0]
                     artist_id = artist.uri.split(":")[2]
                     return [apply_watermark(a.name) for a in
-                            session.get_artist_albums(artist_id)]
+                            self._get_artist_albums(session, artist_id)]
             elif field == "track":
                 return [apply_watermark(t.name) for t in
                         session.user.favorites.tracks()]
@@ -216,13 +216,18 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         if nr_of_parts == 3 and parts[1] == "album":
             return ref_models_mappers.create_tracks(
-                    session.get_album_tracks(parts[2]))
+                    self._get_album_tracks(session, parts[2]))
 
         if nr_of_parts == 3 and parts[1] == "artist":
-            top_10_tracks = self._get_artist_top_tracks(session, parts[2])[:10]
+            top_10_tracks = ref_models_mappers.create_tracks(
+                self._get_artist_top_tracks(session, parts[2])[:10]
+            )
+
             albums = ref_models_mappers.create_albums(
-                    session.get_artist_albums(parts[2]))
-            return albums + ref_models_mappers.create_tracks(top_10_tracks)
+                self._get_artist_albums(session, parts[2])
+            )
+
+            return albums + top_10_tracks
 
         if nr_of_parts == 3 and parts[1] == "playlist":
             return ref_models_mappers.create_tracks(
@@ -374,6 +379,20 @@ class TidalLibraryProvider(backend.LibraryProvider):
         # We need both the list of tracks and the mapped playlist object for
         # caching purposes
         return pl_tracks, pl
+
+    @staticmethod
+    def _get_artist_albums(session, artist_id):
+        # tidalapi < 0.7.0
+        if hasattr(session, 'get_artist_albums'):
+            return session.get_artist_albums(artist_id)
+
+        # tidalapi >= 0.7.0
+        artist = session.artist(artist_id)
+        if not artist:
+            logger.warning('No such artist: %s', artist_id)
+            return []
+
+        return artist.get_albums()
 
     @staticmethod
     def _get_album_tracks(session, album_id):
