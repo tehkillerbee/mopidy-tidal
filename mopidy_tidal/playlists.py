@@ -21,7 +21,7 @@ from mopidy.models import Playlist as MopidyPlaylist, Ref, Track
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
-from mopidy_tidal.utils import mock_track_id
+from mopidy_tidal.utils import mock_track
 from mopidy_tidal.workers import get_items
 
 
@@ -150,7 +150,9 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         logger.debug("Listing TIDAL playlists..")
         refs = [
             Ref.playlist(uri=pl.uri, name=pl.name)
-            for pl in self._playlists_metadata.values()]
+            for pl in self._playlists_metadata.values()
+        ]
+
         return sorted(refs, key=operator.attrgetter('name'))
 
     def _lookup_mix(self, uri):
@@ -206,11 +208,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 # Create as many mock tracks as the number of items in the playlist.
                 # Playlist metadata is concerned only with the number of tracks, not
                 # the actual list.
-                tracks = [Track(
-                    uri=mock_track_id,
-                    artists=[],
-                    name=None
-                )] * pl.num_tracks
+                tracks = [mock_track] * pl.num_tracks
 
             mapped_playlists[uri] = MopidyPlaylist(
                 uri=uri,

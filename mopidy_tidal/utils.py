@@ -1,6 +1,11 @@
-watermark = " [TIDAL]"
-mock_track_id = "tidal:track:0:0:0"
+from mopidy.models import Track
 
+watermark = " [TIDAL]"
+mock_track = Track(
+    uri="tidal:track:0:0:0",
+    artists=[],
+    name=None
+)
 
 def apply_watermark(val):
     return val + watermark
