@@ -152,7 +152,17 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             for pl in self._playlists_metadata.values()]
         return sorted(refs, key=operator.attrgetter('name'))
 
+    def _lookup_mix(self, uri):
+        mix_id = uri.split(':')[-1]
+        session = self.backend._session
+        return session.mix(mix_id)
+
     def _get_or_refresh_playlist(self, uri) -> Optional[MopidyPlaylist]:
+        parts = uri.split(':')
+        if parts[1] == 'mix':
+            mix = self._lookup_mix(uri)
+            return full_models_mappers.create_mopidy_mix_playlist(mix)
+
         playlist = self._playlists.get(uri)
         if (playlist is None) or (playlist and self._has_changes(playlist)):
             self.refresh(uri, include_items=True)

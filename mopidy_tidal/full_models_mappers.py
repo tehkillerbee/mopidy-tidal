@@ -85,3 +85,11 @@ def create_mopidy_playlist(tidal_playlist, tidal_tracks):
         tracks=tidal_tracks,
         last_modified=to_timestamp(tidal_playlist.last_updated),
     )
+
+
+def create_mopidy_mix_playlist(tidal_mix):
+    return Playlist(
+        uri=f'tidal:mix:{tidal_mix.id}',
+        name=f'{tidal_mix.title} ({tidal_mix.sub_title})',
+        tracks=create_mopidy_tracks(tidal_mix.items()),
+    )

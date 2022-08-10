@@ -72,7 +72,7 @@ def create_mixes(tidal_mixes):
 
 def create_mix(tidal_mix):
     return Ref.playlist(uri="tidal:mix:" + tidal_mix.id,
-                        name=tidal_mix.title)
+                        name=f"{tidal_mix.title} ({tidal_mix.sub_title})")
 
 
 def create_albums(tidal_albums):
