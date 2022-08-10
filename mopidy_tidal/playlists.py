@@ -16,7 +16,7 @@ except ImportError:
     from tidalapi.models import Playlist as TidalPlaylist
 
 from mopidy import backend
-from mopidy.models import Playlist as MopidyPlaylist, Ref, Track
+from mopidy.models import Playlist as MopidyPlaylist, Ref
 
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp

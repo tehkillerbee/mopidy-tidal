@@ -8,12 +8,18 @@ from mopidy import backend
 
 from pykka import ThreadingActor
 
-from tidalapi import Config, Session, Quality, __version__ as tidal_api_version
+from tidalapi import Config, Session, Quality
 
 from mopidy_tidal import context, library, playback, playlists, Extension
 
 
 logger = logging.getLogger(__name__)
+
+try:
+    from tidalapi import __version__
+    has_python_tidal_0_7 = True
+except ImportError:
+    has_python_tidal_0_7 = False
 
 
 class TidalBackend(ThreadingActor, backend.Backend):
@@ -95,8 +101,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         }
 
         # tidalapi < 0.7 also requires the session_id for load_oauth_session
-        version = float('.'.join(tidal_api_version.split('.')[:2]))
-        if version < 0.7:
+        if not has_python_tidal_0_7:
             args['session_id'] = data.get('session_id', {}).get('data')
 
         self._session.load_oauth_session(**args)
