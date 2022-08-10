@@ -1,4 +1,5 @@
 watermark = " [TIDAL]"
+mock_track_id = "tidal:track:0:0:0"
 
 
 def apply_watermark(val):

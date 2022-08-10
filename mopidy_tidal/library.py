@@ -17,7 +17,7 @@ from mopidy_tidal import (
 
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.playlists import PlaylistMetadataCache
-from mopidy_tidal.utils import apply_watermark
+from mopidy_tidal.utils import apply_watermark, mock_track_id
 from mopidy_tidal.workers import get_items
 
 
@@ -423,8 +423,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_mix_tracks(session, mix_id):
-        from tidalapi.playlist import Playlist
-
         filtered_mixes = [m for m in session.mixes() if mix_id == m.id]
         if filtered_mixes:
             return filtered_mixes[0].items()
@@ -434,7 +432,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         playlist_uri = ':'.join(parts)
         playlist_id = parts[2]
         playlist = self._playlist_cache.get(playlist_uri)
-        if playlist:
+        if playlist and playlist.tracks and playlist.tracks[0] != mock_track_id:
             return playlist.tracks
 
         tidal_playlist = self._get_playlist(session, playlist_id)

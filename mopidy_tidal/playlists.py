@@ -18,9 +18,10 @@ except ImportError:
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist, Ref, Track
 
-from mopidy_tidal import full_models_mappers, ref_models_mappers
+from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
+from mopidy_tidal.utils import mock_track_id
 from mopidy_tidal.workers import get_items
 
 
@@ -206,7 +207,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                 # Playlist metadata is concerned only with the number of tracks, not
                 # the actual list.
                 tracks = [Track(
-                    uri='tidal:track:0:0:0',
+                    uri=mock_track_id,
                     artists=[],
                     name=None
                 )] * pl.num_tracks
