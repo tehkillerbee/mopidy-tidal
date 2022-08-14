@@ -15,8 +15,8 @@ pip3 install Mopidy-Tidal
 In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root, followed by a restart
 ```
 cd <source root>
-sudo pip uninstall mopidy-tidal
-sudo pip install .
+sudo pip3 uninstall mopidy-tidal
+sudo pip3 install .
 ```
 
 ## Dependencies
@@ -93,6 +93,13 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 - [Python-Tidal issue tracker](https://github.com/tamland/python-tidal/issues)
 
 ### Changelog
+
+#### v0.3.0
+- Added requirement & support for tidalapi 0.7.x.
+- Added support for Moods, Mixes, track/album release date.
+- Speed improvements and Iris bugfixes.
+
+(Thanks [BlackLight](https://github.com/BlackLight) for all of the above improvements and all testers involved)
 
 #### v0.2.8
 - Major caching improvements to avoid slow intialization at startup. Code cleanup, bugfixes and refactoring (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
