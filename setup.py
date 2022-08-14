@@ -27,7 +27,7 @@ setup(
         'setuptools',
         'Mopidy >= 3.0',
         'Pykka >= 1.1',
-        'tidalapi >= 0.6.9,<0.7.0',
+        'tidalapi @ git+https://github.com/tamland/python-tidal.git@0.7.x',
         'requests >= 2.0.0',
     ],
     entry_points={

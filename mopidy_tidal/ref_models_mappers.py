@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 def create_root():
     return [Ref.directory(uri="tidal:genres", name="Genres"),
             Ref.directory(uri="tidal:moods", name="Moods"),
+            Ref.directory(uri="tidal:mixes", name="Mixes"),
             Ref.directory(uri="tidal:my_artists", name="My Artists"),
             Ref.directory(uri="tidal:my_albums", name="My Albums"),
             Ref.directory(uri="tidal:my_playlists", name="My Playlists"),
@@ -39,8 +40,15 @@ def create_moods(tidal_moods):
 
 
 def create_mood(tidal_mood):
-    return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
-                        name=tidal_mood.name)
+    # tidalapi < 0.7.0
+    if hasattr(tidal_mood, "id"):
+        return Ref.playlist(uri="tidal:mood:" + str(tidal_mood.id),
+                            name=tidal_mood.name)
+
+    # tidalapi >= 0.7.0
+    mood_id = tidal_mood.api_path.split("/")[-1]
+    return Ref.directory(uri="tidal:mood:" + mood_id,
+                         name=tidal_mood.title)
 
 
 def create_genres(tidal_genres):
@@ -48,8 +56,23 @@ def create_genres(tidal_genres):
 
 
 def create_genre(tidal_genre):
-    return Ref.playlist(uri="tidal:genre:" + str(tidal_genre.id),
-                        name=tidal_genre.name)
+    if hasattr(tidal_genre, 'id'):
+        # tidalapi < 0.7.0
+        genre_id = str(tidal_genre.id)
+    else:
+        genre_id = tidal_genre.path
+
+    return Ref.directory(uri="tidal:genre:" + genre_id,
+                         name=tidal_genre.name)
+
+
+def create_mixes(tidal_mixes):
+    return [create_mix(m) for m in tidal_mixes]
+
+
+def create_mix(tidal_mix):
+    return Ref.playlist(uri="tidal:mix:" + tidal_mix.id,
+                        name=f"{tidal_mix.title} ({tidal_mix.sub_title})")
 
 
 def create_albums(tidal_albums):

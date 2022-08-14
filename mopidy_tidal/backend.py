@@ -15,6 +15,12 @@ from mopidy_tidal import context, library, playback, playlists, Extension
 
 logger = logging.getLogger(__name__)
 
+try:
+    from tidalapi import __version__
+    has_python_tidal_0_7 = True
+except ImportError:
+    has_python_tidal_0_7 = False
+
 
 class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
@@ -68,16 +74,14 @@ class TidalBackend(ThreadingActor, backend.Backend):
         try:
             # attempt to reload existing session from file
             with open(oauth_file) as f:
-                logger.info("Loading OAuth session from %s..." % oauth_file)
+                logger.info("Loading OAuth session from %s...", oauth_file)
                 data = json.load(f)
-                self._session.load_oauth_session(
-                    data['session_id']['data'],
-                    data['token_type']['data'],
-                    data['access_token']['data'],
-                    data['refresh_token']['data']
-                )
-        except:
-            logger.info("Could not load OAuth session from %s" % oauth_file)
+                self._load_oauth_session(**data)
+        except Exception as e:
+            logger.info(
+                "Could not load OAuth session from %s: %s",
+                oauth_file, e
+            )
 
         if not self._session.check_login():
             logger.info("Creating new OAuth session...")
@@ -88,3 +92,16 @@ class TidalBackend(ThreadingActor, backend.Backend):
         else:
             logger.info("TIDAL Login KO")
 
+    def _load_oauth_session(self, **data):
+        assert self._session, 'No session loaded'
+        args = {
+            'token_type': data.get('token_type', {}).get('data'),
+            'access_token': data.get('access_token', {}).get('data'),
+            'refresh_token': data.get('refresh_token', {}).get('data'),
+        }
+
+        # tidalapi < 0.7 also requires the session_id for load_oauth_session
+        if not has_python_tidal_0_7:
+            args['session_id'] = data.get('session_id', {}).get('data')
+
+        self._session.load_oauth_session(**args)
