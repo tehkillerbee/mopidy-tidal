@@ -8,5 +8,6 @@ def set_config(cfg):
 
 
 def get_config():
-    assert _ctx.get("config"), "Extension configuration not set"
+    if not _ctx["config"]:
+        raise ValueError("Extension configuration not set.")
     return _ctx["config"]
