@@ -1,24 +1,32 @@
 from __future__ import unicode_literals
 
 import logging
-
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import (
-    Callable, Collection, Iterable, List, Mapping, Sequence, Tuple, Type, Union
+    Callable,
+    Collection,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
 )
 
 from lru_cache import SearchCache
-
 from tidalapi.album import Album
 from tidalapi.artist import Artist
 from tidalapi.media import Track
 
-from mopidy_tidal.full_models_mappers import create_mopidy_albums, \
-    create_mopidy_artists, create_mopidy_tracks
-
+from mopidy_tidal.full_models_mappers import (
+    create_mopidy_albums,
+    create_mopidy_artists,
+    create_mopidy_tracks,
+)
 from mopidy_tidal.utils import remove_watermark
 
 logger = logging.getLogger(__name__)
@@ -46,36 +54,36 @@ fields_meta = {
     for meta in [
         SearchFieldMeta(
             SearchField.ANY,
-            request_field='any',
-            results_fields=('artists', 'albums', 'tracks'),
+            request_field="any",
+            results_fields=("artists", "albums", "tracks"),
             model_classes=(Artist, Album, Track),
             mappers=(create_mopidy_artists, create_mopidy_albums, create_mopidy_tracks),
         ),
         SearchFieldMeta(
             SearchField.ARTIST,
-            request_field='artist',
-            results_fields=('artists',),
+            request_field="artist",
+            results_fields=("artists",),
             model_classes=(Artist,),
             mappers=(create_mopidy_artists,),
         ),
         SearchFieldMeta(
             SearchField.ALBUMARTIST,
-            request_field='albumartist',
-            results_fields=('artists',),
+            request_field="albumartist",
+            results_fields=("artists",),
             model_classes=(Artist,),
             mappers=(create_mopidy_artists,),
         ),
         SearchFieldMeta(
             SearchField.ALBUM,
-            request_field='album',
-            results_fields=('albums',),
+            request_field="album",
+            results_fields=("albums",),
             model_classes=(Album,),
             mappers=(create_mopidy_albums,),
         ),
         SearchFieldMeta(
             SearchField.TITLE,
-            request_field='track_name',
-            results_fields=('tracks',),
+            request_field="track_name",
+            results_fields=("tracks",),
             model_classes=(Track,),
             mappers=(create_mopidy_tracks,),
         ),
@@ -83,21 +91,21 @@ fields_meta = {
 }
 
 
-def _get_flattened_query_and_field_meta(query: Mapping[str, str]) \
-        -> Tuple[str, SearchFieldMeta]:
-    q = ' '.join(
+def _get_flattened_query_and_field_meta(
+    query: Mapping[str, str]
+) -> Tuple[str, SearchFieldMeta]:
+    q = " ".join(
         query[field]
-        for field in ('any', 'artist', 'album', 'track_name')
+        for field in ("any", "artist", "album", "track_name")
         if query.get(field)
     )
 
     fields_by_request_field = {
-        field_meta.request_field: field_meta
-        for field_meta in fields_meta.values()
+        field_meta.request_field: field_meta for field_meta in fields_meta.values()
     }
 
-    matched_field_meta = fields_by_request_field['any']
-    for attr in ('track_name', 'album', 'artist', 'albumartist'):
+    matched_field_meta = fields_by_request_field["any"]
+    for attr in ("track_name", "album", "artist", "albumartist"):
         field_meta = fields_by_request_field.get(attr)
         if field_meta and query.get(attr):
             matched_field_meta = field_meta
@@ -109,7 +117,7 @@ def _get_flattened_query_and_field_meta(query: Mapping[str, str]) \
 def _get_exact_result(
     query: Mapping,
     results: Tuple[Iterable[Artist], Iterable[Album], Iterable[Track]],
-    field_meta: SearchFieldMeta
+    field_meta: SearchFieldMeta,
 ) -> Tuple[List[Artist], List[Album], List[Track]]:
     query_value = query[field_meta.request_field]
     filtered_results = [], [], []
@@ -118,13 +126,17 @@ def _get_exact_result(
         (SearchField.TITLE, SearchField.ALBUM, SearchField.ARTIST)
     ):
         if attr == field_meta.field:
-            item = next((
-                res for res in results[len(results)-i-1]
-                if res.name and res.name.lower() == query_value.lower()
-            ), None)
+            item = next(
+                (
+                    res
+                    for res in results[len(results) - i - 1]
+                    if res.name and res.name.lower() == query_value.lower()
+                ),
+                None,
+            )
 
             if item:
-                filtered_results[len(results)-i-1].append(item)
+                filtered_results[len(results) - i - 1].append(item)
             break
 
     return filtered_results
@@ -145,7 +157,7 @@ def _expand_results_tracks(
     artists = results_[0]
     albums = results_[1]
 
-    with ThreadPoolExecutor(4, thread_name_prefix='mopidy-tidal-search-') as pool:
+    with ThreadPoolExecutor(4, thread_name_prefix="mopidy-tidal-search-") as pool:
         pool_res = pool.map(_expand_artist_top_tracks, artists)
         for tracks in pool_res:
             results_[2].extend(tracks)
@@ -162,20 +174,18 @@ def _expand_results_tracks(
 
 @SearchCache
 def tidal_search(session, query, exact=False):
-    logger.info('Searching Tidal for: %r', query)
+    logger.info("Searching Tidal for: %r", query)
     query = query.copy()
 
     for field, value in query.items():
-        if hasattr(value, '__iter__'):
+        if hasattr(value, "__iter__"):
             value = value[0]
         query[field] = remove_watermark(value)
 
-    query_string, field_meta = (
-        _get_flattened_query_and_field_meta(query))
+    query_string, field_meta = _get_flattened_query_and_field_meta(query)
 
-    results = [[], [], []]    # artists, albums, tracks
-    api_results = session.search(
-        query_string, models=field_meta.model_classes)
+    results = [[], [], []]  # artists, albums, tracks
+    api_results = session.search(query_string, models=field_meta.model_classes)
 
     for i, field_type in enumerate(
         (SearchField.ARTIST, SearchField.ALBUM, SearchField.TITLE)
@@ -184,10 +194,7 @@ def tidal_search(session, query, exact=False):
         results_field = meta.results_fields[0]
         mapper = meta.mappers[0]
 
-        if not (
-            results_field in api_results and
-            results_field in meta.results_fields
-        ):
+        if not (results_field in api_results and results_field in meta.results_fields):
             continue
 
         results[i] = api_results[results_field]

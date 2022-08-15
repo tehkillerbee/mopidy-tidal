@@ -5,10 +5,7 @@ from typing import Callable
 def func_wrapper(args):
     (f, offset, *args) = args
     items = f(*args)
-    return list(
-        (i + offset, item)
-        for i, item in enumerate(items)
-    )
+    return list((i + offset, item) for i, item in enumerate(items))
 
 
 def get_items(
@@ -28,14 +25,10 @@ def get_items(
     remaining = chunk_size * processes
 
     with ThreadPoolExecutor(
-        processes,
-        thread_name_prefix=f'mopidy-tidal-{func.__name__}-'
+        processes, thread_name_prefix=f"mopidy-tidal-{func.__name__}-"
     ) as pool:
         while remaining == chunk_size * processes:
-            offsets = [
-                offsets[-1] + chunk_size * (i + 1)
-                for i in range(processes)
-            ]
+            offsets = [offsets[-1] + chunk_size * (i + 1) for i in range(processes)]
 
             pool_results = pool.map(
                 func_wrapper,
@@ -44,11 +37,11 @@ def get_items(
                         func,
                         offset,
                         *args,
-                        chunk_size,   # limit
-                        offset,       # offset
+                        chunk_size,  # limit
+                        offset,  # offset
                     )
                     for offset in offsets
-                ]
+                ],
             )
 
             new_items = []
@@ -59,9 +52,8 @@ def get_items(
             items.extend(new_items)
 
     items = [_ for _ in items if _]
-    sorted_items = list(map(
-        lambda item: item[1],
-        sorted(items, key=lambda item: item[0])
-    ))
+    sorted_items = list(
+        map(lambda item: item[1], sorted(items, key=lambda item: item[0]))
+    )
 
     return list(map(parse, sorted_items))
