@@ -15,6 +15,7 @@ from mopidy.models import Ref
 from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
+from mopidy import backend
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.full_models_mappers import create_mopidy_playlist
 from mopidy_tidal.helpers import to_timestamp
@@ -108,7 +109,6 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return added_ids, removed_ids
 
     def _has_changes(self, playlist: MopidyPlaylist):
-
         upstream_playlist = self.backend._session.playlist(playlist.uri.split(":")[-1])
         if not upstream_playlist:
             return True

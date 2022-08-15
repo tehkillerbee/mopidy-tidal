@@ -394,7 +394,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def _lookup_album(self, session, parts):
         album_id = parts[2]
         tracks = self._get_album_tracks(session, album_id)
-
         return full_models_mappers.create_mopidy_tracks(tracks)
 
     @staticmethod
