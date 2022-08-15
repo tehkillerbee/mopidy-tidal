@@ -18,6 +18,6 @@ def test_get_config_schema():
     schema = ext.get_config_schema()
 
     # Test the content of your config schema
-    assert 'username' in schema
-    assert 'password' in schema
     assert "quality" in schema
+    assert "client_id" in schema
+    assert "client_secret"
