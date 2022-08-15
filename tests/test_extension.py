@@ -8,8 +8,8 @@ def test_get_default_config():
 
     config = ext.get_default_config()
 
-    assert '[tidal]' in config
-    assert 'enabled = true' in config
+    assert "[tidal]" in config
+    assert "enabled = true" in config
 
 
 def test_get_config_schema():
@@ -20,4 +20,4 @@ def test_get_config_schema():
     # Test the content of your config schema
     assert 'username' in schema
     assert 'password' in schema
-    assert 'quality' in schema
+    assert "quality" in schema
