@@ -1,4 +1,5 @@
 from mopidy.models import Ref
+
 from mopidy_tidal import ref_models_mappers as rmm
 
 

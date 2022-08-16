@@ -2,6 +2,7 @@
 # TODO: why?
 
 import pytest
+
 from mopidy_tidal import context
 
 
