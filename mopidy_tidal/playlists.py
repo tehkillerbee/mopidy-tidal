@@ -61,6 +61,8 @@ class PlaylistMetadataCache(PlaylistCache):
 
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
+    PLAYLISTS_SYNC_DOWNTIME_S = 300
+
     def __init__(self, *args, **kwargs):
         super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
         self._playlists_metadata = PlaylistMetadataCache()
@@ -217,7 +219,9 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         # again. Set an event for 5 minutes to ensure that we don't perform
         # another playlist sync.
         self._playlists_loaded_event.set()
-        Timer(300, lambda: self._playlists_loaded_event.clear()).start()
+        Timer(
+            self.PLAYLISTS_SYNC_DOWNTIME_S, lambda: self._playlists_loaded_event.clear()
+        ).start()
 
         # Update the right playlist cache and send the playlists_loaded event.
         playlist_cache.update(mapped_playlists)
