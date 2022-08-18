@@ -110,3 +110,14 @@ def test_get_artist_image(images_getter, mocker):
             Image(height=320, uri=uri, width=320)
         ],  # Why can we just set the dimensions like that?
     )
+
+
+def test_get_artist_no_image(images_getter, mocker):
+    ig, session = images_getter
+    uri = "tidal:artist:2-2-2"
+    get_artist = mocker.Mock()
+    get_artist.picture = None
+    session.get_artist.return_value = get_artist
+    assert ig(uri) == (uri, [])
+
+
