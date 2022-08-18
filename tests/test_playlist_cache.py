@@ -9,21 +9,21 @@ def test_metadata_cache(config):
     cache = PlaylistMetadataCache(directory="cache")
     uniq = object()
     outf = (
-        Path(config["core"]["cache_dir"], "tidal/cache/playlist_metadata/0")
-        / "tidal:playlist:0:1:2.cache"
+        Path(config["core"]["cache_dir"], "tidal/cache/playlist_metadata/00")
+        / "tidal:playlist:00-1-2.cache"
     )
     assert not outf.exists()
-    cache["tidal:playlist:0:1:2"] = uniq
+    cache["tidal:playlist:00-1-2"] = uniq
     assert outf.exists()
-    assert cache["tidal:playlist:0:1:2"] is uniq
+    assert cache["tidal:playlist:00-1-2"] is uniq
 
 
 def test_cached_as_str(config):
     cache = PlaylistCache(persist=False)
     uniq = object()
-    cache["tidal:playlist:0:1:2"] = uniq
-    assert cache["tidal:playlist:0:1:2"] is uniq
-    assert cache["0:1:2"] is uniq
+    cache["tidal:playlist:0-1-2"] = uniq
+    assert cache["tidal:playlist:0-1-2"] is uniq
+    assert cache["0-1-2"] is uniq
 
 
 def test_not_updated(config, mocker):
