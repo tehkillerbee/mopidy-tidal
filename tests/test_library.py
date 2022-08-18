@@ -96,3 +96,17 @@ def test_get_track_image(images_getter, mocker):
         ],  # Why can we just set the dimensions like that?
     )
     session.get_album.assert_called_once_with("1-1-1")
+
+
+def test_get_artist_image(images_getter, mocker):
+    ig, session = images_getter
+    uri = "tidal:artist:2-2-2"
+    get_artist = mocker.Mock()
+    get_artist.image.return_value = uri
+    session.get_artist.return_value = get_artist
+    assert ig(uri) == (
+        uri,
+        [
+            Image(height=320, uri=uri, width=320)
+        ],  # Why can we just set the dimensions like that?
+    )
