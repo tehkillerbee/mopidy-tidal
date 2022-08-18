@@ -1,6 +1,6 @@
 import pytest
 
-from mopidy_tidal.library import Image, ImagesGetter
+from mopidy_tidal.library import HTTPError, Image, ImagesGetter
 
 
 @pytest.fixture
@@ -121,3 +121,15 @@ def test_get_artist_no_image(images_getter, mocker):
     assert ig(uri) == (uri, [])
 
 
+@pytest.mark.parametrize("error", {HTTPError, AttributeError})
+def test_get_artist_error(images_getter, mocker, error):
+    ig, session = images_getter
+    uri = "tidal:artist:2-2-2"
+    get_artist = mocker.Mock()
+
+    def raiser(*_):
+        raise error()
+
+    get_artist.image = raiser
+    session.get_artist.return_value = get_artist
+    assert ig(uri) == (uri, [])
