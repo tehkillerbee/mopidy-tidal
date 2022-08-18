@@ -60,3 +60,18 @@ def test_get_album_image_old_api(images_getter, mocker, dimensions):
         ],  # Why can we just set the dimensions like that?
     )
     assert get_uri_args == [dimensions, dimensions]
+
+
+def test_get_track_image(images_getter, mocker):
+    ig, session = images_getter
+    uri = "tidal:track:0-0-0:1-1-1:2-2-2"
+    get_album = mocker.Mock()
+    get_album.image.return_value = "tidal:album:1-1-1"
+    session.get_album.return_value = get_album
+    assert ig(uri) == (
+        uri,
+        [
+            Image(height=320, uri="tidal:album:1-1-1", width=320)
+        ],  # Why can we just set the dimensions like that?
+    )
+    session.get_album.assert_called_once_with("1-1-1")
