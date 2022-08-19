@@ -1,5 +1,5 @@
 import pytest
-from mopidy.models import Album, Artist, SearchResult, Track
+from mopidy.models import Album, Artist, Image, SearchResult, Track
 
 from mopidy_tidal.library import TidalLibraryProvider
 
@@ -32,3 +32,29 @@ def test_search(mocker, tlp):
         artists=artists, albums=albums, tracks=tracks
     )
     tidal_search.assert_called_once_with(backend._session, query=query, exact=exact)
+
+
+def test_get_track_images(tlp, mocker):
+    tlp, backend = tlp
+    uris = ["tidal:track:0-0-0:1-1-1:2-2-2"]
+    get_album = mocker.Mock()
+    get_album.image.return_value = "tidal:album:1-1-1"
+    backend._session.get_album.return_value = get_album
+    assert tlp.get_images(uris) == {
+        uris[0]: [Image(height=320, uri="tidal:album:1-1-1", width=320)]
+    }
+    backend._session.get_album.assert_called_once_with("1-1-1")
+
+
+@pytest.mark.xfail
+def test_track_cache(tlp, mocker):
+    # I think the caching logic is broken here
+    tlp, backend = tlp
+    uris = ["tidal:track:0-0-0:1-1-1:2-2-2"]
+    get_album = mocker.Mock()
+    get_album.image.return_value = "tidal:album:1-1-1"
+    backend._session.get_album.return_value = get_album
+    first = tlp.get_images(uris)
+    assert first == {uris[0]: [Image(height=320, uri="tidal:album:1-1-1", width=320)]}
+    assert tlp.get_images(uris) == first
+    backend._session.get_album.assert_called_once_with("1-1-1")
