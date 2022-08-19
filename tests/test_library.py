@@ -14,7 +14,7 @@ def tlp(mocker, config):
     return lp, backend
 
 
-def test_search_no_match(tlp):
+def test_search_no_match(tlp, tidal_search):
     tlp, backend = tlp
     assert not tlp.search("nonsuch")
 
