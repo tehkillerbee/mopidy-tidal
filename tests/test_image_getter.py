@@ -142,11 +142,7 @@ def test_get_artist_error(images_getter, mocker, error):
     ig, session = images_getter
     uri = "tidal:artist:2-2-2"
     get_artist = mocker.Mock()
-
-    def raiser(*_):
-        raise error()
-
-    get_artist.image = raiser
+    get_artist.image.side_effect = error()
     session.get_artist.return_value = get_artist
     assert ig(uri) == (uri, [])
 
