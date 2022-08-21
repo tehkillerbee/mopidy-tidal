@@ -58,3 +58,37 @@ def test_track_cache(tlp, mocker):
     assert first == {uris[0]: [Image(height=320, uri="tidal:album:1-1-1", width=320)]}
     assert tlp.get_images(uris) == first
     backend._session.get_album.assert_called_once_with("1-1-1")
+
+
+@pytest.mark.parametrize("field", ("artist", "album", "track"))
+def test_get_distinct_root(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    thing = mocker.Mock()
+    thing.name = "Thing"
+    session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
+    res = tlp.get_distinct(field)
+    assert res[0] == "Thing [TIDAL]"
+    assert len(res) == 1
+
+
+def test_get_distinct_root_nonsuch(tlp, mocker):
+    tlp, backend = tlp
+    assert not tlp.get_distinct("nonsuch")
+
+
+def test_get_distinct_query_nonsuch(tlp, mocker):
+    tlp, backend = tlp
+    assert not tlp.get_distinct("nonsuch", query={"any": "any"})
+
+
+@pytest.mark.parametrize("field", ("artist", "track"))
+def test_get_distinct_ignore_query(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    thing = mocker.Mock()
+    thing.name = "Thing"
+    session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
+    res = tlp.get_distinct(field, query={"any": "any"})
+    assert res[0] == "Thing [TIDAL]"
+    assert len(res) == 1
