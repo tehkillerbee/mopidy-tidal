@@ -178,7 +178,7 @@ def tidal_search(session, query, exact=False):
     query = query.copy()
 
     for field, value in query.items():
-        if hasattr(value, "__iter__"):
+        if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
             value = value[0]
         query[field] = remove_watermark(value)
 
