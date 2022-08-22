@@ -92,3 +92,75 @@ def test_get_distinct_ignore_query(tlp, mocker, field):
     res = tlp.get_distinct(field, query={"any": "any"})
     assert res[0] == "Thing [TIDAL]"
     assert len(res) == 1
+
+
+@pytest.mark.parametrize("field", ("album", "albumartist"))
+def test_get_distinct_album_old_api(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    tidal_search = mocker.Mock()
+    artist = mocker.Mock(spec=Artist)
+    artist.uri = "tidal:artist:1"
+    tidal_search.return_value = ([artist], [], [])
+    thing = mocker.Mock()
+    thing.name = "Thing"
+    session.get_artist_albums.return_value = [thing]
+    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+    res = tlp.get_distinct(field, query={"any": "any"})
+    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+    session.get_artist_albums.assert_called_once_with("1")
+    assert len(res) == 1
+    assert res[0] == "Thing [TIDAL]"
+
+
+@pytest.mark.parametrize("field", ("album", "albumartist"))
+def test_get_distinct_album_no_results(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    tidal_search = mocker.Mock()
+    tidal_search.return_value = ([], [], [])
+    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+    assert not tlp.get_distinct(field, query={"any": "any"})
+    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+
+
+@pytest.mark.parametrize("field", ("album", "albumartist"))
+def test_get_distinct_album_new_api(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
+
+    artist = mocker.Mock()
+    artist.uri = "tidal:artist:1"
+    thing = mocker.Mock()
+    thing.name = "Thing"
+    artist.get_albums.return_value = [thing]
+
+    tidal_search = mocker.Mock()
+    tidal_search.return_value = ([artist], [], [])
+    session.artist.return_value = artist
+    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+    res = tlp.get_distinct(field, query={"any": "any"})
+    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+    session.artist.assert_called_once_with("1")
+    artist.get_albums.assert_called_once_with()
+    assert len(res) == 1
+    assert res[0] == "Thing [TIDAL]"
+
+
+@pytest.mark.parametrize("field", ("album", "albumartist"))
+def test_get_distinct_album_new_api_no_artist(tlp, mocker, field):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
+
+    artist = mocker.Mock()
+    artist.uri = "tidal:artist:1"
+
+    tidal_search = mocker.Mock()
+    tidal_search.return_value = ([artist], [], [])
+    session.artist.return_value = None
+    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+    assert not tlp.get_distinct(field, query={"any": "any"})
+    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+    session.artist.assert_called_once_with("1")
