@@ -147,7 +147,6 @@ def test_search_inexact(
     tidal_artists,
     tidal_albums,
 ):
-    tidal_search, SearchField, fields_meta = tidal_search
     # generate the right query.  We use list slicing since we the fixture isn't
     # available in the parametrizing code.
     _l = locals()
@@ -176,7 +175,6 @@ def test_search_exact(
     tidal_artists,
     tidal_albums,
 ):
-    tidal_search, SearchField, fields_meta = tidal_search
     # generate the right query.  We use list slicing since we the fixture isn't
     # available in the parametrizing code.
     _l = locals()
@@ -208,7 +206,6 @@ def test_search_exact(
 
 
 def test_malformed_api_response(mocker, tidal_search, tidal_tracks):
-    tidal_search, SearchField, fields_meta = tidal_search
     session = mocker.Mock()
     session.search.return_value = {
         # missing albums and artists
