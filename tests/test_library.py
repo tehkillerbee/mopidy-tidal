@@ -170,6 +170,7 @@ def test_browse_wrong_uri(tlp):
     tlp, backend = tlp
     assert not tlp.browse("")
     assert not tlp.browse("spotify:something:something_else")
+    assert not tlp.browse("tidal:album:oneid:oneidtoomany")
 
 
 def test_browse_root(tlp):
@@ -183,3 +184,221 @@ def test_browse_root(tlp):
         Ref(name="My Playlists", type="directory", uri="tidal:my_playlists"),
         Ref(name="My Tracks", type="directory", uri="tidal:my_tracks"),
     ]
+
+
+def test_browse_artists(tlp, mocker, tidal_artists):
+    tlp, backend = tlp
+    session = backend._session
+    session.user.favorites.artists = tidal_artists
+    mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+    assert tlp.browse("tidal:my_artists") == [
+        Ref(name="Artist-0", type="artist", uri="tidal:artist:0"),
+        Ref(name="Artist-1", type="artist", uri="tidal:artist:1"),
+    ]
+
+
+def test_browse_albums(tlp, mocker, tidal_albums):
+    tlp, backend = tlp
+    session = backend._session
+    session.user.favorites.albums = tidal_albums
+    mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+    assert tlp.browse("tidal:my_albums") == [
+        Ref(name="Album-0", type="album", uri="tidal:album:0"),
+        Ref(name="Album-1", type="album", uri="tidal:album:1"),
+    ]
+
+
+def test_browse_tracks(tlp, mocker, tidal_tracks):
+    tlp, backend = tlp
+    session = backend._session
+    session.user.favorites.tracks = tidal_tracks
+    mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+    assert tlp.browse("tidal:my_tracks") == [
+        Ref(name="Track-0", type="track", uri="tidal:track:0:0:0"),
+        Ref(name="Track-1", type="track", uri="tidal:track:1:1:1"),
+    ]
+
+
+def test_browse_playlists(tlp, mocker):
+    tlp, backend = tlp
+    as_list = mocker.Mock()
+    uniq = object()
+    as_list.return_value = uniq
+    backend.playlists.as_list = as_list
+    assert tlp.browse("tidal:my_playlists") is uniq
+    as_list.assert_called_once_with()
+
+
+def test_moods_old_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    mood = mocker.Mock()
+    mood.name = "Mood-1"
+    mood.id = "1"
+    session.get_moods.return_value = [mood]
+    assert tlp.browse("tidal:moods") == [
+        Ref(name="Mood-1", type="playlist", uri="tidal:mood:1")
+    ]
+    session.get_moods.assert_called_once_with()
+
+
+def test_moods_new_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("moods",))
+    mood = mocker.Mock()
+    mood.name = "Mood-1"
+    mood.id = "1"
+    session.moods.return_value = [mood]
+    assert tlp.browse("tidal:moods") == [
+        Ref(name="Mood-1", type="playlist", uri="tidal:mood:1")
+    ]
+    session.moods.assert_called_once_with()
+
+
+def test_mixes_old_api(tlp, mocker):
+    tlp, backend = tlp
+    assert not tlp.browse("tidal:mixes")
+
+
+def test_mixes_new_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("mixes",))
+    mix = mocker.Mock()
+    mix.title = "Mix-1"
+    mix.sub_title = "[Subtitle]"
+    mix.id = "1"
+    session.mixes.return_value = [mix]
+    assert tlp.browse("tidal:mixes") == [
+        Ref(name="Mix-1 ([Subtitle])", type="playlist", uri="tidal:mix:1")
+    ]
+    session.mixes.assert_called_once_with()
+
+
+def test_genres_old_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    genre = mocker.Mock()
+    genre.name = "Genre-1"
+    genre.id = "1"
+    session.get_genres.return_value = [genre]
+    assert tlp.browse("tidal:genres") == [
+        Ref(name="Genre-1", type="directory", uri="tidal:genre:1")
+    ]
+    session.get_genres.assert_called_once_with()
+
+
+def test_genres_new_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(
+        (
+            "genre",
+            "genre.get_genres",
+        )
+    )
+    genre = mocker.Mock()
+    genre.name = "Genre-1"
+    genre.id = "1"
+    session.genre.get_genres.return_value = [genre]
+    assert tlp.browse("tidal:genres") == [
+        Ref(name="Genre-1", type="directory", uri="tidal:genre:1")
+    ]
+    session.genre.get_genres.assert_called_once_with()
+
+
+def test_specific_album_old_api(tlp, mocker, tidal_tracks):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    assert tlp.browse("tidal:album:1") == [
+        Ref(name="Track-0", type="track", uri="tidal:track:0:0:0"),
+        Ref(name="Track-1", type="track", uri="tidal:track:1:1:1"),
+    ]
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_specific_album_new_api(tlp, mocker, tidal_albums):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("album",))
+    album = tidal_albums[0]
+    session.album.return_value = album
+    assert tlp.browse("tidal:album:1") == [
+        Ref(name="Track-0", type="track", uri="tidal:track:1234:0:0")
+    ]
+    session.album.assert_called_once_with("1")
+    album.tracks.assert_called_once_with()
+
+
+def test_specific_album_new_api_none(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("album",))
+    session.album.return_value = None
+    assert not tlp.browse("tidal:album:1")
+    session.album.assert_called_once_with("1")
+
+
+def test_specific_playlist_new_api(tlp, mocker, tidal_tracks):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("playlist",))
+    playlist = mocker.Mock(name="Playlist")
+    playlist.tracks.return_value = tidal_tracks
+    playlist.tracks.__name__ = "playlist"
+    session.playlist.return_value = playlist
+
+    tracks = tlp.browse("tidal:playlist:1")
+    assert tracks[:2] == [
+        Ref(name="Track-0", type="track", uri="tidal:track:0:0:0"),
+        Ref(name="Track-1", type="track", uri="tidal:track:1:1:1"),
+    ]
+
+    session.playlist.assert_called_once_with("1")
+    playlist.tracks.assert_has_calls([mocker.call(100, 0)])
+
+
+def test_specific_mood_old_api(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    playlist = mocker.Mock()
+    playlist.id = 1
+    playlist.name = "Playlist-1"
+    session.get_mood_playlists.return_value = [playlist]
+    assert tlp.browse("tidal:mood:1") == [
+        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1")
+    ]
+    session.get_mood_playlists.assert_called_once_with("1", "playlists")
+
+
+def test_specific_mood_new_api(tlp, mocker, tidal_tracks):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("moods",))
+    playlist = mocker.Mock()
+    playlist.id = 1
+    playlist.name = "Playlist-1"
+    playlist.api_path = "something/somethingelse/1"
+    playlist.get.return_value = tidal_tracks
+    playlist_2 = mocker.Mock()
+    playlist_2.api_path = "0/0/0"
+    session.moods.return_value = [playlist, playlist_2]
+    assert tlp.browse("tidal:mood:1") == [
+        Ref(name="Track-0", type="playlist", uri="tidal:playlist:0"),
+        Ref(name="Track-1", type="playlist", uri="tidal:playlist:1"),
+    ]
+
+    session.moods.assert_called_once_with()
+    playlist.get.assert_called_once_with()
+
+
+def test_specific_mood_new_api_none(tlp, mocker, tidal_tracks):
+    tlp, backend = tlp
+    session = backend._session
+    session.mock_add_spec(("moods",))
+    playlist_2 = mocker.Mock()
+    playlist_2.api_path = "0/0/0"
+    session.moods.return_value = [playlist_2]
+    assert not tlp.browse("tidal:mood:1")
