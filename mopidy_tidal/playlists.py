@@ -11,7 +11,7 @@ from typing import Collection, List, Optional, Tuple, Union
 try:
     # tidalapi >= 0.7.0
     from tidalapi.playlist import Playlist as TidalPlaylist
-except ImportError:
+except ImportError:  # pragma: no cover
     # tidalapi < 0.7.0
     from tidalapi.models import Playlist as TidalPlaylist
 
