@@ -1,5 +1,5 @@
 import pytest
-from mopidy.models import Album, Artist, Image, SearchResult, Track
+from mopidy.models import Album, Artist, Image, Ref, SearchResult, Track
 
 from mopidy_tidal.library import TidalLibraryProvider
 
@@ -164,3 +164,22 @@ def test_get_distinct_album_new_api_no_artist(tlp, mocker, field):
     assert not tlp.get_distinct(field, query={"any": "any"})
     tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
     session.artist.assert_called_once_with("1")
+
+
+def test_browse_wrong_uri(tlp):
+    tlp, backend = tlp
+    assert not tlp.browse("")
+    assert not tlp.browse("spotify:something:something_else")
+
+
+def test_browse_root(tlp):
+    tlp, backend = tlp
+    assert tlp.browse("tidal:directory") == [
+        Ref(name="Genres", type="directory", uri="tidal:genres"),
+        Ref(name="Moods", type="directory", uri="tidal:moods"),
+        Ref(name="Mixes", type="directory", uri="tidal:mixes"),
+        Ref(name="My Artists", type="directory", uri="tidal:my_artists"),
+        Ref(name="My Albums", type="directory", uri="tidal:my_albums"),
+        Ref(name="My Playlists", type="directory", uri="tidal:my_playlists"),
+        Ref(name="My Tracks", type="directory", uri="tidal:my_tracks"),
+    ]
