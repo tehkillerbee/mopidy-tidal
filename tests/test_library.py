@@ -247,12 +247,12 @@ def test_moods_new_api(tlp, mocker):
     tlp, backend = tlp
     session = backend._session
     session.mock_add_spec(("moods",))
-    mood = mocker.Mock()
-    mood.name = "Mood-1"
-    mood.id = "1"
+    mood = mocker.Mock(spec=("title", "title", "api_path"))
+    mood.title = "Mood-1"
+    mood.api_path = "0/0/1"
     session.moods.return_value = [mood]
     assert tlp.browse("tidal:moods") == [
-        Ref(name="Mood-1", type="playlist", uri="tidal:mood:1")
+        Ref(name="Mood-1", type="directory", uri="tidal:mood:1")
     ]
     session.moods.assert_called_once_with()
 
@@ -299,9 +299,9 @@ def test_genres_new_api(tlp, mocker):
             "genre.get_genres",
         )
     )
-    genre = mocker.Mock()
+    genre = mocker.Mock(spec=("name", "path"))
     genre.name = "Genre-1"
-    genre.id = "1"
+    genre.path = "1"
     session.genre.get_genres.return_value = [genre]
     assert tlp.browse("tidal:genres") == [
         Ref(name="Genre-1", type="directory", uri="tidal:genre:1")
