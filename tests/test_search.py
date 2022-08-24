@@ -3,33 +3,6 @@ from tidalapi.album import Album
 from tidalapi.artist import Artist
 from tidalapi.media import Track
 
-
-def compare_track(tidal, mopidy):
-    assert tidal.uri == mopidy.uri
-    assert tidal.name == mopidy.name
-    assert tidal.duration * 1000 == mopidy.length
-    assert tidal.disc_num == mopidy.disc_no
-    assert tidal.track_num == mopidy.track_no
-    compare_artist(tidal.artist, list(mopidy.artists)[0])
-    compare_album(tidal.album, mopidy.album)
-
-
-def compare_artist(tidal, mopidy):
-    assert tidal.name == mopidy.name
-    assert f"tidal:artist:{tidal.id}" == mopidy.uri
-
-
-def compare_album(tidal, mopidy):
-    assert tidal.name == mopidy.name
-    assert f"tidal:album:{tidal.id}" == mopidy.uri
-
-
-def compare(tidal, mopidy, fn):
-    assert len(tidal) == len(mopidy)
-    for t, m in zip(tidal, mopidy):
-        fn(t, m)
-
-
 test_queries = [
     (  # Any
         dict(
@@ -91,6 +64,7 @@ def test_search_inexact(
     tidal_tracks,
     tidal_artists,
     tidal_albums,
+    compare,
 ):
     # generate the right query.  We use list slicing since we the fixture isn't
     # available in the parametrizing code.
@@ -102,9 +76,9 @@ def test_search_inexact(
     # NOTE: There is no need to copy the extra artist/album tracks into
     # results["tracks"]: the call to tidal_search() will actually do that for
     # us.
-    compare(results["tracks"], tracks, compare_track)
-    compare(results["artists"], artists, compare_artist)
-    compare(results["albums"], albums, compare_album)
+    compare(results["tracks"], tracks, "track")
+    compare(results["artists"], artists, "artist")
+    compare(results["albums"], albums, "album")
     session.search.assert_called_once_with(query_str, models=models)
 
 
@@ -119,6 +93,7 @@ def test_search_exact(
     tidal_tracks,
     tidal_artists,
     tidal_albums,
+    compare,
 ):
     # generate the right query.  We use list slicing since we the fixture isn't
     # available in the parametrizing code.
@@ -144,13 +119,13 @@ def test_search_exact(
         ]
         for artist in results["artists"]:
             results["tracks"] += artist.get_top_tracks()
-    compare(results["tracks"], tracks, compare_track)
-    compare(results["artists"], artists, compare_artist)
-    compare(results["albums"], albums, compare_album)
+    compare(results["tracks"], tracks, "track")
+    compare(results["artists"], artists, "artist")
+    compare(results["albums"], albums, "album")
     session.search.assert_called_once_with(query_str, models=models)
 
 
-def test_malformed_api_response(mocker, tidal_search, tidal_tracks):
+def test_malformed_api_response(mocker, tidal_search, tidal_tracks, compare):
     session = mocker.Mock()
     session.search.return_value = {
         # missing albums and artists
@@ -167,4 +142,4 @@ def test_malformed_api_response(mocker, tidal_search, tidal_tracks):
     artists, albums, tracks = tidal_search(session, query=query, exact=False)
     assert not artists
     assert not albums
-    compare(tidal_tracks, tracks, compare_track)
+    compare(tidal_tracks, tracks, "track")

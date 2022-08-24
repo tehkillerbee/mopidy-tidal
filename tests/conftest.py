@@ -85,3 +85,40 @@ def tidal_tracks(mocker, tidal_artists, tidal_albums):
         make_track(i, artist, album)
         for i, (artist, album) in enumerate(zip(tidal_artists, tidal_albums))
     ]
+
+
+def compare_track(tidal, mopidy):
+    assert tidal.uri == mopidy.uri
+    assert tidal.name == mopidy.name
+    assert tidal.duration * 1000 == mopidy.length
+    assert tidal.disc_num == mopidy.disc_no
+    assert tidal.track_num == mopidy.track_no
+    compare_artist(tidal.artist, list(mopidy.artists)[0])
+    compare_album(tidal.album, mopidy.album)
+
+
+def compare_artist(tidal, mopidy):
+    assert tidal.name == mopidy.name
+    assert f"tidal:artist:{tidal.id}" == mopidy.uri
+
+
+def compare_album(tidal, mopidy):
+    assert tidal.name == mopidy.name
+    assert f"tidal:album:{tidal.id}" == mopidy.uri
+
+
+_compare_map = {
+    "artist": compare_artist,
+    "album": compare_album,
+    "track": compare_track,
+}
+
+
+@pytest.fixture
+def compare():
+    def _compare(tidal, mopidy, fn: str):
+        assert len(tidal) == len(mopidy)
+        for t, m in zip(tidal, mopidy):
+            _compare_map[fn](t, m)
+
+    return _compare
