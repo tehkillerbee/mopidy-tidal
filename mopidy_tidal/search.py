@@ -129,6 +129,7 @@ def _get_exact_result(
             item = next(
                 (
                     res
+                    # TODO: why not results[-i-1]?
                     for res in results[len(results) - i - 1]
                     if res.name and res.name.lower() == query_value.lower()
                 ),

@@ -63,6 +63,7 @@ class ImagesGetter:
 
     def _get_api_getter(self, item_type: str):
         tidal_lt_0_7_getter_name = f"get_{item_type}"
+        # TODO: can't we use nested getattr here?
         return (
             # tidalapi < 0.7.0
             getattr(self._session, tidal_lt_0_7_getter_name)
@@ -419,6 +420,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         playlist_uri = ":".join(parts)
         playlist_id = parts[2]
         playlist = self._playlist_cache.get(playlist_uri)
+        # NOTE: Unreachable?
         if playlist and playlist.tracks and playlist.tracks[0] != mock_track.uri:
             return playlist.tracks
 
@@ -463,6 +465,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         album_uri = ":".join(["tidal", "album", album_id])
 
         tracks = self._album_cache.get(album_uri)
+        # NOTE: unreachable?
         if tracks is None:
             tracks = self._get_album_tracks(session, album_id)
 
@@ -476,6 +479,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         album_uri = ":".join(parts)
 
         tracks = self._album_cache.get(album_uri)
+        # NOTE: unreachable?
         if tracks is None:
             tracks = self._get_album_tracks(session, album_id)
 
@@ -495,6 +499,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         artist_uri = ":".join(parts)
 
         tracks = self._artist_cache.get(artist_uri)
+        # NOTE: unreachable?
         if tracks is None:
             tracks = self._get_artist_top_tracks(session, artist_id)
 
