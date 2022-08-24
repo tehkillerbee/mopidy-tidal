@@ -2,7 +2,7 @@ import pytest
 from mopidy.models import Album, Artist, Image, Ref, SearchResult, Track
 from tidalapi.playlist import Playlist
 
-from mopidy_tidal.library import TidalLibraryProvider
+from mopidy_tidal.library import HTTPError, TidalLibraryProvider
 
 
 @pytest.fixture
@@ -510,3 +510,131 @@ def test_specific_artist_new_api(tlp, mocker, tidal_albums, tidal_artists):
     artist.get_top_tracks.assert_called_once_with()
     artist.get_albums.assert_called_once_with()
     session.artist.assert_has_calls([mocker.call("1"), mocker.call("1")])
+
+
+def test_lookup_no_uris(tlp, mocker):
+    tlp, backend = tlp
+    with pytest.raises(Exception):  # just check it raises
+        tlp.lookup()
+    with pytest.raises(Exception):
+        tlp.lookup("")
+    with pytest.raises(Exception):
+        tlp.lookup("somethingwhichisntauri")
+    assert not tlp.lookup("tidal:nonsuch:11")
+
+
+def test_lookup_http_error(tlp, mocker):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.side_effect = HTTPError
+    assert not tlp.lookup("tidal:track:0:1:0")
+
+
+def test_lookup_track(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:track:0:1:0")
+    compare(tidal_tracks[:1], res, "track")
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_lookup_track_cached(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:track:0:1:0")
+    compare(tidal_tracks[:1], res, "track")
+    res2 = tlp.lookup("tidal:track:0:1:0")
+    assert res2 == res
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+@pytest.mark.xfail  # Should we cache the album when we look up a track?
+def test_lookup_track_cached_album(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:track:0:1:1")
+    compare(tidal_tracks[-1:], res, "track")
+    res2 = tlp.lookup("tidal:track:0:1:0")
+    compare(tidal_tracks[:1], res2, "track")
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_lookup_album(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:album:1")
+    compare(tidal_tracks, res, "track")
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_lookup_album_cached(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:album:1")
+    compare(tidal_tracks, res, "track")
+    res2 = tlp.lookup("tidal:album:1")
+    assert res2 == res
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_lookup_artist(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_artist_top_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:artist:1")
+    compare(tidal_tracks, res, "track")
+    session.get_artist_top_tracks.assert_called_once_with("1")
+
+
+def test_lookup_artist_cached(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_artist_top_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:artist:1")
+    compare(tidal_tracks, res, "track")
+    res2 = tlp.lookup("tidal:artist:1")
+    assert res2 == res
+    session.get_artist_top_tracks.assert_called_once_with("1")
+
+
+def test_lookup_playlist(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    playlist = mocker.Mock()
+    playlist.name = "Playlist-1"
+    playlist.last_updated = 10
+    session.get_playlist.return_value = playlist
+    session.get_playlist_tracks.return_value = tidal_tracks
+    session.get_playlist_tracks.__name__ = "get_playlist_tracks"
+
+    res = tlp.lookup("tidal:playlist:99")
+    compare(tidal_tracks, res[: len(tidal_tracks)], "track")
+
+    session.get_playlist.assert_called_once_with("99")
+    assert len(session.get_playlist_tracks.mock_calls) == 5
+    assert all(c.args[0] == "99" for c in session.get_playlist_tracks.mock_calls)
+
+
+def test_lookup_playlist_cached(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    playlist = mocker.Mock()
+    playlist.name = "Playlist-1"
+    playlist.last_updated = 10
+    session.get_playlist.return_value = playlist
+    session.get_playlist_tracks.return_value = tidal_tracks
+    session.get_playlist_tracks.__name__ = "get_playlist_tracks"
+
+    res = tlp.lookup("tidal:playlist:99")
+    compare(tidal_tracks, res[: len(tidal_tracks)], "track")
+    res2 = tlp.lookup("tidal:playlist:99")
+    assert res2 == res
+
+    session.get_playlist.assert_called_once_with("99")
+    assert len(session.get_playlist_tracks.mock_calls) == 5
+    assert all(c.args[0] == "99" for c in session.get_playlist_tracks.mock_calls)
