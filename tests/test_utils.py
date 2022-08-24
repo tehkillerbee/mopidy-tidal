@@ -6,4 +6,5 @@ def test_apply_watermark():
 
 
 def test_remove_watermark():
+    assert remove_watermark(None) is None
     assert remove_watermark("track [TIDAL]") == "track"
