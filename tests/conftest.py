@@ -14,7 +14,13 @@ def config(tmp_path):
     cfg = {
         "core": {
             "cache_dir": str(tmp_path),
-        }
+            "data_dir": str(tmp_path),
+        },
+        "tidal": {
+            "client_id": "client_id",
+            "client_secret": "client_secret",
+            "quality": "LOSSLESS",
+        },
     }
     context.set_config(cfg)
     yield cfg

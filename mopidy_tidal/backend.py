@@ -16,7 +16,7 @@ try:
     from tidalapi import __version__
 
     has_python_tidal_0_7 = True
-except ImportError:
+except ImportError:  # pragma: no cover
     has_python_tidal_0_7 = False
 
 
