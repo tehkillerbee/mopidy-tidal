@@ -63,13 +63,8 @@ class ImagesGetter:
 
     def _get_api_getter(self, item_type: str):
         tidal_lt_0_7_getter_name = f"get_{item_type}"
-        # TODO: can't we use nested getattr here?
-        return (
-            # tidalapi < 0.7.0
-            getattr(self._session, tidal_lt_0_7_getter_name)
-            if hasattr(self._session, tidal_lt_0_7_getter_name)
-            # tidalapi >= 0.7.0
-            else getattr(self._session, item_type)
+        return getattr(
+            self._session, tidal_lt_0_7_getter_name, getattr(self._session, item_type)
         )
 
     def _get_images(self, uri) -> List[Image]:
