@@ -203,14 +203,16 @@ def test_playlist_sync_downtime(mocker, tidal_playlists, config):
 
 def test_update_changes(tpp, mocker, tidal_playlists):
     tpp, backend = tpp
-    tpp._playlists_metadata |= {
-        "tidal:playlist:0-0-0": MopidyPlaylist(
-            last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
-        ),
-        "tidal:playlist:1-1-1": MopidyPlaylist(
-            last_modified=9, name="Playlist-1", uri="tidal:playlist:1-1-1"
-        ),
-    }
+    tpp._playlists_metadata.update(
+        {
+            "tidal:playlist:0-0-0": MopidyPlaylist(
+                last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
+            ),
+            "tidal:playlist:1-1-1": MopidyPlaylist(
+                last_modified=9, name="Playlist-1", uri="tidal:playlist:1-1-1"
+            ),
+        }
+    )
 
     mocker.patch("mopidy_tidal.playlists.get_items", lambda x: x)
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
@@ -223,14 +225,16 @@ def test_update_changes(tpp, mocker, tidal_playlists):
 
 def test_update_no_changes(tpp, mocker, tidal_playlists):
     tpp, backend = tpp
-    tpp._playlists_metadata |= {
-        "tidal:playlist:0-0-0": MopidyPlaylist(
-            last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
-        ),
-        "tidal:playlist:1-1-1": MopidyPlaylist(
-            last_modified=10, name="Playlist-1", uri="tidal:playlist:1-1-1"
-        ),
-    }
+    tpp._playlists_metadata.update(
+        {
+            "tidal:playlist:0-0-0": MopidyPlaylist(
+                last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
+            ),
+            "tidal:playlist:1-1-1": MopidyPlaylist(
+                last_modified=10, name="Playlist-1", uri="tidal:playlist:1-1-1"
+            ),
+        }
+    )
 
     mocker.patch("mopidy_tidal.playlists.get_items", lambda x: x)
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
