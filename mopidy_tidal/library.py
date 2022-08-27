@@ -69,7 +69,7 @@ class ImagesGetter:
             getattr(self._session, tidal_lt_0_7_getter_name)
             if hasattr(self._session, tidal_lt_0_7_getter_name)
             # tidalapi >= 0.7.0
-            else getattr(self._session, item_type, None)
+            else getattr(self._session, item_type)
         )
 
     def _get_images(self, uri) -> List[Image]:
