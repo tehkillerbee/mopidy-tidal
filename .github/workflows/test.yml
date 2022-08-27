@@ -28,4 +28,5 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install .
+          pip install -r test_requirements.txt
           make test
