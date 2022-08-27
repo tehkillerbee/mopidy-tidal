@@ -55,6 +55,7 @@ def test_update(lru_cache):
     assert "tidal:uri:nonesuch" not in lru_cache
 
 
+@pytest.mark.gt_3_7
 def test_newstyle_update(lru_cache):
     assert "tidal:uri:val" not in lru_cache
     lru_cache |= {"tidal:uri:val": "hi", "tidal:uri:otherval": 17}
@@ -134,7 +135,7 @@ def test_prune_deleted(config):
 
 
 def test_max_size(lru_cache):
-    lru_cache |= {f"tidal:uri:{val}": val for val in range(8)}
+    lru_cache.update({f"tidal:uri:{val}": val for val in range(8)})
     assert len(lru_cache) == 8
     lru_cache["tidal:uri:8"] = 8
     assert lru_cache == {f"tidal:uri:{val}": val for val in range(1, 9)}
@@ -143,13 +144,13 @@ def test_max_size(lru_cache):
 def test_no_max_size(config):
     l = LruCache(max_size=0, persist=False)
     assert not l.max_size
-    l |= {f"tidal:uri:{val}": val for val in range(2**12)}
+    l.update({f"tidal:uri:{val}": val for val in range(2**12)})
     assert len(l) == 2**12
 
 
 @pytest.mark.xfail
 def test_lru(lru_cache):
-    lru_cache |= {f"tidal:uri:{val}": val for val in range(8)}
+    lru_cache.update({f"tidal:uri:{val}": val for val in range(8)})
     lru_cache["tidal:uri:0"]
     lru_cache["tidal:uri:8"] = 8
     assert lru_cache == {f"tidal:uri:{val}": val for val in (0, *range(2, 9))}
