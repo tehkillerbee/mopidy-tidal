@@ -71,7 +71,7 @@ def test_prune(lru_cache):
     lru_cache.update({"tidal:uri:val": "hi", "tidal:uri:otherval": 17})
     assert "tidal:uri:val" in lru_cache
     lru_cache.prune("tidal:uri:val")
-    assert not "tidal:uri:val" in lru_cache
+    assert "tidal:uri:val" not in lru_cache
     assert "tidal:uri:otherval" in lru_cache
 
 
@@ -80,8 +80,8 @@ def test_prune_all(lru_cache):
     assert "tidal:uri:val" in lru_cache
     assert "tidal:uri:otherval" in lru_cache
     lru_cache.prune_all()
-    assert not "tidal:uri:val" in lru_cache
-    assert not "tidal:uri:otherval" in lru_cache
+    assert "tidal:uri:val" not in lru_cache
+    assert "tidal:uri:otherval" not in lru_cache
 
 
 def test_persist(config):
