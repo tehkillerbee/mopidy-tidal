@@ -472,14 +472,21 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return album.tracks()
 
     def _lookup_track(self, session, parts):
-        album_id = parts[3]
+        if len(parts) == 3:   # Track in format `tidal:track:<track_id>`
+            track_id = parts[2]
+            track = session.track(track_id)
+            album_id = str(track.album.id)
+        else:   # Track in format `tidal:track:<artist_id>:<album_id>:<track_id>`
+            album_id = parts[3]
+            track_id = parts[4]
+
         album_uri = ':'.join(['tidal', 'album', album_id])
 
         tracks = self._album_cache.get(album_uri)
         if tracks is None:
             tracks = self._get_album_tracks(session, album_id)
 
-        track = [t for t in tracks if t.id == int(parts[4])][0]
+        track = [t for t in tracks if t.id == int(track_id)][0]
         artist = full_models_mappers.create_mopidy_artist(track.artist)
         album = full_models_mappers.create_mopidy_album(track.album, artist)
         return [full_models_mappers.create_mopidy_track(artist, album, track)]
