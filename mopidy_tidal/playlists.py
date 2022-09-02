@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Timer, Event
 from typing import Optional, Union, List, Tuple, Collection
 
+import requests
+
 try:
     # tidalapi >= 0.7.0
     from tidalapi.playlist import Playlist as TidalPlaylist
@@ -19,6 +21,7 @@ from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist, Ref
 
 from mopidy_tidal import full_models_mappers
+from mopidy_tidal.full_models_mappers import create_mopidy_playlist
 from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.utils import mock_track
@@ -172,10 +175,40 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return self._playlists.get(uri)
 
     def create(self, name):
-        pass  # TODO
+        pl = create_mopidy_playlist(
+            self.backend._session.user.create_playlist(name, ''), []
+        )
+
+        self.refresh(pl.uri)
+        return pl
 
     def delete(self, uri):
-        pass  # TODO
+        playlist_id = uri.split(':')[-1]
+        session = self.backend._session
+
+        try:
+            session.request.request(
+                'DELETE', 'playlists/{playlist_id}'.format(
+                    playlist_id=playlist_id,
+                )
+            )
+        except requests.HTTPError as e:
+            # If we got a 401, it's likely that the user is following
+            # this playlist but they don't have permissions for removing
+            # it. If that's the case, remove the playlist from the
+            # favourites instead of deleting it.
+            if (
+                e.response.status_code == 401 and uri in {
+                    f'tidal:playlist:{pl.id}'
+                    for pl in session.user.favorites.playlists()
+                }
+            ):
+                session.user.favorites.remove_playlist(playlist_id)
+            else:
+                raise e
+
+        self._playlists_metadata.prune(uri)
+        self._playlists.prune(uri)
 
     def lookup(self, uri):
         return self._get_or_refresh_playlist(uri)
