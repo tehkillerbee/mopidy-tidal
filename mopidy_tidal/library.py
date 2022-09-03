@@ -64,7 +64,9 @@ class ImagesGetter:
     def _get_api_getter(self, item_type: str):
         tidal_lt_0_7_getter_name = f"get_{item_type}"
         return getattr(
-            self._session, tidal_lt_0_7_getter_name, getattr(self._session, item_type)
+            self._session,
+            tidal_lt_0_7_getter_name,
+            getattr(self._session, item_type, None),
         )
 
     def _get_images(self, uri) -> List[Image]:

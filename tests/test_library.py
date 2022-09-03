@@ -61,6 +61,13 @@ def test_track_cache(tlp, mocker):
     backend._session.get_album.assert_called_once_with("1-1-1")
 
 
+def test_get_noimages(tlp, mocker):
+    tlp, backend = tlp
+    uris = ["tidal:nonsuch:0-0-0:1-1-1:2-2-2"]
+    backend._session.mock_add_spec([])
+    assert tlp.get_images(uris) == {uris[0]: []}
+
+
 @pytest.mark.parametrize("field", ("artist", "album", "track"))
 def test_get_distinct_root(tlp, mocker, field):
     tlp, backend = tlp
