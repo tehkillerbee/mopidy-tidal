@@ -558,13 +558,25 @@ def test_lookup_track_cached(tlp, mocker, tidal_tracks, compare):
 
 
 @pytest.mark.xfail  # Should we cache the album when we look up a track?
-def test_lookup_track_cached_album(tlp, mocker, tidal_tracks, compare):
+def test_lookup_track_cached_track_album(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend._session
     session.get_album_tracks.return_value = tidal_tracks
     res = tlp.lookup("tidal:track:0:1:1")
     compare(tidal_tracks[-1:], res, "track")
     res2 = tlp.lookup("tidal:track:0:1:0")
+    compare(tidal_tracks[:1], res2, "track")
+    session.get_album_tracks.assert_called_once_with("1")
+
+
+def test_lookup_track_cached_album(tlp, mocker, tidal_albums, compare):
+    tlp, backend = tlp
+    session = backend._session
+    tidal_tracks = tidal_albums[1].tracks()
+    session.get_album_tracks.return_value = tidal_tracks
+    res = tlp.lookup("tidal:album:1")
+    compare(tidal_tracks, res, "track")
+    res2 = tlp.lookup("tidal:track:1234:1:1")
     compare(tidal_tracks[:1], res2, "track")
     session.get_album_tracks.assert_called_once_with("1")
 
