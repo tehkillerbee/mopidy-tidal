@@ -30,7 +30,7 @@ jobs:
           make test
       - name: Upload coverage
         uses: codecov/codecov-action@v3
-        if: ${{ matrix.python-version  == "3.10" }}
+        if: ${{ matrix.python-version  == '3.10' }}
         files: ./coverage.xml
         with:
           fail_ci_if_error: true
