@@ -41,6 +41,10 @@ sudo apt-get install gstreamer1.0-plugins-bad
 ```
 This is mandatory to be able to play m4a streams.
 
+### Python
+
+Mopidy-Tidal requires python >= 3.8.
+
 ## Configuration
 
 Before starting Mopidy, you must add configuration for
