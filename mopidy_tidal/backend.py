@@ -4,10 +4,10 @@ import json
 import logging
 import os
 
+from mopidy import backend
 from pykka import ThreadingActor
 from tidalapi import Config, Quality, Session
 
-from mopidy import backend
 from mopidy_tidal import Extension, context, library, playback, playlists
 
 logger = logging.getLogger(__name__)
