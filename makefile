@@ -1,8 +1,12 @@
 .PHONY: lint test
 
-lint:
+format:
 	isort --profile=black mopidy_tidal tests
 	black mopidy_tidal tests
+
+lint:
+	isort --check --profile=black mopidy_tidal tests
+	black --check mopidy_tidal tests
 
 test:
 	pytest tests/ \
