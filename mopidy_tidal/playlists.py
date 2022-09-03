@@ -15,7 +15,6 @@ from mopidy.models import Ref
 from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
-from mopidy import backend
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.full_models_mappers import create_mopidy_playlist
 from mopidy_tidal.helpers import to_timestamp
