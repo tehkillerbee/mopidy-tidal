@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import difflib
 import logging
 import operator
 import os
@@ -52,7 +53,10 @@ class PlaylistCache(LruCache):
         ):
             # The playlist has been updated since last time:
             # we should refresh the associated cache entry
-            logger.info('The playlist "%s" has been updated: refresh forced', key.name)
+            logger.info(
+                'The playlist "%s" has been updated: refresh forced', key.name
+            )
+
             raise KeyError(uri)
 
         return playlist
@@ -284,4 +288,55 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return get_items(getter, *getter_args)
 
     def save(self, playlist):
-        pass  # TODO
+        old_playlist = self._get_or_refresh_playlist(playlist.uri)
+        session = self.backend._session  # type: ignore
+        playlist_id = playlist.uri.split(':')[-1]
+        assert old_playlist, f'No such playlist: {playlist.uri}'
+        assert session, 'No active session'
+        upstream_playlist = session.playlist(playlist_id)
+
+        # Playlist rename case
+        if old_playlist.name != playlist.name:
+            upstream_playlist.edit(title=playlist.name)
+
+        additions = []
+        removals = []
+        remove_offset = 0
+        diff_lines = difflib.ndiff(
+            [t.uri for t in old_playlist.tracks],
+            [t.uri for t in playlist.tracks]
+        )
+
+        for diff_line in diff_lines:
+            if diff_line.startswith('+ '):
+                additions.append(diff_line[2:].split(':')[-1])
+            else:
+                if diff_line.startswith('- '):
+                    removals.append(remove_offset)
+                remove_offset += 1
+
+        # Process removals in descending order so we don't have to recalculate
+        # the offsets while we remove tracks
+        if removals:
+            logger.info(
+                'Removing %d tracks from the playlist "%s"',
+                len(removals), playlist.name
+            )
+
+            removals.reverse()
+            for idx in removals:
+                upstream_playlist.remove_by_index(idx)
+
+        # tidalapi currently only supports appending tracks to the end of the
+        # playlist
+        if additions:
+            logger.info(
+                'Adding %d tracks to the playlist "%s"',
+                len(additions), playlist.name
+            )
+
+            upstream_playlist.add(additions)
+
+        self._calculate_added_and_removed_playlist_ids()
+        self.refresh(playlist.uri)
+
