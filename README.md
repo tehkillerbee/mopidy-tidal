@@ -99,7 +99,7 @@ pip install -r test_requirements.txt
 You can then run the tests:
 
 ```bash
-pytest tests/ -k "not gt_3.10" --cov=mopidy_tidal --cov-report=html
+pytest tests/ -k "not gt_3_10" --cov=mopidy_tidal --cov-report=html
 --cov-report=term-missing --cov-branch
 ```
 
