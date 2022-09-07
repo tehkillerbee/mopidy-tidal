@@ -93,7 +93,7 @@ To run the test suite you need to install `pytest`, `pytest-mock` and
 `pytest-cov` inside your venv:
 
 ```bash
-pip install -r test_requirements.py
+pip install -r test_requirements.txt
 ```
 
 You can then run the tests:
