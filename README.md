@@ -72,7 +72,7 @@ Using the new OAuth flow, you have to visit a link to connect the mopidy app to 
 ```
 journalctl -u mopidy | tail -10
 ...
-Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
+Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
