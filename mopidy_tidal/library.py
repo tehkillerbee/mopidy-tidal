@@ -452,16 +452,16 @@ class TidalLibraryProvider(backend.LibraryProvider):
         return album.tracks()
 
     def _lookup_track(self, session, parts):
-        if len(parts) == 3:   # Track in format `tidal:track:<track_id>`
+        if len(parts) == 3:  # Track in format `tidal:track:<track_id>`
             track_id = parts[2]
             track = session.track(track_id)
             album_id = str(track.album.id)
-        else:   # Track in format `tidal:track:<artist_id>:<album_id>:<track_id>`
+        else:  # Track in format `tidal:track:<artist_id>:<album_id>:<track_id>`
             album_id = parts[3]
             track_id = parts[4]
         tracks = self._get_album_tracks(session, album_id)
         # We get a spurious coverage error since the next expression should never raise StopIteration
-        track = next(t for t in tracks if t.id == int(track_id)  # pragma: no cover
+        track = next(t for t in tracks if t.id == int(track_id))  # pragma: no cover
         artist = full_models_mappers.create_mopidy_artist(track.artist)
         album = full_models_mappers.create_mopidy_album(track.album, artist)
         return [full_models_mappers.create_mopidy_track(artist, album, track)]
