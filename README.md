@@ -82,12 +82,7 @@ Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ##### Note: Login process is a **blocking** action, so Mopidy will not load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
 
-## Contributions
-Source contributions, suggestions and pull requests are very welcome.
-
-If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check Python-Tidal for relevant issues.
-
-### Test Suite
+## Test Suite
 Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
 contributions would come with tests to keep this coverage up, but we can help in
 writing them if need be.
@@ -136,6 +131,11 @@ make format
 
 The CI workflow will fail on linting as well as test failures.
 
+## Contributions
+Source contributions, suggestions and pull requests are very welcome.
+
+If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check [Python-Tidal/Tidalapi repository](https://github.com/tamland/python-tidal) for relevant issues.
+
 ### Contributor(s)
 - Current maintainer: [tehkillerbee](https://github.com/tehkillerbee)
 - Original author: [mones88](https://github.com/mones88)
@@ -151,11 +151,13 @@ The CI workflow will fail on linting as well as test failures.
 ### Changelog
 
 #### v0.3.0
-- Added requirement & support for tidalapi 0.7.x.
+- Added support for tidalapi 0.7.x. Tidalapi >=0.7.x is now required.
 - Added support for Moods, Mixes, track/album release date.
-- Speed improvements and Iris bugfixes.
+- Speed, cache improvements and Iris bugfixes.
+- Overhauled Test suite
+- Support for playlist editing
 
-(Thanks [BlackLight](https://github.com/BlackLight) for all of the above improvements and all testers involved)
+(Major thanks [BlackLight](https://github.com/BlackLight) and [2e0byo](https://github.com/2e0byo) for the above improvements and all testers involved)
 
 #### v0.2.8
 - Major caching improvements to avoid slow intialization at startup. Code cleanup, bugfixes and refactoring (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
