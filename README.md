@@ -43,7 +43,10 @@ This is mandatory to be able to play m4a streams.
 
 ### Python
 
-Mopidy-Tidal requires python >= 3.8.
+Mopidy-Tidal requires python >= 3.7.  3.7 is supported in theory as many people
+are still using it on embedded devices, but our test suite does not currently
+have 100% coverage under 3.7 (PRs to fix this are welcome!).  Mopidy-Tidal is
+fully tested on python >= 3.8.
 
 ## Configuration
 
