@@ -24,6 +24,7 @@ def test_get_config_schema():
     assert "client_secret"
 
 
+@pytest.mark.gt_3_7
 def test_setup(mocker):
     ext = Extension()
     registry = mocker.Mock()

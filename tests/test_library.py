@@ -621,6 +621,7 @@ def test_lookup_artist_cached(tlp, mocker, tidal_tracks, compare):
     session.get_artist_top_tracks.assert_called_once_with("1")
 
 
+@pytest.mark.gt_3_7
 def test_lookup_playlist(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend._session
@@ -639,6 +640,7 @@ def test_lookup_playlist(tlp, mocker, tidal_tracks, compare):
     assert all(c.args[0] == "99" for c in session.get_playlist_tracks.mock_calls)
 
 
+@pytest.mark.gt_3_7
 def test_lookup_playlist_cached(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend._session
