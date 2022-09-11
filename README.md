@@ -41,6 +41,13 @@ sudo apt-get install gstreamer1.0-plugins-bad
 ```
 This is mandatory to be able to play m4a streams.
 
+### Python
+
+Mopidy-Tidal requires python >= 3.7.  3.7 is supported in theory as many people
+are still using it on embedded devices, but our test suite does not currently
+have 100% coverage under 3.7 (PRs to fix this are welcome!).  Mopidy-Tidal is
+fully tested on python >= 3.8.
+
 ## Configuration
 
 Before starting Mopidy, you must add configuration for
@@ -68,7 +75,7 @@ Using the new OAuth flow, you have to visit a link to connect the mopidy app to 
 ```
 journalctl -u mopidy | tail -10
 ...
-Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
+Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
@@ -79,6 +86,55 @@ The OAuth session will be reloaded automatically when Mopidy is restarted. It wi
 Source contributions, suggestions and pull requests are very welcome.
 
 If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check Python-Tidal for relevant issues.
+
+### Test Suite
+Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
+contributions would come with tests to keep this coverage up, but we can help in
+writing them if need be.
+
+To run the test suite you need to install `pytest`, `pytest-mock` and
+`pytest-cov` inside your venv:
+
+```bash
+pip install -r test_requirements.txt
+```
+
+You can then run the tests:
+
+```bash
+pytest tests/ -k "not gt_3_10" --cov=mopidy_tidal --cov-report=html
+--cov-report=term-missing --cov-branch
+```
+
+substituting the correct python version (e.g. `-k "not gt_3.8"`).  This is
+unlikely to be necessary beyond 3.9 as the python language has become very
+standard.  It's only really needed to exclude a few tests which check that
+dict-like objects behave the way modern dicts do, with `|`.
+
+If you are on *nix, you can simply run:
+
+```bash
+make test
+```
+
+Currently the code is not very heavily documented.  The easiest way to see how
+something is supposed to work is probably to have a look at the tests.
+
+### Code Style
+Code should be formatted with `isort` and `black`:
+
+```bash
+isort --profile=black mopidy_tidal tests
+black mopidy_tidal tests
+```
+
+if you are on *nix you can run:
+
+```bash
+make format
+```
+
+The CI workflow will fail on linting as well as test failures.
 
 ### Contributor(s)
 - Current maintainer: [tehkillerbee](https://github.com/tehkillerbee)

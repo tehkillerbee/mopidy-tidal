@@ -1,11 +1,8 @@
 from mopidy.models import Track
 
 watermark = " [TIDAL]"
-mock_track = Track(
-    uri="tidal:track:0:0:0",
-    artists=[],
-    name=None
-)
+mock_track = Track(uri="tidal:track:0:0:0", artists=[], name=None)
+
 
 def apply_watermark(val):
     return val + watermark
@@ -16,16 +13,6 @@ def remove_watermark(watermarked_val):
         return None
 
     if watermarked_val.endswith(watermark):
-        watermarked_val = watermarked_val[:-len(watermark)]
+        watermarked_val = watermarked_val[: -len(watermark)]
 
     return watermarked_val
-
-
-def get_query_param(query, param, should_remove_watermark=True):
-    val = None
-    if param in query:
-        val = query[param]
-        if hasattr(val, '__iter__'):
-            val = next(iter(val))
-
-    return remove_watermark(val) if should_remove_watermark else val

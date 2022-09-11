@@ -4,18 +4,16 @@ import logging
 import os
 import pathlib
 import pickle
-
 from collections import OrderedDict
 from typing import Optional
 
-from mopidy_tidal import context, Extension
-
+from mopidy_tidal import Extension, context
 
 logger = logging.getLogger(__name__)
 
 
 class LruCache(OrderedDict):
-    def __init__(self, max_size: Optional[int] = 1024, persist=True, directory=''):
+    def __init__(self, max_size: Optional[int] = 1024, persist=True, directory=""):
         """
         :param max_size: Max size of the cache in memory. Set 0 or None for no
             limit (default: 1024)
@@ -26,12 +24,12 @@ class LruCache(OrderedDict):
         """
         super().__init__(self)
         if max_size:
-            assert max_size > 0, (
-                f'Invalid cache size: {max_size}'
-            )
+            assert max_size > 0, f"Invalid cache size: {max_size}"
 
         self._max_size = max_size or 0
-        self._cache_dir = os.path.join(Extension.get_cache_dir(context.get_config()), directory)
+        self._cache_dir = os.path.join(
+            Extension.get_cache_dir(context.get_config()), directory
+        )
         self._persist = persist
         if persist:
             pathlib.Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
@@ -47,11 +45,11 @@ class LruCache(OrderedDict):
         return self._persist
 
     def _cache_filename(self, key: str) -> str:
-        parts = key.split(':')
-        assert len(parts) > 2, f'Invalid TIDAL ID: {key}'
+        parts = key.split(":")
+        assert len(parts) > 2, f"Invalid TIDAL ID: {key}"
         cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
         pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
-        return os.path.join(cache_dir, f'{key}.cache')
+        return os.path.join(cache_dir, f"{key}.cache")
 
     def _get_from_storage(self, key):
         cache_file = self._cache_filename(key)
@@ -61,20 +59,23 @@ class LruCache(OrderedDict):
             raise err
 
         # Cache hit on the filesystem
-        with open(cache_file, 'rb') as f:
+        with open(cache_file, "rb") as f:
             try:
                 value = pickle.load(f)
             except Exception as e:
                 # If the cache entry on the filesystem is corrupt, reset it
-                logger.warning('Could not deserialize cache file %s: '
-                    'refreshing the entry: %s', cache_file, e)
+                logger.warning(
+                    "Could not deserialize cache file %s: " "refreshing the entry: %s",
+                    cache_file,
+                    e,
+                )
                 self._reset_stored_entry(key)
                 raise err
 
         # Store the filesystem item in memory
         if value is not None:
             self.__setitem__(key, value, _sync_to_fs=False)
-        logger.debug(f'Filesystem cache hit for {key}')
+        logger.debug(f"Filesystem cache hit for {key}")
         return value
 
     def __getitem__(self, key, *_, **__):
@@ -96,7 +97,7 @@ class LruCache(OrderedDict):
         super().__setitem__(key, value)
         if self.persist and _sync_to_fs:
             cache_file = self._cache_filename(key)
-            with open(cache_file, 'wb') as f:
+            with open(cache_file, "wb") as f:
                 pickle.dump(value, f)
 
         self._check_limit()
@@ -120,10 +121,7 @@ class LruCache(OrderedDict):
         Delete the specified keys both from memory and disk.
         """
         for key in keys:
-            logger.debug(
-                'Pruning key %r from cache %s',
-                key, self.__class__.__name__
-            )
+            logger.debug("Pruning key %r from cache %s", key, self.__class__.__name__)
 
             self._reset_stored_entry(key)
             self.pop(key, None)
@@ -153,8 +151,9 @@ class SearchCache(LruCache):
     def __call__(self, *args, **kwargs):
         key = str(SearchKey(**kwargs))
         cached_result = self.get(key)
-        logger.info("Search cache miss" if cached_result is None
-                    else "Search cache hit")
+        logger.info(
+            "Search cache miss" if cached_result is None else "Search cache hit"
+        )
         if cached_result is None:
             cached_result = self._func(*args, **kwargs)
             self[key] = cached_result
@@ -177,14 +176,13 @@ class SearchKey(object):
         return self._hash
 
     def __str__(self):
-        return f'tidal:search:{self.__hash__()}'
+        return f"tidal:search:{self.__hash__()}"
 
     def __eq__(self, other):
         if not isinstance(other, SearchKey):
             return False
 
-        return self._exact == other._exact and \
-            self._query == other._query
+        return self._exact == other._exact and self._query == other._query
 
     @staticmethod
     def fix_query(query):

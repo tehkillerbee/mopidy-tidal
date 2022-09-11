@@ -8,3 +8,6 @@ MANIFEST
 build/
 dist/
 /.idea/
+.venv/
+
+
