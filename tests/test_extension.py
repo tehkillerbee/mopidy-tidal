@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import pytest
+
 from mopidy_tidal import Extension
 from mopidy_tidal.backend import TidalBackend
 
