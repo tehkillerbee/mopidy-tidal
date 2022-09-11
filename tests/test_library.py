@@ -546,6 +546,18 @@ def test_lookup_track(tlp, mocker, tidal_tracks, compare):
     session.get_album_tracks.assert_called_once_with("1")
 
 
+def test_lookup_track_newstyle(tlp, mocker, tidal_tracks, compare):
+    tlp, backend = tlp
+    session = backend._session
+    session.get_album_tracks.return_value = tidal_tracks
+    track = mocker.Mock(**{"album.id": 1, "name": "track"})
+    session.track.return_value = track
+    res = tlp.lookup("tidal:track:0")
+    compare(tidal_tracks[:1], res, "track")
+    session.get_album_tracks.assert_called_once_with("1")
+    session.track.assert_called_once_with("0")
+
+
 def test_lookup_track_cached(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend._session
