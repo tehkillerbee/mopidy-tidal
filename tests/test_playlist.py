@@ -123,17 +123,6 @@ def api_test(tpp, mocker, api_method, tp):
     )
 
 
-def test_refresh_old_api(tpp, mocker):
-    tpp, backend = tpp
-    session = backend._session
-    api_method = session.get_playlist_tracks
-    tp = mocker.Mock(spec=TidalPlaylist, session=session, playlist_id="1-1-1")
-    tp.id = tp.playlist_id
-    tp.name = "Playlist-1"
-    tp.last_updated = 10
-    api_test(tpp, mocker, api_method, tp)
-
-
 def test_refresh_new_api(tpp, mocker):
     tpp, backend = tpp
     session = backend._session
