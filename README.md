@@ -2,6 +2,7 @@
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
 [![Number of PyPI downloads](https://img.shields.io/pypi/dm/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
+[![codecov](https://codecov.io/gh/tehkillerbee/mopidy-tidal/branch/master/graph/badge.svg?token=cTJDQ646wy)](https://codecov.io/gh/tehkillerbee/mopidy-tidal)
 
 Mopidy Extension for Tidal music service integration.
 
@@ -91,7 +92,7 @@ To run the test suite you need to install `pytest`, `pytest-mock` and
 `pytest-cov` inside your venv:
 
 ```bash
-pip install -r test_requirements.txt
+pip3 install -r test_requirements.txt
 ```
 
 You can then run the tests:
