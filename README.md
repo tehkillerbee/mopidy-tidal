@@ -2,6 +2,7 @@
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
 [![Number of PyPI downloads](https://img.shields.io/pypi/dm/Mopidy-Tidal.svg?style=flat)](https://github.com/tehkillerbee/mopidy-tidal)
+[![codecov](https://codecov.io/gh/tehkillerbee/mopidy-tidal/branch/master/graph/badge.svg?token=cTJDQ646wy)](https://codecov.io/gh/tehkillerbee/mopidy-tidal)
 
 Mopidy Extension for Tidal music service integration.
 
@@ -41,6 +42,13 @@ sudo apt-get install gstreamer1.0-plugins-bad
 ```
 This is mandatory to be able to play m4a streams.
 
+### Python
+
+Mopidy-Tidal requires python >= 3.7.  3.7 is supported in theory as many people
+are still using it on embedded devices, but our test suite does not currently
+have 100% coverage under 3.7 (PRs to fix this are welcome!).  Mopidy-Tidal is
+fully tested on python >= 3.8.
+
 ## Configuration
 
 Before starting Mopidy, you must add configuration for
@@ -68,17 +76,66 @@ Using the new OAuth flow, you have to visit a link to connect the mopidy app to 
 ```
 journalctl -u mopidy | tail -10
 ...
-Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds``
+Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
 ##### Note: Login process is a **blocking** action, so Mopidy will not load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
 
+## Test Suite
+Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
+contributions would come with tests to keep this coverage up, but we can help in
+writing them if need be.
+
+To run the test suite you need to install `pytest`, `pytest-mock` and
+`pytest-cov` inside your venv:
+
+```bash
+pip3 install -r test_requirements.txt
+```
+
+You can then run the tests:
+
+```bash
+pytest tests/ -k "not gt_3_10" --cov=mopidy_tidal --cov-report=html
+--cov-report=term-missing --cov-branch
+```
+
+substituting the correct python version (e.g. `-k "not gt_3.8"`).  This is
+unlikely to be necessary beyond 3.9 as the python language has become very
+standard.  It's only really needed to exclude a few tests which check that
+dict-like objects behave the way modern dicts do, with `|`.
+
+If you are on *nix, you can simply run:
+
+```bash
+make test
+```
+
+Currently the code is not very heavily documented.  The easiest way to see how
+something is supposed to work is probably to have a look at the tests.
+
+### Code Style
+Code should be formatted with `isort` and `black`:
+
+```bash
+isort --profile=black mopidy_tidal tests
+black mopidy_tidal tests
+```
+
+if you are on *nix you can run:
+
+```bash
+make format
+```
+
+The CI workflow will fail on linting as well as test failures.
+
 ## Contributions
 Source contributions, suggestions and pull requests are very welcome.
 
-If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check Python-Tidal for relevant issues.
+If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check [Python-Tidal/Tidalapi repository](https://github.com/tamland/python-tidal) for relevant issues.
 
 ### Contributor(s)
 - Current maintainer: [tehkillerbee](https://github.com/tehkillerbee)
@@ -95,11 +152,13 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 ### Changelog
 
 #### v0.3.0
-- Added requirement & support for tidalapi 0.7.x.
+- Added support for tidalapi 0.7.x. Tidalapi >=0.7.x is now required.
 - Added support for Moods, Mixes, track/album release date.
-- Speed improvements and Iris bugfixes.
+- Speed, cache improvements and Iris bugfixes.
+- Overhauled Test suite
+- Support for playlist editing
 
-(Thanks [BlackLight](https://github.com/BlackLight) for all of the above improvements and all testers involved)
+(Major thanks [BlackLight](https://github.com/BlackLight) and [2e0byo](https://github.com/2e0byo) for the above improvements and all testers involved)
 
 #### v0.2.8
 - Major caching improvements to avoid slow intialization at startup. Code cleanup, bugfixes and refactoring (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
