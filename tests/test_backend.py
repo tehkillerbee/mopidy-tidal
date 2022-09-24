@@ -144,25 +144,3 @@ def test_loads_session(get_backend, mocker, config):
     backend.oauth_login_new_session.assert_not_called()
     session.load_oauth_session.assert_called_once_with(**args)
     session_factory.assert_called_once()
-
-
-def test_loads_session_old(get_backend, mocker, config):
-    backend, config, _, session_factory, session = get_backend(config=config)
-    backend.oauth_login_new_session = mocker.Mock()
-    mocker.patch("mopidy_tidal.backend.has_python_tidal_0_7", False)
-
-    authf = Path(config["core"]["data_dir"], "tidal") / "tidal-oauth.json"
-    data = {
-        "token_type": dict(data="token_type"),
-        "session_id": dict(data="session_id"),
-        "access_token": dict(data="access_token"),
-        "refresh_token": dict(data="refresh_token"),
-    }
-    with authf.open("w") as f:
-        dump(data, f)
-    session.check_login.return_value = True
-    backend.on_start()
-    args = {k: v["data"] for k, v in data.items()}
-    backend.oauth_login_new_session.assert_not_called()
-    session.load_oauth_session.assert_called_once_with(**args)
-    session_factory.assert_called_once()

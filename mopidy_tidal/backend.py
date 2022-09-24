@@ -12,13 +12,6 @@ from mopidy_tidal import Extension, context, library, playback, playlists
 
 logger = logging.getLogger(__name__)
 
-try:
-    from tidalapi import __version__
-
-    has_python_tidal_0_7 = True
-except ImportError:  # pragma: no cover
-    has_python_tidal_0_7 = False
-
 
 class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
@@ -101,9 +94,5 @@ class TidalBackend(ThreadingActor, backend.Backend):
             "access_token": data.get("access_token", {}).get("data"),
             "refresh_token": data.get("refresh_token", {}).get("data"),
         }
-
-        # tidalapi < 0.7 also requires the session_id for load_oauth_session
-        if not has_python_tidal_0_7:
-            args["session_id"] = data.get("session_id", {}).get("data")
 
         self._session.load_oauth_session(**args)

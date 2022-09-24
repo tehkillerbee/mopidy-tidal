@@ -32,9 +32,8 @@ class ImagesGetter:
 
     @classmethod
     def _get_image_uri(cls, obj):
-        method, tidal_lt_0_7 = None, False
+        method = None
 
-        # tidalapi >= 0.7.0
         if hasattr(obj, "image"):
             # Handle artists with missing images
             if hasattr(obj, "picture") and getattr(obj, "picture", None) is None:
@@ -42,18 +41,13 @@ class ImagesGetter:
                 return
 
             method = obj.image
-
-        # tidalapi < 0.7.0
-        elif hasattr(obj, "picture"):
-            method = obj.picture
-            tidal_lt_0_7 = True
         else:
             cls._log_image_not_found(obj)
             return
 
         dimensions = (750, 640, 480)
         for dim in dimensions:
-            args = (dim, dim) if tidal_lt_0_7 else (dim,)
+            args = (dim,)
             try:
                 return method(*args)
             except ValueError:
@@ -62,12 +56,7 @@ class ImagesGetter:
         cls._log_image_not_found(obj)
 
     def _get_api_getter(self, item_type: str):
-        tidal_lt_0_7_getter_name = f"get_{item_type}"
-        return getattr(
-            self._session,
-            tidal_lt_0_7_getter_name,
-            getattr(self._session, item_type, None),
-        )
+        return getattr(self._session, item_type, None)
 
     def _get_images(self, uri) -> List[Image]:
         assert uri.startswith("tidal:"), f"Invalid TIDAL URI: {uri}"
@@ -198,11 +187,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 get_items(session.user.favorites.tracks)
             )
         elif uri == "tidal:moods":
-            return ref_models_mappers.create_moods(self._get_moods(session))
+            return ref_models_mappers.create_moods(session.moods())
         elif uri == "tidal:mixes":
-            return ref_models_mappers.create_mixes(self._get_mixes(session))
+            return ref_models_mappers.create_mixes([m for m in session.mixes()])
         elif uri == "tidal:genres":
-            return ref_models_mappers.create_genres(self._get_genres(session))
+            return ref_models_mappers.create_genres(session.genre.get_genres())
 
         # details
 
@@ -326,63 +315,14 @@ class TidalLibraryProvider(backend.LibraryProvider):
         logger.info("Returning %d tracks", len(tracks))
         return tracks
 
-    @staticmethod
-    def _get_playlist(session, playlist_id):
-        if hasattr(session, "get_playlist"):
-            # tidalapi < 0.7.0
-            return session.get_playlist(playlist_id)
-
-        # tidalapi >= 0.7.0
-        return session.playlist(playlist_id)
-
     @classmethod
     def _get_playlist_tracks(cls, session, playlist_id):
-        if hasattr(session, "get_playlist_tracks"):
-            # tidalapi < 0.7.0
-            getter = session.get_playlist_tracks
-            getter_args = (playlist_id,)
-        else:
-            # tidalapi >= 0.7.0
-            pl = cls._get_playlist(session, playlist_id)
-            getter = pl.tracks
-            getter_args = tuple()
-
-        return get_items(getter, *getter_args)
-
-    @staticmethod
-    def _get_genres(session):
-        if hasattr(session, "get_genres"):
-            # tidalapi < 0.7.0
-            return session.get_genres()
-
-        # tidalapi >= 0.7.0
-        return session.genre.get_genres()
-
-    @staticmethod
-    def _get_moods(session):
-        if hasattr(session, "get_moods"):
-            # tidalapi < 0.7.0
-            return session.get_moods()
-
-        # tidalapi >= 0.7.0
-        return session.moods()
-
-    @staticmethod
-    def _get_mixes(session):
-        if hasattr(session, "get_mixes"):
-            # tidalapi < 0.7.0
-            return []  # Method not available
-
-        # tidalapi >= 0.7.0
-        return [m for m in session.mixes()]
+        pl = session.playlist(playlist_id)
+        getter_args = tuple()
+        return get_items(pl.tracks, *getter_args)
 
     @staticmethod
     def _get_genre_items(session, genre_id):
-        if hasattr(session, "get_genre_items"):
-            # tidalapi < 0.7.0
-            return session.get_genre_items(genre_id, "playlists")
-
-        # tidalapi >= 0.7.0
         from tidalapi.playlist import Playlist
 
         filtered_genres = [g for g in session.genre.get_genres() if genre_id == g.path]
@@ -392,11 +332,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_mood_items(session, mood_id):
-        if hasattr(session, "get_mood_playlists"):
-            # tidalapi < 0.7.0
-            return session.get_mood_playlists(mood_id, "playlists")
-
-        # tidalapi >= 0.7.0
         filtered_moods = [
             m for m in session.moods() if mood_id == m.api_path.split("/")[-1]
         ]
@@ -415,7 +350,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     def _lookup_playlist(self, session, parts):
         playlist_id = parts[2]
-        tidal_playlist = self._get_playlist(session, playlist_id)
+        tidal_playlist = session.playlist(playlist_id)
         tidal_tracks = self._get_playlist_tracks(session, playlist_id)
         pl_tracks = full_models_mappers.create_mopidy_tracks(tidal_tracks)
         pl = full_models_mappers.create_mopidy_playlist(tidal_playlist, pl_tracks)
@@ -425,11 +360,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_artist_albums(session, artist_id):
-        # tidalapi < 0.7.0
-        if hasattr(session, "get_artist_albums"):
-            return session.get_artist_albums(artist_id)
-
-        # tidalapi >= 0.7.0
         artist = session.artist(artist_id)
         if not artist:
             logger.warning("No such artist: %s", artist_id)
@@ -439,11 +369,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_album_tracks(session, album_id):
-        if hasattr(session, "get_album_tracks"):
-            # tidalapi < 0.7.0
-            return session.get_album_tracks(album_id)
-
-        # tidalapi >= 0.7.0
         album = session.album(album_id)
         if not album:
             logger.warning("No such album: %s", album_id)
@@ -474,11 +399,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_artist_top_tracks(session, artist_id):
-        if hasattr(session, "get_artist_top_tracks"):
-            # tidalapi < 0.7.0
-            return session.get_artist_top_tracks(artist_id)
-
-        # tidalapi >= 0.7.0
         return session.artist(artist_id).get_top_tracks()
 
     def _lookup_artist(self, session, parts):

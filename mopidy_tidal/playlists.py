@@ -8,12 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event, Timer
 from typing import Collection, List, Optional, Tuple, Union
 
-try:
-    # tidalapi >= 0.7.0
-    from tidalapi.playlist import Playlist as TidalPlaylist
-except ImportError:  # pragma: no cover
-    # tidalapi < 0.7.0
-    from tidalapi.models import Playlist as TidalPlaylist
+from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
@@ -236,16 +231,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return [Ref.track(uri=t.uri, name=t.name) for t in playlist.tracks]
 
     def _retrieve_api_tracks(self, session, playlist):
-        if hasattr(session, "get_playlist_tracks"):
-            # tidalapi < 0.7.0
-            getter = session.get_playlist_tracks
-            getter_args = (playlist.id,)
-        else:
-            # tidalapi >= 0.7.0
-            getter = playlist.tracks
-            getter_args = tuple()
-
-        return get_items(getter, *getter_args)
+        getter_args = tuple()
+        return get_items(playlist.tracks, *getter_args)
 
     def save(self, playlist):
         pass  # TODO
