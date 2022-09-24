@@ -8,11 +8,10 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event, Timer
 from typing import Collection, List, Optional, Tuple, Union
 
-from tidalapi.playlist import Playlist as TidalPlaylist
-
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
 from mopidy.models import Ref
+from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.helpers import to_timestamp
