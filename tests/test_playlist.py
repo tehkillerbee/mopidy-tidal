@@ -21,10 +21,16 @@ def tpp(config, mocker):
     yield tpp, backend
 
 
-# Currently unimplemented
-def test_smoketest_create(tpp):
+def test_create(tpp, mocker):
     tpp, backend = tpp
-    tpp.create("new playlist")
+    playlist = mocker.Mock(last_updated=9, id=17)
+    playlist.name = "playlist name"
+    backend._session.user.create_playlist.return_value = playlist
+    p = tpp.create("playlist")
+    assert p == MopidyPlaylist(
+        last_modified=9, name="playlist name", uri="tidal:playlist:17"
+    )
+    backend._session.user.create_playlist.assert_called_once_with("playlist", "")
 
 
 def test_smoketest_save(tpp):
