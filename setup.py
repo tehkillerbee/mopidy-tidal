@@ -19,6 +19,7 @@ setup(
     author="Johannes Linde",
     author_email="josaksel.dk@gmail.com",
     description="Tidal music service integration",
+    long_description_content_type="text/markdown",
     long_description=open("README.md").read(),
     packages=find_packages(exclude=["tests", "tests.*"]),
     zip_safe=False,
