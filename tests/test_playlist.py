@@ -2,6 +2,7 @@ from time import sleep
 
 import pytest
 from mopidy.models import Track
+from requests import HTTPError
 
 from mopidy_tidal.playlists import (
     MopidyPlaylist,
@@ -33,14 +34,70 @@ def test_create(tpp, mocker):
     backend._session.user.create_playlist.assert_called_once_with("playlist", "")
 
 
+def test_delete(tpp):
+    tpp, backend = tpp
+    tpp.delete("tidal:playlist:19")
+    backend._session.request.request.assert_called_once_with("DELETE", "playlists/19")
+
+
+def test_delete_http_404(tpp, mocker):
+    tpp, backend = tpp
+    response = mocker.Mock(status_code=404)
+    error = HTTPError()
+    error.response = response
+    backend._session.request.request.side_effect = error
+    with pytest.raises(HTTPError) as e:
+        tpp.delete("tidal:playlist:19")
+        assert e.response == response
+    backend._session.request.request.assert_called_once_with("DELETE", "playlists/19")
+
+
+def test_delete_http_401_in_favourites(tpp, mocker):
+    """
+    Test removing from favourites.
+
+    We should just remove the playlist from user favourites if its present but
+    we get a 401 for deleting it.
+    """
+    tpp, backend = tpp
+    session = backend._session
+    response = mocker.Mock(status_code=401)
+    error = HTTPError()
+    error.response = response
+    session.request.request.side_effect = error
+    pl = mocker.Mock()
+    pl.id = 21
+    session.user.favorites.playlists.return_value = [pl]
+    tpp.delete("tidal:playlist:21")
+    session.user.favorites.remove_playlist.assert_called_once_with("21")
+    session.request.request.assert_called_once_with("DELETE", "playlists/21")
+
+
+def test_delete_http_401_not_in_favourites(tpp, mocker):
+    """
+    Test removing from favourites.
+
+    We should just remove the playlist from user favourites if its present but
+    we get a 401 for deleting it.
+    """
+    tpp, backend = tpp
+    session = backend._session
+    response = mocker.Mock(status_code=401)
+    error = HTTPError()
+    error.response = response
+    session.request.request.side_effect = error
+    pl = mocker.Mock()
+    pl.id = 21
+    session.user.favorites.playlists.return_value = [pl]
+    with pytest.raises(HTTPError) as e:
+        tpp.delete("tidal:playlist:678")
+        assert e.response == response
+    session.request.request.assert_called_once_with("DELETE", "playlists/678")
+
+
 def test_smoketest_save(tpp):
     tpp, backend = tpp
     tpp.save("new playlist")
-
-
-def test_smoketest_delete(tpp):
-    tpp, backend = tpp
-    tpp.delete("new playlist")
 
 
 @pytest.fixture
