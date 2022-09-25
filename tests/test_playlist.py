@@ -135,17 +135,17 @@ def test_refresh_metadata(tpp, mocker, tidal_playlists):
 
     tracks = [Track(uri="tidal:track:0:0:0")] * 2
     assert dict(tpp._playlists_metadata) == {
-        "tidal:playlist:0-0-0": MopidyPlaylist(
+        "tidal:playlist:101": MopidyPlaylist(
             last_modified=10,
-            name="Playlist-0",
-            uri="tidal:playlist:0-0-0",
+            name="Playlist-101",
+            uri="tidal:playlist:101",
             tracks=tracks,
         ),
-        "tidal:playlist:1-1-1": MopidyPlaylist(
+        "tidal:playlist:222": MopidyPlaylist(
             last_modified=10,
-            name="Playlist-1",
-            uri="tidal:playlist:1-1-1",
-            tracks=tracks,
+            name="Playlist-222",
+            uri="tidal:playlist:222",
+            tracks=tracks[:1],
         ),
     }
 
@@ -205,8 +205,8 @@ def test_as_list(tpp, mocker, tidal_playlists):
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._session.user.playlists.return_value = tidal_playlists[1:]
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
 
 
@@ -219,8 +219,8 @@ def test_prevent_duplicate_playlist_sync(tpp, mocker, tidal_playlists):
     p = mocker.Mock(spec=TidalPlaylist, session=mocker.Mock, playlist_id="2-2-2")
     backend._session.user.playlists.return_value.append(p)
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
 
 
@@ -235,21 +235,21 @@ def test_playlist_sync_downtime(mocker, tidal_playlists, config):
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._session.user.playlists.return_value = tidal_playlists[1:]
     tpp.as_list()
-    p = mocker.Mock(spec=TidalPlaylist, session=mocker.Mock, playlist_id="2-2-2")
+    p = mocker.Mock(spec=TidalPlaylist, session=mocker.Mock, playlist_id="2")
     p.id = p.playlist_id
     p.num_tracks = 2
     p.name = "Playlist-2"
     p.last_updated = 10
     backend._session.user.playlists.return_value.append(p)
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
     sleep(0.1)
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
-        Ref(name="Playlist-2", type="playlist", uri="tidal:playlist:2-2-2"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-2", type="playlist", uri="tidal:playlist:2"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
 
 
@@ -257,11 +257,11 @@ def test_update_changes(tpp, mocker, tidal_playlists):
     tpp, backend = tpp
     tpp._playlists_metadata.update(
         {
-            "tidal:playlist:0-0-0": MopidyPlaylist(
-                last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
+            "tidal:playlist:101": MopidyPlaylist(
+                last_modified=10, name="Playlist-101", uri="tidal:playlist:101"
             ),
-            "tidal:playlist:1-1-1": MopidyPlaylist(
-                last_modified=9, name="Playlist-1", uri="tidal:playlist:1-1-1"
+            "tidal:playlist:222": MopidyPlaylist(
+                last_modified=9, name="Playlist-222", uri="tidal:playlist:222"
             ),
         }
     )
@@ -270,8 +270,8 @@ def test_update_changes(tpp, mocker, tidal_playlists):
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._session.user.playlists.return_value = tidal_playlists[1:]
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
 
 
@@ -279,11 +279,11 @@ def test_update_no_changes(tpp, mocker, tidal_playlists):
     tpp, backend = tpp
     tpp._playlists_metadata.update(
         {
-            "tidal:playlist:0-0-0": MopidyPlaylist(
-                last_modified=10, name="Playlist-0", uri="tidal:playlist:0-0-0"
+            "tidal:playlist:101": MopidyPlaylist(
+                last_modified=10, name="Playlist-101", uri="tidal:playlist:101"
             ),
-            "tidal:playlist:1-1-1": MopidyPlaylist(
-                last_modified=10, name="Playlist-1", uri="tidal:playlist:1-1-1"
+            "tidal:playlist:222": MopidyPlaylist(
+                last_modified=10, name="Playlist-222", uri="tidal:playlist:222"
             ),
         }
     )
@@ -292,8 +292,8 @@ def test_update_no_changes(tpp, mocker, tidal_playlists):
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._session.user.playlists.return_value = tidal_playlists[1:]
     assert tpp.as_list() == [
-        Ref(name="Playlist-0", type="playlist", uri="tidal:playlist:0-0-0"),
-        Ref(name="Playlist-1", type="playlist", uri="tidal:playlist:1-1-1"),
+        Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
+        Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
 
 
