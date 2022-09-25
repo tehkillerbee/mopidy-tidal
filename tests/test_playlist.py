@@ -1,3 +1,4 @@
+from copy import deepcopy
 from time import sleep
 
 import pytest
@@ -95,23 +96,93 @@ def test_delete_http_401_not_in_favourites(tpp, mocker):
     session.request.request.assert_called_once_with("DELETE", "playlists/678")
 
 
-def test_smoketest_save(tpp):
+def test_save_no_changes(tpp, mocker, tidal_playlists):
     tpp, backend = tpp
-    tpp.save("new playlist")
+    session = backend._session
+    tidal_pl = tidal_playlists[0]
+    uri = tidal_pl.uri
+    mopidy_pl = mocker.Mock(
+        uri=uri,
+        last_modified=10,
+        tracks=tidal_pl.tracks,
+    )
+    mopidy_pl.name = tidal_pl.name
+    session.playlist.return_value = tidal_pl
+    session.user.favorites.playlists.__name__ = "pl"
+    session.user.favorites.playlists.return_value = [tidal_pl]
+    session.user.playlists.return_value = []
+    tpp._playlists[uri] = mopidy_pl
+    tpp.save(mopidy_pl)
+    assert tpp._playlists[uri] == mopidy_pl
 
 
-@pytest.fixture
-def tidal_playlists(mocker):
-    playlists = [
-        mocker.Mock(spec=TidalPlaylist, session=mocker.Mock, playlist_id=f"{i}-{i}-{i}")
-        for i in range(2)
-    ]
-    for i, pl in enumerate(playlists):
-        pl.id = pl.playlist_id
-        pl.name = f"Playlist-{i}"
-        pl.last_updated = 10
-        pl.num_tracks = 2
-    return playlists
+def test_save_change_name(tpp, mocker, tidal_playlists):
+    tpp, backend = tpp
+    session = backend._session
+    tidal_pl = tidal_playlists[0]
+    uri = tidal_pl.uri
+    mopidy_pl = mocker.Mock(
+        uri=uri,
+        last_modified=10,
+        tracks=tidal_pl.tracks,
+    )
+    mopidy_pl.name = tidal_pl.name
+    session.playlist.return_value = tidal_pl
+    session.user.favorites.playlists.__name__ = "pl"
+    session.user.favorites.playlists.return_value = [tidal_pl]
+    session.user.playlists.return_value = []
+    tpp._playlists[uri] = mopidy_pl
+    pl = deepcopy(mopidy_pl)
+    pl.name += "NEW"
+    tpp.save(pl)
+    session.playlist.assert_called_with("101")
+    session.playlist().edit.assert_called_once_with(title=pl.name)
+
+
+def test_save_remove(tpp, mocker, tidal_playlists):
+    tpp, backend = tpp
+    session = backend._session
+    tidal_pl = tidal_playlists[0]
+    uri = tidal_pl.uri
+    mopidy_pl = mocker.Mock(
+        uri=uri,
+        last_modified=10,
+        tracks=tidal_pl.tracks,
+    )
+    mopidy_pl.name = tidal_pl.name
+    session.playlist.return_value = tidal_pl
+    session.user.favorites.playlists.__name__ = "pl"
+    session.user.favorites.playlists.return_value = [tidal_pl]
+    session.user.playlists.return_value = []
+    tpp._playlists[uri] = mopidy_pl
+    pl = deepcopy(mopidy_pl)
+    pl.tracks = pl.tracks[:1]
+    tpp.save(pl)
+    session.playlist.assert_called_with("101")
+    session.playlist().remove_by_index.assert_called_once_with(1)
+
+
+def test_save_add(tpp, mocker, tidal_playlists, tidal_tracks):
+    tpp, backend = tpp
+    session = backend._session
+    tidal_pl = tidal_playlists[0]
+    uri = tidal_pl.uri
+    mopidy_pl = mocker.Mock(
+        uri=uri,
+        last_modified=10,
+        tracks=tidal_pl.tracks,
+    )
+    mopidy_pl.name = tidal_pl.name
+    session.playlist.return_value = tidal_pl
+    session.user.favorites.playlists.__name__ = "pl"
+    session.user.favorites.playlists.return_value = [tidal_pl]
+    session.user.playlists.return_value = []
+    tpp._playlists[uri] = mopidy_pl
+    pl = deepcopy(mopidy_pl)
+    pl.tracks += tidal_tracks[-2:-1]
+    tpp.save(pl)
+    session.playlist.assert_called_with("101")
+    session.playlist().add.assert_called_once_with(["0"])
 
 
 def test_lookup_unmodified_cached(tpp, mocker):
