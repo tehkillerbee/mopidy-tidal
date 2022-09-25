@@ -40,9 +40,7 @@ class PlaylistCache(LruCache):
         ):
             # The playlist has been updated since last time:
             # we should refresh the associated cache entry
-            logger.info(
-                'The playlist "%s" has been updated: refresh forced', key.name
-            )
+            logger.info('The playlist "%s" has been updated: refresh forced', key.name)
 
             raise KeyError(uri)
 
@@ -173,33 +171,31 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def create(self, name):
         pl = create_mopidy_playlist(
-            self.backend._session.user.create_playlist(name, ''), []
+            self.backend._session.user.create_playlist(name, ""), []
         )
 
         self.refresh(pl.uri)
         return pl
 
     def delete(self, uri):
-        playlist_id = uri.split(':')[-1]
+        playlist_id = uri.split(":")[-1]
         session = self.backend._session
 
         try:
             session.request.request(
-                'DELETE', 'playlists/{playlist_id}'.format(
+                "DELETE",
+                "playlists/{playlist_id}".format(
                     playlist_id=playlist_id,
-                )
+                ),
             )
         except requests.HTTPError as e:
             # If we got a 401, it's likely that the user is following
             # this playlist but they don't have permissions for removing
             # it. If that's the case, remove the playlist from the
             # favourites instead of deleting it.
-            if (
-                e.response.status_code == 401 and uri in {
-                    f'tidal:playlist:{pl.id}'
-                    for pl in session.user.favorites.playlists()
-                }
-            ):
+            if e.response.status_code == 401 and uri in {
+                f"tidal:playlist:{pl.id}" for pl in session.user.favorites.playlists()
+            }:
                 session.user.favorites.remove_playlist(playlist_id)
             else:
                 raise e
@@ -271,9 +267,9 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
     def save(self, playlist):
         old_playlist = self._get_or_refresh_playlist(playlist.uri)
         session = self.backend._session  # type: ignore
-        playlist_id = playlist.uri.split(':')[-1]
-        assert old_playlist, f'No such playlist: {playlist.uri}'
-        assert session, 'No active session'
+        playlist_id = playlist.uri.split(":")[-1]
+        assert old_playlist, f"No such playlist: {playlist.uri}"
+        assert session, "No active session"
         upstream_playlist = session.playlist(playlist_id)
 
         # Playlist rename case
@@ -284,15 +280,14 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         removals = []
         remove_offset = 0
         diff_lines = difflib.ndiff(
-            [t.uri for t in old_playlist.tracks],
-            [t.uri for t in playlist.tracks]
+            [t.uri for t in old_playlist.tracks], [t.uri for t in playlist.tracks]
         )
 
         for diff_line in diff_lines:
-            if diff_line.startswith('+ '):
-                additions.append(diff_line[2:].split(':')[-1])
+            if diff_line.startswith("+ "):
+                additions.append(diff_line[2:].split(":")[-1])
             else:
-                if diff_line.startswith('- '):
+                if diff_line.startswith("- "):
                     removals.append(remove_offset)
                 remove_offset += 1
 
@@ -301,7 +296,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         if removals:
             logger.info(
                 'Removing %d tracks from the playlist "%s"',
-                len(removals), playlist.name
+                len(removals),
+                playlist.name,
             )
 
             removals.reverse()
@@ -312,12 +308,10 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         # playlist
         if additions:
             logger.info(
-                'Adding %d tracks to the playlist "%s"',
-                len(additions), playlist.name
+                'Adding %d tracks to the playlist "%s"', len(additions), playlist.name
             )
 
             upstream_playlist.add(additions)
 
         self._calculate_added_and_removed_playlist_ids()
         self.refresh(playlist.uri)
-
