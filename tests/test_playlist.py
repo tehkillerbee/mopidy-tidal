@@ -117,7 +117,7 @@ def tidal_playlists(mocker):
 def test_lookup_unmodified_cached(tpp, mocker):
     tpp, backend = tpp
     remote_playlist = mocker.Mock(last_updated=9)
-    backend._session.get_playlist.return_value = remote_playlist
+    backend._session.playlist.return_value = remote_playlist
     playlist = mocker.MagicMock(last_modified=9)
     tpp._playlists["tidal:playlist:0:1:2"] = playlist
     assert tpp.lookup("tidal:playlist:0:1:2") is playlist
@@ -300,7 +300,7 @@ def test_update_no_changes(tpp, mocker, tidal_playlists):
 def test_lookup_modified_cached(tpp, mocker):
     tpp, backend = tpp
     remote_playlist = mocker.Mock(last_updated=10)
-    backend._session.get_playlist.return_value = remote_playlist
+    backend._session.playlist.return_value = remote_playlist
     playlist = mocker.MagicMock(last_modified=9)
     tpp._playlists["tidal:playlist:0:1:2"] = playlist
     assert tpp.lookup("tidal:playlist:0:1:2") is playlist
@@ -313,7 +313,7 @@ def test_get_items_none(tpp):
 
 def test_get_items_none_upstream(tpp, mocker):
     tpp, backend = tpp
-    backend._session.get_playlist.return_value = None
+    backend._session.playlist.return_value = None
     tracks = [mocker.Mock() for _ in range(2)]
     for i, track in enumerate(tracks):
         track.uri = f"tidal:track:{i}:{i}:{i}"
@@ -329,7 +329,7 @@ def test_get_items_none_upstream(tpp, mocker):
 
 def test_get_items_playlists(tpp, mocker):
     tpp, backend = tpp
-    backend._session.get_playlist.return_value = mocker.Mock(last_updated=9)
+    backend._session.playlist.return_value = mocker.Mock(last_updated=9)
     tracks = [mocker.Mock() for _ in range(2)]
     for i, track in enumerate(tracks):
         track.uri = f"tidal:track:{i}:{i}:{i}"
@@ -345,7 +345,7 @@ def test_get_items_playlists(tpp, mocker):
 
 def test_get_items_playlists_no_updated(tpp, mocker):
     tpp, backend = tpp
-    backend._session.get_playlist.return_value = mocker.Mock(spec={})
+    backend._session.playlist.return_value = mocker.Mock(spec={})
     tracks = [mocker.Mock() for _ in range(2)]
     for i, track in enumerate(tracks):
         track.uri = f"tidal:track:{i}:{i}:{i}"
