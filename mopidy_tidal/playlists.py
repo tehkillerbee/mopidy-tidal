@@ -12,6 +12,7 @@ from typing import Collection, List, Optional, Tuple, Union
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
 from mopidy.models import Ref
+from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy_tidal import full_models_mappers
@@ -188,7 +189,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                     playlist_id=playlist_id,
                 ),
             )
-        except requests.HTTPError as e:
+        except HTTPError as e:
             # If we got a 401, it's likely that the user is following
             # this playlist but they don't have permissions for removing
             # it. If that's the case, remove the playlist from the
