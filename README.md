@@ -151,7 +151,7 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 
 ### Changelog
 
-#### v0.3.0
+#### v0.3.1
 - Added support for tidalapi 0.7.x. Tidalapi >=0.7.x is now required.
 - Added support for Moods, Mixes, track/album release date.
 - Speed, cache improvements and Iris bugfixes.
