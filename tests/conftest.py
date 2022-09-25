@@ -5,7 +5,7 @@ import pytest
 from tidalapi.album import Album
 from tidalapi.artist import Artist
 from tidalapi.media import Track
-from tidalapi.playlist import Playlist
+from tidalapi.playlist import UserPlaylist
 
 from mopidy_tidal import context
 
@@ -111,7 +111,7 @@ def tidal_tracks(mocker, tidal_artists, tidal_albums):
 
 
 def make_playlist(playlist_id, tracks):
-    playlist = Mock(spec=Playlist, session=Mock())
+    playlist = Mock(spec=UserPlaylist, session=Mock())
     playlist.name = f"Playlist-{playlist_id}"
     playlist.id = str(playlist_id)
     playlist.uri = f"tidal:playlist:{playlist_id}"
