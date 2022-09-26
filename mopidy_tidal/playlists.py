@@ -309,5 +309,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
             upstream_playlist.add(additions)
 
+        # remove all defunct tracks from cache
         self._calculate_added_and_removed_playlist_ids()
+        # force update the whole playlist so all state is good
         self.refresh(playlist.uri)
