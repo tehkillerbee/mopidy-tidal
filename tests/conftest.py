@@ -5,6 +5,7 @@ import pytest
 from tidalapi.album import Album
 from tidalapi.artist import Artist
 from tidalapi.media import Track
+from tidalapi.playlist import UserPlaylist
 
 from mopidy_tidal import context
 
@@ -109,6 +110,25 @@ def tidal_tracks(mocker, tidal_artists, tidal_albums):
     ]
 
 
+def make_playlist(playlist_id, tracks):
+    playlist = Mock(spec=UserPlaylist, session=Mock())
+    playlist.name = f"Playlist-{playlist_id}"
+    playlist.id = str(playlist_id)
+    playlist.uri = f"tidal:playlist:{playlist_id}"
+    playlist.tracks = tracks
+    playlist.num_tracks = len(tracks)
+    playlist.last_updated = 10
+    return playlist
+
+
+@pytest.fixture
+def tidal_playlists(mocker, tidal_tracks):
+    return [
+        make_playlist(101, tidal_tracks[:2]),
+        make_playlist(222, tidal_tracks[1:]),
+    ]
+
+
 def compare_track(tidal, mopidy):
     assert tidal.uri == mopidy.uri
     assert tidal.name == mopidy.name
@@ -129,11 +149,24 @@ def compare_album(tidal, mopidy):
     assert f"tidal:album:{tidal.id}" == mopidy.uri
 
 
+def compare_playlist(tidal, mopidy):
+    assert tidal.uri == mopidy.uri
+    assert tidal.name == mopidy.name
+    _compare(tidal.tracks, mopidy.tracks, "track")
+
+
 _compare_map = {
     "artist": compare_artist,
     "album": compare_album,
     "track": compare_track,
+    "playlist": compare_playlist,
 }
+
+
+def _compare(tidal: Iterable, mopidy: Iterable, type: str):
+    assert len(tidal) == len(mopidy)
+    for t, m in zip(tidal, mopidy):
+        _compare_map[type](t, m)
 
 
 @pytest.fixture
@@ -145,10 +178,5 @@ def compare():
         mopidy: The mopidy tracks.
         type: The type of comparison: one of "artist", "album" or "track".
     """
-
-    def _compare(tidal: Iterable, mopidy: Iterable, type: str):
-        assert len(tidal) == len(mopidy)
-        for t, m in zip(tidal, mopidy):
-            _compare_map[type](t, m)
 
     return _compare

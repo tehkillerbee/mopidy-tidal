@@ -12,6 +12,7 @@ from typing import Collection, List, Optional, Tuple, Union
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
 from mopidy.models import Ref
+from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy_tidal import full_models_mappers
@@ -109,13 +110,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return added_ids, removed_ids
 
     def _has_changes(self, playlist: MopidyPlaylist):
-        pl_getter = (
-            self.backend._session.get_playlist
-            if hasattr(self.backend._session, "get_playlist")
-            else self.backend._session.playlist
-        )
 
-        upstream_playlist = pl_getter(playlist.uri.split(":")[-1])
+        upstream_playlist = self.backend._session.playlist(playlist.uri.split(":")[-1])
         if not upstream_playlist:
             return True
 
@@ -188,7 +184,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
                     playlist_id=playlist_id,
                 ),
             )
-        except requests.HTTPError as e:
+        except HTTPError as e:
             # If we got a 401, it's likely that the user is following
             # this playlist but they don't have permissions for removing
             # it. If that's the case, remove the playlist from the
@@ -313,5 +309,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
             upstream_playlist.add(additions)
 
+        # remove all defunct tracks from cache
         self._calculate_added_and_removed_playlist_ids()
+        # force update the whole playlist so all state is good
         self.refresh(playlist.uri)
