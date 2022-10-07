@@ -45,7 +45,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         client_secret = self._config["tidal"]["client_secret"]
 
         if (client_id and not client_secret) or (client_secret and not client_id):
-            logger.warn(
+            logger.warning(
                 "Connecting to TIDAL.. always provide client_id and client_secret together"
             )
             logger.info(
