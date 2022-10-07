@@ -18,11 +18,7 @@ from mopidy_tidal.playlists import (
 def tpp(config, mocker):
     mocker.patch("mopidy_tidal.playlists.Timer")
     backend = mocker.Mock()
-    backend._config = {
-        "tidal": {
-            "playlist_cache_refresh_secs": 1
-        }
-    }
+    backend._config = {"tidal": {"playlist_cache_refresh_secs": 1}}
 
     tpp = TidalPlaylistsProvider(backend)
     tpp._playlists = PlaylistCache(persist=False)
@@ -306,11 +302,7 @@ def test_playlist_sync_downtime(mocker, tidal_playlists, config):
     tpp = TidalPlaylistsProvider(backend)
     tpp._playlists = PlaylistCache(persist=False)
     mocker.patch("mopidy_tidal.playlists.get_items", lambda x: x)
-    backend._config = {
-        "tidal": {
-            "playlist_cache_refresh_secs": 0.1
-        }
-    }
+    backend._config = {"tidal": {"playlist_cache_refresh_secs": 0.1}}
 
     backend._session.configure_mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._session.user.playlists.return_value = tidal_playlists[1:]

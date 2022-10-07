@@ -238,14 +238,14 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         # again. Set an event in playlist_cache_refresh_secs seconds to ensure
         # that we don't perform another playlist sync.
         self._playlists_loaded_event.set()
-        playlist_cache_refresh_secs = (
-            self.backend._config["tidal"].get("playlist_cache_refresh_secs")
+        playlist_cache_refresh_secs = self.backend._config["tidal"].get(
+            "playlist_cache_refresh_secs"
         )
 
         if playlist_cache_refresh_secs:
             Timer(
                 playlist_cache_refresh_secs,
-                lambda: self._playlists_loaded_event.clear()
+                lambda: self._playlists_loaded_event.clear(),
             ).start()
 
         # Update the right playlist cache and send the playlists_loaded event.
