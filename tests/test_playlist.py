@@ -18,7 +18,7 @@ from mopidy_tidal.playlists import (
 def tpp(config, mocker):
     mocker.patch("mopidy_tidal.playlists.Timer")
     backend = mocker.Mock()
-    backend._config = {"tidal": {"playlist_cache_refresh_secs": 1}}
+    backend._config = {"tidal": {"playlist_cache_refresh_secs": 0}}
 
     tpp = TidalPlaylistsProvider(backend)
     tpp._playlists = PlaylistCache(persist=False)
