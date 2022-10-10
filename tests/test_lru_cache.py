@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -103,7 +105,7 @@ def test_corrupt(config):
     l.update({"tidal:uri:val": "hi", "tidal:uri:otherval": 17})
     del l
     Path(
-        config["core"]["cache_dir"], "tidal/cache/uri/va/tidal:uri:val.cache"
+        config["core"]["cache_dir"], "tidal/cache/uri/va/tidal-uri-val.cache"
     ).write_text("hahaha")
 
     new_l = LruCache(max_size=8, persist=True, directory="cache")
@@ -116,7 +118,7 @@ def test_delete(config):
     l = LruCache(max_size=8, persist=True, directory="cache")
     l.update({"tidal:uri:val": "hi", "tidal:uri:otherval": 17})
     del l
-    Path(config["core"]["cache_dir"], "tidal/cache/uri/va/tidal:uri:val.cache").unlink()
+    Path(config["core"]["cache_dir"], "tidal/cache/uri/va/tidal-uri-val.cache").unlink()
 
     new_l = LruCache(max_size=8, persist=True, directory="cache")
     assert new_l["tidal:uri:otherval"] == 17
@@ -128,7 +130,7 @@ def test_prune_deleted(config):
     l = LruCache(max_size=8, persist=True, directory="cache")
     l.update({"tidal:uri:val": "hi", "tidal:uri:otherval": 17})
     del l
-    Path(config["core"]["cache_dir"], "tidal/cache/uri/va/tidal:uri:val.cache").unlink()
+    Path(config["core"]["cache_dir"], "tidal/cache/uri/va/tidal-uri-val.cache").unlink()
 
     new_l = LruCache(max_size=8, persist=True, directory="cache")
     new_l.prune("tidal:uri:otherval")
@@ -147,6 +149,30 @@ def test_no_max_size(config):
     assert not l.max_size
     l.update({f"tidal:uri:{val}": val for val in range(2**12)})
     assert len(l) == 2**12
+
+
+def test_old_cache_filename(lru_cache):
+    uri = "tidal:uri:val"
+    value = "hi"
+    lru_cache[uri] = value
+    assert lru_cache[uri] == value
+
+    # The cache filename should be dash-separated
+    filename = lru_cache._cache_filename(uri)
+    assert filename.split(os.sep)[-1] == "-".join(uri.split(":")) + ".cache"
+
+    # Rename the cache filename to match the old file format
+    new_filename = os.path.join(os.path.dirname(filename), f"{uri}.cache")
+    shutil.move(filename, new_filename)
+
+    # Remove the in-memory cache element in order to force a filesystem reload
+    lru_cache.pop(uri)
+    cached_value = lru_cache.get(uri)
+    assert cached_value == value
+
+    # The cache filename should be column-separated
+    filename = lru_cache._cache_filename(uri)
+    assert filename.split(os.sep)[-1] == f"{uri}.cache"
 
 
 @pytest.mark.xfail

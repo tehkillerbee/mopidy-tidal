@@ -49,6 +49,15 @@ class LruCache(OrderedDict):
         assert len(parts) > 2, f"Invalid TIDAL ID: {key}"
         cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
         pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
+
+        # Previous filename format
+        key = ":".join(parts)
+        cache_file = os.path.join(cache_dir, f"{key}.cache")
+        if os.path.isfile(cache_file):
+            return cache_file
+
+        # New filename format
+        key = "-".join(parts)
         return os.path.join(cache_dir, f"{key}.cache")
 
     def _get_from_storage(self, key):
