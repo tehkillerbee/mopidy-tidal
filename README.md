@@ -61,12 +61,38 @@ enabled = true
 quality = LOSSLESS
 #client_id =
 #client_secret =
+#playlist_cache_refresh_secs = 0
 ```
 
 Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 
 Optional: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
+
+Optional: `playlist_cache_refresh_secs` tells if (and how often) playlist
+content should be refreshed upon lookup.
+
+The default value (`0`) means that playlists won't be refreshed after the
+extension has started, unless they are explicitly modified from mopidy.
+
+A non-zero value expresses for how long (in seconds) a cached playlist is
+considered valid. For example, a value of `300` means that the cached snapshot
+of a playlist will be used if a new `lookup` occurs within 5 minutes from the
+previous one, but the playlist will be re-loaded via API if a lookup request
+occurs later.
+
+The preferred setting for this value is a trade-off between UI responsiveness
+and responsiveness to changes. If you perform a lot of playlist changes from
+other clients and you want your playlists to be instantly updated on mopidy,
+then you may choose a low value for this setting, albeit this will result in
+longer waits when you look up a playlist, since it will be fetched from
+upstream most of the times. If instead you don't perform many playlist
+modifications, then you may choose a value for this setting within the range of
+hours - or days, or even leave it to zero so playlists will only be refreshed
+when mopidy restarts. This means that it will take longer for external changes
+to be reflected in the loaded playlists, but the UI will be more responsive
+when playlists are looked up. A value of zero makes the behaviour of
+`mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
 
 ## OAuth Flow
 

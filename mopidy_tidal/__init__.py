@@ -30,6 +30,7 @@ class Extension(ext.Extension):
         schema["quality"] = config.String(choices=["LOSSLESS", "HIGH", "LOW"])
         schema["client_id"] = config.String(optional=True)
         schema["client_secret"] = config.String(optional=True)
+        schema["playlist_cache_refresh_secs"] = config.Integer(optional=True)
         return schema
 
     def setup(self, registry):
