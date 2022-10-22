@@ -14,14 +14,16 @@ After installing Mopidy, you can now proceed installing the plugins, including M
 sudo pip3 install Mopidy-Tidal
 ```
 
+##### Note: Make sure to install the Mopidy-Tidal plugin in the same python venv used by your Mopidy installation. Otherwise, the plugin will NOT be detected.
+
+### Install from latest sources
 In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root, followed by a (service) restart.
 ```
 cd <mopidy-tidal source root>
 sudo pip3 uninstall mopidy-tidal
 sudo pip3 install .
+sudo systemctl restart mopidy
 ```
-
-##### Note: Make sure to install the Mopidy-Tidal plugin in the same python venv used by your Mopidy installation. Otherwise, the plugin will NOT be detected.
 
 ## Dependencies
 ### Python
@@ -66,14 +68,19 @@ quality = LOSSLESS
 #playlist_cache_refresh_secs = 0
 ```
 
-#### Quality:
-Set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
+Restart the Mopidy service after adding the Tidal configuration
+```
+sudo systemctl restart mopidy
+```
+
+### Parameters
+
+**Quality:** Set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 
-#### Client_id, _secret:
-Optional: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
+**client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
-Optional: `playlist_cache_refresh_secs` tells if (and how often) playlist
+**playlist_cache_refresh_secs (Optional):** Tells if (and how often) playlist
 content should be refreshed upon lookup.
 
 The default value (`0`) means that playlists won't be refreshed after the
@@ -98,11 +105,6 @@ to be reflected in the loaded playlists, but the UI will be more responsive
 when playlists are looked up. A value of zero makes the behaviour of
 `mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
 
-Restart the Mopidy service after adding the Tidal configuration
-```
-sudo systemctl restart mopidy
-```
-
 ## OAuth Flow
 
 Using the OAuth flow, you have to visit a link to connect the mopidy app to your Tidal account.
@@ -115,8 +117,9 @@ Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
-##### Note: Login process is a **blocking** action, so Mopidy + Web interface will NOT load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
+
+##### Note: Login process is a **blocking** action, so Mopidy + Web interface will NOT load until you approve the application.
 
 ## Test Suite
 Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
@@ -187,8 +190,8 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 ### Changelog
 
 #### v0.3.2
-- Implemented a configurable `playlist_cache_refresh_secs`, default of 0 sec.
-- Replace columns in cache filenames with hyphens to fix FAT32/NTFS compatibility
+- Implemented a configurable `playlist_cache_refresh_secs`
+- Replace colons in cache filenames with hyphens to add FAT32/NTFS compatibility
 
 (Thanks [BlackLight](https://github.com/BlackLight) for the above PRs)
 
