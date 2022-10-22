@@ -7,41 +7,23 @@
 Mopidy Extension for Tidal music service integration.
 
 ## Installation
+First install and configure Mopidy as per the instructions listed [here](https://docs.mopidy.com/en/latest/installation/). It is encouraged to install Mopidy as a systemd service, as per the instructions listed [here](https://docs.mopidy.com/en/latest/running/service/). 
 
-Install by running::
+After installing Mopidy, you can now proceed installing the plugins, including Mopidy-Tidal. :
 ```
-pip3 install Mopidy-Tidal
+sudo pip3 install Mopidy-Tidal
 ```
 
-In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root, followed by a restart
+In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root, followed by a (service) restart.
 ```
-cd <source root>
+cd <mopidy-tidal source root>
 sudo pip3 uninstall mopidy-tidal
 sudo pip3 install .
 ```
 
+##### Note: Make sure to install the Mopidy-Tidal plugin in the same python venv used by your Mopidy installation. Otherwise, the plugin will NOT be detected.
+
 ## Dependencies
-### Python-Tidal
-Mopidy-Tidal requires the Python-Tidal API to function. This is usually installed automatically.
-In some cases, Python-Tidal stops working due to Tidal changing their API keys.
-
-When this happens, it will usually be necessary to upgrade the Python-Tidal API plugin manually
-```
-sudo pip3 install --upgrade tidalapi
-```
-
-After upgrading tidalapi, it will often be necessary to delete the existing json file and restart mopidy.
-The path will vary, depending on your install method.
-```
-rm /var/lib/mopidy/tidal/tidal-oauth.json
-```
-### GStreamer
-When using High and Low quality, be sure to install gstreamer bad-plugins, eg. ::
-```
-sudo apt-get install gstreamer1.0-plugins-bad
-```
-This is mandatory to be able to play m4a streams.
-
 ### Python
 
 Mopidy-Tidal requires python >= 3.7.  3.7 is supported in theory as many people
@@ -49,12 +31,32 @@ are still using it on embedded devices, but our test suite does not currently
 have 100% coverage under 3.7 (PRs to fix this are welcome!).  Mopidy-Tidal is
 fully tested on python >= 3.8.
 
-## Configuration
+### Python-Tidal
+Mopidy-Tidal requires the Python-Tidal API (tidalapi) to function. This is usually installed automatically when installing Mopidy-Tidal.
+In some cases, Python-Tidal stops working due to Tidal changing their API keys.
 
-Before starting Mopidy, you must add configuration for
-Mopidy-Tidal to your Mopidy configuration file, if it is not already present.
+When this happens, it will usually be necessary to upgrade the Python-Tidal API plugin manually
+```
+sudo pip3 install --upgrade tidalapi
+```
 
-The configuration is usually stored in `/etc/mopidy/mopidy.conf` or possibly `~/.config/mopidy/mopidy.conf`, depending on your system configuration ::
+After upgrading Python-Tidal/tidalapi, it will often be necessary to delete the existing json file and restart mopidy.
+The file is usually stored in `/var/lib/mopidy/tidal/tidal-oauth.json`, depending on your system configuration.
+
+### GStreamer
+When using High and Low quality, be sure to install gstreamer bad-plugins, eg.:
+```
+sudo apt-get install gstreamer1.0-plugins-bad
+```
+This is mandatory to be able to play m4a streams.
+
+## Plugin Configuration
+
+Before starting Mopidy, you must add configuration for Mopidy-Tidal to your Mopidy configuration file, if it is not already present.
+
+Run `sudo mopidyctl config` to see the current effective config used by Mopidy
+
+The configuration is usually stored in `/etc/mopidy/mopidy.conf`, depending on your system configuration. Add the configuration listed below in the respective configuration file:
 ```
 [tidal]
 enabled = true
@@ -64,9 +66,11 @@ quality = LOSSLESS
 #playlist_cache_refresh_secs = 0
 ```
 
-Quality can be set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
+#### Quality:
+Set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
 Lossless quality (FLAC) requires Tidal HiFi Subscription.
 
+#### Client_id, _secret:
 Optional: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
 Optional: `playlist_cache_refresh_secs` tells if (and how often) playlist
@@ -94,9 +98,14 @@ to be reflected in the loaded playlists, but the UI will be more responsive
 when playlists are looked up. A value of zero makes the behaviour of
 `mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
 
+Restart the Mopidy service after adding the Tidal configuration
+```
+sudo systemctl restart mopidy
+```
+
 ## OAuth Flow
 
-Using the new OAuth flow, you have to visit a link to connect the mopidy app to your login.
+Using the OAuth flow, you have to visit a link to connect the mopidy app to your Tidal account.
 
 1. When you restart the Mopidy server, check the latest systemd logs and find a line like:
 ```
@@ -106,7 +115,7 @@ Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
-##### Note: Login process is a **blocking** action, so Mopidy will not load until you approve the application.
+##### Note: Login process is a **blocking** action, so Mopidy + Web interface will NOT load until you approve the application.
 The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
 
 ## Test Suite
@@ -176,6 +185,12 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 - [Python-Tidal issue tracker](https://github.com/tamland/python-tidal/issues)
 
 ### Changelog
+
+#### v0.3.2
+- Implemented a configurable `playlist_cache_refresh_secs`, default of 0 sec.
+- Replace columns in cache filenames with hyphens to fix FAT32/NTFS compatibility
+
+(Thanks [BlackLight](https://github.com/BlackLight) for the above PRs)
 
 #### v0.3.1
 - Added support for tidalapi 0.7.x. Tidalapi >=0.7.x is now required.
