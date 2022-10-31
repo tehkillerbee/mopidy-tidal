@@ -167,6 +167,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             self.backend._session.user.create_playlist(name, ""), []
         )
 
+        self._current_tidal_playlists.append(pl)
         self.refresh(pl.uri)
         return pl
 
