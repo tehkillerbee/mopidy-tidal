@@ -28,7 +28,7 @@ setup(
         "setuptools",
         "Mopidy >= 3.0",
         "Pykka >= 1.1",
-        "tidalapi >= 0.7.0",
+        "tidalapi @ git+https://github.com/BlackLight/python-tidal",
         "requests >= 2.0.0",
     ],
     entry_points={
