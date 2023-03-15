@@ -108,7 +108,6 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return added_ids, removed_ids
 
     def _has_changes(self, playlist: MopidyPlaylist):
-
         upstream_playlist = self.backend._session.playlist(playlist.uri.split(":")[-1])
         if not upstream_playlist:
             return True
