@@ -16,7 +16,6 @@ sys.path.append(file_dir)
 
 
 class Extension(ext.Extension):
-
     dist_name = "Mopidy-Tidal"
     ext_name = "tidal"
     version = __version__
