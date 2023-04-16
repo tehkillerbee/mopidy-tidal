@@ -163,10 +163,10 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return self._playlists.get(uri)
 
     def create(self, name):
-        pl = create_mopidy_playlist(
-            self.backend._session.user.create_playlist(name, ""), []
-        )
+        tidal_playlist = self.backend._session.user.create_playlist(name, "")
+        pl = create_mopidy_playlist(tidal_playlist, [])
 
+        self._current_tidal_playlists.append(tidal_playlist)
         self.refresh(pl.uri)
         return pl
 

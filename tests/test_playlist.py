@@ -27,7 +27,9 @@ def tpp(config, mocker):
 
 def test_create(tpp, mocker):
     tpp, backend = tpp
-    playlist = mocker.Mock(last_updated=9, id=17)
+    playlist = mocker.Mock(last_updated=9, id="17")
+    playlist.tracks.__name__ = "tracks"
+    playlist.tracks.return_value = []
     playlist.name = "playlist name"
     backend._session.user.create_playlist.return_value = playlist
     p = tpp.create("playlist")
