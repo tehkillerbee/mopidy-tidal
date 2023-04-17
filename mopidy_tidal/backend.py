@@ -35,7 +35,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
             self._login()
         return self._active_session
 
-    def oauth_login_new_session(self, oauth_file):
+    def _oauth_login_new_session(self, oauth_file):
         # create a new session
         self._active_session.login_oauth_simple(function=logger.info)
         if self._active_session.check_login():
@@ -89,7 +89,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
         if not self._active_session.check_login():
             logger.info("Creating new OAuth session...")
-            self.oauth_login_new_session(oauth_file)
+            self._oauth_login_new_session(oauth_file)
 
         if self._active_session.check_login():
             logger.info("TIDAL Login OK")
