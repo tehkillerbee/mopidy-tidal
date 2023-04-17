@@ -23,7 +23,7 @@ def test_get_config_schema():
     # Test the content of your config schema
     assert "quality" in schema
     assert "client_id" in schema
-    assert "client_secret"
+    assert "client_secret" in schema
 
 
 @pytest.mark.gt_3_7
