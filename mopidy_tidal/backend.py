@@ -32,10 +32,6 @@ class TidalBackend(ThreadingActor, backend.Backend):
     def _session(self):
         return self._active_session
 
-    @_session.setter
-    def _session(self, session):
-        self._active_session = session
-
     def oauth_login_new_session(self, oauth_file):
         # create a new session
         self._active_session.login_oauth_simple(function=logger.info)

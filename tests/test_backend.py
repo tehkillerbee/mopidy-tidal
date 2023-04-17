@@ -36,7 +36,7 @@ def test_composition(get_backend):
 def test_setup(get_backend):
     backend, config, *_ = get_backend()
     assert tuple(backend.uri_schemes) == ("tidal",)  # TODO: why is this muteable?
-    assert not backend._session
+    assert not backend._active_session
     assert backend._config is config
 
 
@@ -48,7 +48,7 @@ def test_login(get_backend, tmp_path, mocker):
     session.session_id = "session_id"
     session.access_token = "access_token"
     session.refresh_token = "refresh_token"
-    backend._session = session
+    backend._active_session = session
     authf = tmp_path / "auth.json"
     assert not authf.exists()
     backend.oauth_login_new_session(authf)
@@ -67,7 +67,7 @@ def test_login(get_backend, tmp_path, mocker):
 def test_failed_login(get_backend, tmp_path, mocker):
     backend, _, _, _, session = get_backend()
     session.check_login.return_value = False
-    backend._session = session
+    backend._active_session = session
     authf = tmp_path / "auth.json"
     backend.oauth_login_new_session(authf)
     assert not authf.exists()
