@@ -64,7 +64,7 @@ def test_login(get_backend, tmp_path, mocker):
 
 
 @pytest.mark.gt_3_7
-def test_failed_login(get_backend, tmp_path, mocker):
+def test_failed_login_falls_back_to_new_oauth(get_backend, tmp_path, mocker):
     backend, _, _, _, session = get_backend()
     session.check_login.return_value = False
     backend._active_session = session
@@ -75,11 +75,51 @@ def test_failed_login(get_backend, tmp_path, mocker):
 
 
 @pytest.mark.gt_3_7
+def test_failed_overall_login_throws_error(get_backend, tmp_path, mocker, config):
+    backend, _, _, _, session = get_backend(config=config)
+    session.check_login.return_value = False
+    backend._active_session = session
+    authf = tmp_path / "auth.json"
+    with pytest.raises(ConnectionError):
+        backend.on_start()
+    assert not authf.exists()
+
+
+@pytest.mark.gt_3_7
 def test_logs_in(get_backend, mocker, config):
     backend, _, _, session_factory, session = get_backend(config=config)
     backend.oauth_login_new_session = mocker.Mock()
+
+    def set_logged_in(*_):
+        session.check_login.return_value = True
+
+    backend.oauth_login_new_session.side_effect = set_logged_in
     session.check_login.return_value = False
     backend.on_start()
+    backend.oauth_login_new_session.assert_called_once()
+    session_factory.assert_called_once()
+    config_obj = session_factory.mock_calls[0].args[0]
+    assert config_obj.quality == config["tidal"]["quality"]
+    assert config_obj.client_id == config["tidal"]["client_id"]
+    assert config_obj.client_secret == config["tidal"]["client_secret"]
+
+
+@pytest.mark.gt_3_7
+def test_accessing_session_triggers_lazy_login(get_backend, mocker, config):
+    config["tidal"]["lazy"] = True
+    backend, _, _, session_factory, session = get_backend(config=config)
+    backend.oauth_login_new_session = mocker.Mock()
+
+    def set_logged_in(*_):
+        session.check_login.return_value = True
+
+    backend.oauth_login_new_session.side_effect = set_logged_in
+    session.check_login.return_value = False
+    backend.on_start()
+    backend.oauth_login_new_session.assert_not_called()
+    assert not backend._active_session.check_login()
+    assert backend._session
+    assert backend._session.check_login()
     backend.oauth_login_new_session.assert_called_once()
     session_factory.assert_called_once()
     config_obj = session_factory.mock_calls[0].args[0]
@@ -93,6 +133,11 @@ def test_logs_in_only_client_secret(get_backend, mocker, config):
     config["tidal"]["client_id"] = ""
     backend, _, _, session_factory, session = get_backend(config=config)
     backend.oauth_login_new_session = mocker.Mock()
+
+    def set_logged_in(*_):
+        session.check_login.return_value = True
+
+    backend.oauth_login_new_session.side_effect = set_logged_in
     session.check_login.return_value = False
     backend.on_start()
     backend.oauth_login_new_session.assert_called_once()
@@ -112,6 +157,11 @@ def test_logs_in_default(get_backend, mocker, config):
     config["tidal"]["client_secret"] = ""
     backend, _, _, session_factory, session = get_backend(config=config)
     backend.oauth_login_new_session = mocker.Mock()
+
+    def set_logged_in(*_):
+        session.check_login.return_value = True
+
+    backend.oauth_login_new_session.side_effect = set_logged_in
     session.check_login.return_value = False
     backend.on_start()
     backend.oauth_login_new_session.assert_called_once()

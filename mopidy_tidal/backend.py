@@ -21,6 +21,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(TidalBackend, self).__init__()
         self._active_session = None
+        self._logged_in = False
         self._config = config
         context.set_config(self._config)
         self.playback = playback.TidalPlaybackProvider(audio=audio, backend=self)
@@ -30,6 +31,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
     @property
     def _session(self):
+        if not self._logged_in:
+            self._login()
         return self._active_session
 
     def oauth_login_new_session(self, oauth_file):
@@ -68,6 +71,10 @@ class TidalBackend(ThreadingActor, backend.Backend):
             _connecting_log("using default client id & client secret from python-tidal")
 
         self._active_session = Session(config)
+        if not self._config["tidal"]["lazy"]:
+            self._login()
+
+    def _login(self):
         # Always store tidal-oauth cache in mopidy core config data_dir
         data_dir = Extension.get_data_dir(self._config)
         oauth_file = os.path.join(data_dir, "tidal-oauth.json")
@@ -86,8 +93,10 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
         if self._active_session.check_login():
             logger.info("TIDAL Login OK")
+            self._logged_in = True
         else:
             logger.info("TIDAL Login KO")
+            raise ConnectionError("Failed to log in.")
 
     def _load_oauth_session(self, **data):
         assert self._active_session, "No session loaded"
