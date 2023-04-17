@@ -13,6 +13,10 @@ from mopidy_tidal import Extension, context, library, playback, playlists
 logger = logging.getLogger(__name__)
 
 
+def _connecting_log(msg: str, level="info"):
+    getattr(logger, level)("Connecting to TIDAL... " + msg)
+
+
 class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(TidalBackend, self).__init__()
@@ -39,31 +43,25 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
     def on_start(self):
         quality = self._config["tidal"]["quality"]
-        logger.info("Connecting to TIDAL.. Quality = %s" % quality)
+        _connecting_log("Quality = %s" % quality)
         config = Config(quality=Quality(quality))
         client_id = self._config["tidal"]["client_id"]
         client_secret = self._config["tidal"]["client_secret"]
 
         if (client_id and not client_secret) or (client_secret and not client_id):
-            logger.warning(
-                "Connecting to TIDAL.. always provide client_id and client_secret together"
+            _connecting_log(
+                "always provide client_id and client_secret together", "warning"
             )
-            logger.info(
-                "Connecting to TIDAL.. using default client id & client secret from python-tidal"
-            )
+            _connecting_log("using default client id & client secret from python-tidal")
 
         if client_id and client_secret:
-            logger.info(
-                "Connecting to TIDAL.. client id & client secret from config section are used"
-            )
+            _connecting_log("client id & client secret from config section are used")
             config.client_id = client_id
             config.api_token = client_id
             config.client_secret = client_secret
 
         if not client_id and not client_secret:
-            logger.info(
-                "Connecting to TIDAL.. using default client id & client secret from python-tidal"
-            )
+            _connecting_log("using default client id & client secret from python-tidal")
 
         self._session = Session(config)
         # Always store tidal-oauth cache in mopidy core config data_dir
