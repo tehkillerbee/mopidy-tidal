@@ -66,6 +66,7 @@ quality = LOSSLESS
 #client_id =
 #client_secret =
 #playlist_cache_refresh_secs = 0
+#lazy = false
 ```
 
 Restart the Mopidy service after adding the Tidal configuration
@@ -105,6 +106,22 @@ to be reflected in the loaded playlists, but the UI will be more responsive
 when playlists are looked up. A value of zero makes the behaviour of
 `mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
 
+**lazy (Optional):**: Whether to connect lazily, i.e. when required, rather than
+at startup.  In lazy mode Mopidy-Tidal will only try to connect when something
+tries to access a resource provided by Tidal.  Since failed connections due to
+network errors do not overwrite cached credentials (see below) and Mopidy
+handles exceptions in plugins gracefully, lazy mode allows Mopidy to continue to
+run even with intermittent or non-existent network access (although you will
+obviously be unable to play any streamed music if you cannot access the
+network).  When the network comes back Mopidy will be able to play tidal content
+again.  This may be desirable on mobile internet connections, or when a server
+is used with multiple backends and a failure with Tidal should not prevent
+other services from running.
+
+Lazy mode is off by default for backwards compatibility and to make the first
+login easier (since mopidy will not block in lazy mode until you try to access
+Tidal).
+
 ## OAuth Flow
 
 Using the OAuth flow, you have to visit a link to connect the mopidy app to your Tidal account.
@@ -117,9 +134,21 @@ Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
 2. Go to that link in your browser, approve it, and that should be it.
 
-The OAuth session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if/when the session expires or if the json file is moved.
+The OAuth session will be reloaded automatically when Mopidy is restarted. It
+will be necessary to perform these steps again if/when the session expires or if
+the json file is moved.
 
-##### Note: Login process is a **blocking** action, so Mopidy + Web interface will NOT load until you approve the application.
+##### Note: Login process is a **blocking** action, so Mopidy + Web interface will stop loading until you approve the application.
+
+If for some reason loading cached credentials fails, `mopidy-tidal` will restart
+the oauth flow (potentially blocking mopidy).  If connection failed for a
+network error and this new connection also fails, your cached credentials will
+not be overwritten.  There is, however, a potential race condition where the
+network comes back online after a failed connection and `mopidy-tidal`
+unnecessarily requests new credentials.  This bug has never been reported in the
+wild and is only mildly annoying, whereas any logic to detect it (for instance
+by inspecting the specific failure from `python-tidal`) would probably be more
+fragile.
 
 ## Test Suite
 Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
