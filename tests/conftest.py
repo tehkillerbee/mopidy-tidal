@@ -28,6 +28,7 @@ def config(tmp_path):
             "client_id": "client_id",
             "client_secret": "client_secret",
             "quality": "LOSSLESS",
+            "lazy": False,
         },
     }
     context.set_config(cfg)

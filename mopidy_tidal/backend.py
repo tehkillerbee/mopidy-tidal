@@ -13,10 +13,15 @@ from mopidy_tidal import Extension, context, library, playback, playlists
 logger = logging.getLogger(__name__)
 
 
+def _connecting_log(msg: str, level="info"):
+    getattr(logger, level)("Connecting to TIDAL... " + msg)
+
+
 class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
         super(TidalBackend, self).__init__()
-        self._session = None
+        self._active_session = None
+        self._logged_in = False
         self._config = config
         context.set_config(self._config)
         self.playback = playback.TidalPlaybackProvider(audio=audio, backend=self)
@@ -24,48 +29,52 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self.playlists = playlists.TidalPlaylistsProvider(backend=self)
         self.uri_schemes = ["tidal"]
 
-    def oauth_login_new_session(self, oauth_file):
+    @property
+    def _session(self):
+        if not self._logged_in:
+            self._login()
+        return self._active_session
+
+    def _oauth_login_new_session(self, oauth_file):
         # create a new session
-        self._session.login_oauth_simple(function=logger.info)
-        if self._session.check_login():
+        self._active_session.login_oauth_simple(function=logger.info)
+        if self._active_session.check_login():
             # store current OAuth session
             data = {}
-            data["token_type"] = {"data": self._session.token_type}
-            data["session_id"] = {"data": self._session.session_id}
-            data["access_token"] = {"data": self._session.access_token}
-            data["refresh_token"] = {"data": self._session.refresh_token}
+            data["token_type"] = {"data": self._active_session.token_type}
+            data["session_id"] = {"data": self._active_session.session_id}
+            data["access_token"] = {"data": self._active_session.access_token}
+            data["refresh_token"] = {"data": self._active_session.refresh_token}
             with open(oauth_file, "w") as outfile:
                 json.dump(data, outfile)
 
     def on_start(self):
         quality = self._config["tidal"]["quality"]
-        logger.info("Connecting to TIDAL.. Quality = %s" % quality)
+        _connecting_log("Quality = %s" % quality)
         config = Config(quality=Quality(quality))
         client_id = self._config["tidal"]["client_id"]
         client_secret = self._config["tidal"]["client_secret"]
 
         if (client_id and not client_secret) or (client_secret and not client_id):
-            logger.warning(
-                "Connecting to TIDAL.. always provide client_id and client_secret together"
+            _connecting_log(
+                "always provide client_id and client_secret together", "warning"
             )
-            logger.info(
-                "Connecting to TIDAL.. using default client id & client secret from python-tidal"
-            )
+            _connecting_log("using default client id & client secret from python-tidal")
 
         if client_id and client_secret:
-            logger.info(
-                "Connecting to TIDAL.. client id & client secret from config section are used"
-            )
+            _connecting_log("client id & client secret from config section are used")
             config.client_id = client_id
             config.api_token = client_id
             config.client_secret = client_secret
 
         if not client_id and not client_secret:
-            logger.info(
-                "Connecting to TIDAL.. using default client id & client secret from python-tidal"
-            )
+            _connecting_log("using default client id & client secret from python-tidal")
 
-        self._session = Session(config)
+        self._active_session = Session(config)
+        if not self._config["tidal"]["lazy"]:
+            self._login()
+
+    def _login(self):
         # Always store tidal-oauth cache in mopidy core config data_dir
         data_dir = Extension.get_data_dir(self._config)
         oauth_file = os.path.join(data_dir, "tidal-oauth.json")
@@ -78,21 +87,23 @@ class TidalBackend(ThreadingActor, backend.Backend):
         except Exception as e:
             logger.info("Could not load OAuth session from %s: %s", oauth_file, e)
 
-        if not self._session.check_login():
+        if not self._active_session.check_login():
             logger.info("Creating new OAuth session...")
-            self.oauth_login_new_session(oauth_file)
+            self._oauth_login_new_session(oauth_file)
 
-        if self._session.check_login():
+        if self._active_session.check_login():
             logger.info("TIDAL Login OK")
+            self._logged_in = True
         else:
             logger.info("TIDAL Login KO")
+            raise ConnectionError("Failed to log in.")
 
     def _load_oauth_session(self, **data):
-        assert self._session, "No session loaded"
+        assert self._active_session, "No session loaded"
         args = {
             "token_type": data.get("token_type", {}).get("data"),
             "access_token": data.get("access_token", {}).get("data"),
             "refresh_token": data.get("refresh_token", {}).get("data"),
         }
 
-        self._session.load_oauth_session(**args)
+        self._active_session.load_oauth_session(**args)
