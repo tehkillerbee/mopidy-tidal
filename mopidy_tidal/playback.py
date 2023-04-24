@@ -12,7 +12,7 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
         logger.info("TIDAL uri: %s", uri)
         parts = uri.split(":")
         track_id = int(parts[4])
-        session = self.backend._session
+        session = self.backend.session
 
         newurl = session.track(track_id).get_url()
         logger.info("transformed into %s", newurl)
