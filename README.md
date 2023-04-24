@@ -17,10 +17,11 @@ sudo pip3 install Mopidy-Tidal
 ##### Note: Make sure to install the Mopidy-Tidal plugin in the same python venv used by your Mopidy installation. Otherwise, the plugin will NOT be detected.
 
 ### Install from latest sources
-In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root, followed by a (service) restart.
+In case you are upgrading your Mopidy-Tidal installation from the latest git sources, make sure to do a force upgrade from the source root (remove both mopidy-tidal and python-tidal), followed by a (service) restart.
 ```
 cd <mopidy-tidal source root>
 sudo pip3 uninstall mopidy-tidal
+sudo pip3 uninstall tidalapi
 sudo pip3 install .
 sudo systemctl restart mopidy
 ```
