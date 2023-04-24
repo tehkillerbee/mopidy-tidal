@@ -117,7 +117,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @property
     def _session(self):
-        return self.backend._session  # type: ignore
+        return self.backend.session  # type: ignore
 
     def get_distinct(self, field, query=None):
         from mopidy_tidal.search import tidal_search

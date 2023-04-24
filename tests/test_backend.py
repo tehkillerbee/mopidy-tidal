@@ -168,8 +168,8 @@ def test_accessing_session_triggers_lazy_login(get_backend, mocker, config):
     backend.on_start()
     session.login_oauth_simple.assert_not_called()
     assert not backend._active_session.check_login()
-    assert backend._session
-    assert backend._session.check_login()
+    assert backend.session
+    assert backend.session.check_login()
     session_factory.assert_called_once()
     config_obj = session_factory.mock_calls[0].args[0]
     assert config_obj.quality == config["tidal"]["quality"]

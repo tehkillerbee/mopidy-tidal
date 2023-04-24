@@ -70,7 +70,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self,
     ) -> Tuple[Collection[str], Collection[str]]:
         logger.info("Calculating playlist updates..")
-        session = self.backend._session  # type: ignore
+        session = self.backend.session  # type: ignore
         updated_playlists = []
 
         with ThreadPoolExecutor(
@@ -108,7 +108,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return added_ids, removed_ids
 
     def _has_changes(self, playlist: MopidyPlaylist):
-        upstream_playlist = self.backend._session.playlist(playlist.uri.split(":")[-1])
+        upstream_playlist = self.backend.session.playlist(playlist.uri.split(":")[-1])
         if not upstream_playlist:
             return True
 
@@ -148,7 +148,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def _lookup_mix(self, uri):
         mix_id = uri.split(":")[-1]
-        session = self.backend._session
+        session = self.backend.session
         return session.mix(mix_id)
 
     def _get_or_refresh_playlist(self, uri) -> Optional[MopidyPlaylist]:
@@ -163,7 +163,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         return self._playlists.get(uri)
 
     def create(self, name):
-        tidal_playlist = self.backend._session.user.create_playlist(name, "")
+        tidal_playlist = self.backend.session.user.create_playlist(name, "")
         pl = create_mopidy_playlist(tidal_playlist, [])
 
         self._current_tidal_playlists.append(tidal_playlist)
@@ -172,7 +172,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def delete(self, uri):
         playlist_id = uri.split(":")[-1]
-        session = self.backend._session
+        session = self.backend.session
 
         try:
             session.request.request(
@@ -205,7 +205,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         else:
             logger.info("Refreshing TIDAL playlists..")
 
-        session = self.backend._session
+        session = self.backend.session
         plists = self._current_tidal_playlists
         mapped_playlists = {}
         playlist_cache = self._playlists if include_items else self._playlists_metadata
@@ -265,7 +265,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def save(self, playlist):
         old_playlist = self._get_or_refresh_playlist(playlist.uri)
-        session = self.backend._session  # type: ignore
+        session = self.backend.session  # type: ignore
         playlist_id = playlist.uri.split(":")[-1]
         assert old_playlist, f"No such playlist: {playlist.uri}"
         assert session, "No active session"

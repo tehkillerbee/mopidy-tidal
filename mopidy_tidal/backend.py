@@ -30,7 +30,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self.uri_schemes = ["tidal"]
 
     @property
-    def _session(self):
+    def session(self):
         if not self._logged_in:
             self._login()
         return self._active_session
