@@ -3,9 +3,8 @@ from __future__ import unicode_literals
 import difflib
 import logging
 import operator
-import os
-import pathlib
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event, Timer
 from typing import TYPE_CHECKING, Collection, List, Optional, Tuple, Union
 
@@ -52,13 +51,8 @@ class PlaylistCache(LruCache):
 
 
 class PlaylistMetadataCache(PlaylistCache):
-    def _cache_filename(self, key: str) -> str:
-        parts = key.split(":")
-        assert len(parts) > 2, f"Invalid TIDAL ID: {key}"
-        parts[1] += "_metadata"
-        cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
-        pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
-        return os.path.join(cache_dir, f"{key}.cache")
+    def cache_file(self, key: str) -> Path:
+        return super().cache_file(key, Path("playlist_metadata"))
 
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):

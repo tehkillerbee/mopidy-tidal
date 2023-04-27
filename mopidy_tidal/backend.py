@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
-import os
+from pathlib import Path
 
 from mopidy import backend
 from pykka import ThreadingActor
@@ -35,7 +35,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
             self._login()
         return self._active_session
 
-    def _oauth_login_new_session(self, oauth_file):
+    def _oauth_login_new_session(self, oauth_file: Path):
         # create a new session
         self._active_session.login_oauth_simple(function=logger.info)
         if self._active_session.check_login():
@@ -45,7 +45,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
             data["session_id"] = {"data": self._active_session.session_id}
             data["access_token"] = {"data": self._active_session.access_token}
             data["refresh_token"] = {"data": self._active_session.refresh_token}
-            with open(oauth_file, "w") as outfile:
+            with oauth_file.open("w") as outfile:
                 json.dump(data, outfile)
 
     def on_start(self):
@@ -76,8 +76,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
     def _login(self):
         # Always store tidal-oauth cache in mopidy core config data_dir
-        data_dir = Extension.get_data_dir(self._config)
-        oauth_file = os.path.join(data_dir, "tidal-oauth.json")
+        data_dir = Path(Extension.get_data_dir(self._config))
+        oauth_file = data_dir / "tidal-oauth.json"
         try:
             # attempt to reload existing session from file
             with open(oauth_file) as f:

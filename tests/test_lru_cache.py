@@ -158,8 +158,8 @@ def test_old_cache_filename(lru_cache):
     assert lru_cache[uri] == value
 
     # The cache filename should be dash-separated
-    filename = lru_cache._cache_filename(uri)
-    assert filename.split(os.sep)[-1] == "-".join(uri.split(":")) + ".cache"
+    filename = lru_cache.cache_file(uri)
+    assert filename.name == "-".join(uri.split(":")) + ".cache"
 
     # Rename the cache filename to match the old file format
     new_filename = os.path.join(os.path.dirname(filename), f"{uri}.cache")
@@ -171,8 +171,8 @@ def test_old_cache_filename(lru_cache):
     assert cached_value == value
 
     # The cache filename should be column-separated
-    filename = lru_cache._cache_filename(uri)
-    assert filename.split(os.sep)[-1] == f"{uri}.cache"
+    filename = lru_cache.cache_file(uri)
+    assert filename.name == f"{uri}.cache"
 
 
 @pytest.mark.xfail
