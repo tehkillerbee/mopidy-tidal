@@ -26,10 +26,9 @@ jobs:
         uses: abatilo/actions-poetry@v2
         # with:
         #   poetry-version: ${{ matrix.poetry-version }}
-      - name: Install mopidy-tidal and enter venv
+      - name: Install mopidy-tidal
         run: |
           poetry install
-          poetry shell
       - name: Lint
         run: |
           make lint
