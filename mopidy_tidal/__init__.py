@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 import logging
 import os
 import sys
+from importlib import metadata
 
 from mopidy import config, ext
 
-__version__ = "0.3.2"
+__version__ = metadata.version("mopidy_tidal")
 
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
