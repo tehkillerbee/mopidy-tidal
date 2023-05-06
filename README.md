@@ -29,10 +29,9 @@ sudo systemctl restart mopidy
 ## Dependencies
 ### Python
 
-Mopidy-Tidal requires python >= 3.7.  3.7 is supported in theory as many people
-are still using it on embedded devices, but our test suite does not currently
-have 100% coverage under 3.7 (PRs to fix this are welcome!).  Mopidy-Tidal is
-fully tested on python >= 3.8.
+Released versions of Mopidy-Tidal have the same requirement as the Mopidy
+version they depend on.  Development code may depend on unreleased features.
+At the time of writing we require python >= 3.9 in anticipation of mopidy 3.5.0.
 
 ### Python-Tidal
 Mopidy-Tidal requires the Python-Tidal API (tidalapi) to function. This is usually installed automatically when installing Mopidy-Tidal.
@@ -47,7 +46,7 @@ After upgrading Python-Tidal/tidalapi, it will often be necessary to delete the 
 The file is usually stored in `/var/lib/mopidy/tidal/tidal-oauth.json`, depending on your system configuration.
 
 ### GStreamer
-When using High and Low quality, be sure to install gstreamer bad-plugins, eg.:
+When using High and Low quality, be sure to install gstreamer bad-plugins, e.g.:
 ```
 sudo apt-get install gstreamer1.0-plugins-bad
 ```
@@ -151,19 +150,19 @@ wild and is only mildly annoying, whereas any logic to detect it (for instance
 by inspecting the specific failure from `python-tidal`) would probably be more
 fragile.
 
+## Development
+### Installation
+
+- [Install poetry](https://python-poetry.org/docs/#installation)
+- run `poetry install` to install all dependencies, including for development
+- run `poetry shell` to activate the virtual environment
+
 ## Test Suite
 Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
 contributions would come with tests to keep this coverage up, but we can help in
 writing them if need be.
 
-To run the test suite you need to install `pytest`, `pytest-mock` and
-`pytest-cov` inside your venv:
-
-```bash
-pip3 install -r test_requirements.txt
-```
-
-You can then run the tests:
+Install using poetry, and then run:
 
 ```bash
 pytest tests/ -k "not gt_3_10" --cov=mopidy_tidal --cov-report=html
@@ -184,6 +183,7 @@ make test
 Currently the code is not very heavily documented.  The easiest way to see how
 something is supposed to work is probably to have a look at the tests.
 
+
 ### Code Style
 Code should be formatted with `isort` and `black`:
 
@@ -199,6 +199,21 @@ make format
 ```
 
 The CI workflow will fail on linting as well as test failures.
+
+### Installing a development version system-wide
+
+```bash
+rm -rf dist
+poetry build
+pip install dist/*.whl
+```
+
+This installs the built package, without any of the development dependencies.
+If you are on *nix you can just run:
+
+```bash
+make install
+```
 
 ## Contributions
 Source contributions, suggestions and pull requests are very welcome.
