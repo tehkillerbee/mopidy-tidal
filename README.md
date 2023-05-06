@@ -215,6 +215,50 @@ If you are on *nix you can just run:
 make install
 ```
 
+### Running mopidy against development code
+
+Mopidy can be run against a local (development) version of Mopidy-Tidal.  There
+are two ways to do this: using the system mopidy installation to provide audio
+support, or installing `PyGObject` inside the virtualenv.  The former is
+recommended by Mopidy; the latter is used in our integration tests for two reasons:
+
+- at the time of writing, poetry system-site-packages support is broken
+- when integration testing, the version of PyGObject should be pinned (reproducible builds)
+
+To install a completely isolated mopidy inside the virtualenv with `PyGObject`,
+`mopidy-local` and `mopidy-iris` run
+
+```bash
+poetry install --with complete
+```
+
+This will compile a shim for gobject.  On any system other than a Raspberry
+pi this will not take more than a minute, and is a once off.
+
+Alternatively you can use a virtualenv which can see system-site-packages (which
+still needs mopidy installed locally, as plugins use pip to register
+themselves).  Until [#6035](https://github.com/python-poetry/poetry/issues/6035)
+is resolved this requires a hack:
+
+```bash
+python -m venv .venv --system-site-packages
+source ".venv/bin/activate" #or activate.csh or activate.fish or activate.ps1 as required
+poetry install
+```
+
+*nix users can just run
+
+```bash
+make system-venv
+source ".venv/bin/activate" #or activate.csh or activate.fish
+```
+(Make runs in a subshell and cannot modify the parent shell, so there's no way
+by design of entering the venv permanently from within the makefile.)
+
+
+In either case, run `mopidy` inside the virtualenv to launch mopidy with your
+development version of Mopidy-Tidal.
+
 ## Contributions
 Source contributions, suggestions and pull requests are very welcome.
 

@@ -1,4 +1,4 @@
-.PHONY: lint test install format all
+.PHONY: lint test install format all system-venv
 POETRY ?= poetry run
 
 help:
@@ -16,6 +16,12 @@ format:
 lint:
 	${POETRY} isort --check --profile=black mopidy_tidal tests
 	${POETRY} black --check mopidy_tidal tests
+
+system-venv:
+	python -m venv .venv --system-site-packages
+	bash -c "source .venv/bin/activate && poetry install"
+	@printf "You now need to activate the venv by sourcing the right file, e.g. source .venv/bin/activate\n"
+
 
 test:
 	${POETRY} pytest tests/ \

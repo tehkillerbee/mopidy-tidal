@@ -323,6 +323,52 @@ lint = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "
 test = ["pytest", "pytest-cov", "responses"]
 
 [[package]]
+name = "mopidy-iris"
+version = "3.66.1"
+description = "Fully-featured Mopidy frontend client"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "Mopidy-Iris-3.66.1.tar.gz", hash = "sha256:73cd9e1e473f304abc0620c7b03dab710f7f2642d180381d103ae402c04d5667"},
+    {file = "Mopidy_Iris-3.66.1-py3-none-any.whl", hash = "sha256:f5838a1af9d8c2c22ac60f6e5f1dda42b578a067be405bb55d5b57b64ac7be6e"},
+]
+
+[package.dependencies]
+Mopidy = ">=3.0"
+Pykka = ">=2.0.1"
+setuptools = "*"
+
+[package.extras]
+dev = ["black", "check-manifest", "flake8", "flake8-bugbear", "flake8-import-order", "isort[pyproject]", "pytest", "pytest-cov", "twine", "wheel"]
+lint = ["black", "check-manifest", "flake8", "flake8-bugbear", "flake8-import-order", "isort[pyproject]"]
+release = ["twine", "wheel"]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
+name = "mopidy-local"
+version = "3.2.1"
+description = "Mopidy extension for playing music from your local music archive"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "Mopidy-Local-3.2.1.tar.gz", hash = "sha256:29165157134fe869228da675e4d0083888368a29dc7dd3203fe1a27d7b4d83a3"},
+    {file = "Mopidy_Local-3.2.1-py3-none-any.whl", hash = "sha256:20e142397664d4348a0868e255d1b6e55fffd6c507fc2afda2314a4de885b38d"},
+]
+
+[package.dependencies]
+Mopidy = ">=3.0.0"
+Pykka = ">=2.0.1"
+setuptools = "*"
+uritools = ">=1.0"
+
+[package.extras]
+dev = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "flake8-import-order", "isort[pyproject]", "pytest", "pytest-cov"]
+lint = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "flake8-import-order", "isort[pyproject]"]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -389,6 +435,41 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
+
+[[package]]
+name = "pycairo"
+version = "1.23.0"
+description = "Python interface for cairo"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pycairo-1.23.0-cp310-cp310-win32.whl", hash = "sha256:564601e5f528531c6caec1c0177c3d0709081e1a2a5cccc13561f715080ae535"},
+    {file = "pycairo-1.23.0-cp310-cp310-win_amd64.whl", hash = "sha256:e7cde633986435d87a86b6118b7b6109c384266fd719ef959883e2729f6eafae"},
+    {file = "pycairo-1.23.0-cp311-cp311-win32.whl", hash = "sha256:3a71f758e461180d241e62ef52e85499c843bd2660fd6d87cec99c9833792bfa"},
+    {file = "pycairo-1.23.0-cp311-cp311-win_amd64.whl", hash = "sha256:2dec5378133778961993fb59d66df16070e03f4d491b67eb695ca9ad7a696008"},
+    {file = "pycairo-1.23.0-cp37-cp37m-win32.whl", hash = "sha256:d6bacff15d688ed135b4567965a4b664d9fb8de7417a7865bb138ad612043c9f"},
+    {file = "pycairo-1.23.0-cp37-cp37m-win_amd64.whl", hash = "sha256:ec305fc7f2f0299df78aadec0eaf6eb9accb90eda242b5d3492544d3f2b28027"},
+    {file = "pycairo-1.23.0-cp38-cp38-win32.whl", hash = "sha256:1a6d8e0f353062ad92954784e33dbbaf66c880c9c30e947996c542ed9748aaaf"},
+    {file = "pycairo-1.23.0-cp38-cp38-win_amd64.whl", hash = "sha256:82e335774a17870bc038e0c2fb106c1e5e7ad0c764662023886dfcfce5bb5a52"},
+    {file = "pycairo-1.23.0-cp39-cp39-win32.whl", hash = "sha256:a4b1f525bbdf637c40f4d91378de36c01ec2b7f8ecc585b700a079b9ff83298e"},
+    {file = "pycairo-1.23.0-cp39-cp39-win_amd64.whl", hash = "sha256:87efd62a7b7afad9a0a420f05b6008742a6cfc59077697be65afe8dc73ae15ad"},
+    {file = "pycairo-1.23.0.tar.gz", hash = "sha256:9b61ac818723adc04367301317eb2e814a83522f07bbd1f409af0dada463c44c"},
+]
+
+[[package]]
+name = "pygobject"
+version = "3.44.1"
+description = "Python bindings for GObject Introspection"
+category = "dev"
+optional = false
+python-versions = ">=3.7, <4"
+files = [
+    {file = "PyGObject-3.44.1.tar.gz", hash = "sha256:665fbe980c91e8b31ad78ed3f66879946948200864002d193f67eccc1d7d5d83"},
+]
+
+[package.dependencies]
+pycairo = ">=1.16,<2.0"
 
 [[package]]
 name = "pykka"
@@ -629,6 +710,18 @@ files = [
 ]
 
 [[package]]
+name = "uritools"
+version = "4.0.1"
+description = "URI parsing, classification and composition"
+category = "dev"
+optional = false
+python-versions = "~=3.7"
+files = [
+    {file = "uritools-4.0.1-py3-none-any.whl", hash = "sha256:d122d394ed6e6e15ac0fddba6a5b19e9fa204e7797507815cbfb0e1455ac0475"},
+    {file = "uritools-4.0.1.tar.gz", hash = "sha256:efc5c3a6de05404850685a8d3f34da8476b56aa3516fbf8eff5c8704c7a2826f"},
+]
+
+[[package]]
 name = "urllib3"
 version = "2.0.2"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -649,4 +742,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "283862117e2d366ee597997144d0f7d2e1b08ae1f0be341cc20ff30d9fe101aa"
+content-hash = "b5649e489172a549bef94cda7dc7cf7e38654b77b85562d3756923172884c9ad"

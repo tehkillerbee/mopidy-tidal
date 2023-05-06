@@ -29,6 +29,14 @@ black = "^23.3.0"
 isort = "^5.12.0"
 pytest-cov = "^4.0.0"
 
+[tool.poetry.group.complete]
+optional = true
+
+[tool.poetry.group.complete.dependencies]
+pygobject = "^3.44.1"
+mopidy-local = "^3.2.1"
+mopidy-iris = "^3.66.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
