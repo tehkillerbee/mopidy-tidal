@@ -37,7 +37,7 @@ optional = true
 pygobject = "^3.44.1"
 mopidy-local = "^3.2.1"
 mopidy-iris = "^3.66.1"
-mopidy-mpd = "^3.3.0"
+mopidy-mpd = "^3"
 
 [build-system]
 requires = ["poetry-core"]
