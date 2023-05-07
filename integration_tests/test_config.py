@@ -29,7 +29,7 @@ def spawn(*args, **kwargs):
 config_dir = Path(__file__).parent / "config"
 
 
-def test_basic_config_loads_tidal_extension():
+def test_basic_config_loads_tidal_generates_auth_url():
     config = config_dir / "basic.conf"
     with spawn(f"mopidy --config {config.resolve()}") as child:
         child.expect("Connecting to TIDAL... Quality = LOSSLESS")
