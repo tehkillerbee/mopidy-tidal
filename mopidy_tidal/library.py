@@ -134,7 +134,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.albums()
                 ]
-            elif field == "track":
+            elif field in {"track", "track_name"}:
                 return [
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
                 ]
@@ -152,7 +152,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         apply_watermark(a.name)
                         for a in self._get_artist_albums(session, artist_id)
                     ]
-            elif field == "track":
+            elif field in {"track", "track_name"}:
                 return [
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
                 ]
