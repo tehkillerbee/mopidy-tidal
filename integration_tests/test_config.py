@@ -1,3 +1,4 @@
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -18,7 +19,9 @@ class AssertiveChild:
 
 @contextmanager
 def spawn(*args, **kwargs):
+    kwargs["encoding"] = kwargs.get("encoding", "utf8")
     child = pexpect.spawn(*args, **kwargs)
+    child.logfile = sys.stdout
     yield AssertiveChild(child)
     assert child.terminate(force=True), "Failed to kill process"
 
