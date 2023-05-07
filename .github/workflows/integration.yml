@@ -33,4 +33,4 @@ jobs:
         run: |
           poetry install --with complete
       - name: Integration test
-        run: pytest
+        run: make integration-test
