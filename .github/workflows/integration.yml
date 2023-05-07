@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Mopidy system-wide
-        run: apt update && apt install mopidy
+        run: sudo apt update && sudo apt install mopidy
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
         with:
