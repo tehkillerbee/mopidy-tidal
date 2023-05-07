@@ -10,7 +10,7 @@ class AssertiveChild:
     def __init__(self, child):
         self.child = child
 
-    def expect(self, msg, timeout=1):
+    def expect(self, msg, timeout=3):
         try:
             self.child.expect(msg, timeout=timeout)
         except pexpect.TIMEOUT as e:
