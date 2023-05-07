@@ -369,6 +369,28 @@ lint = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "
 test = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "mopidy-mpd"
+version = "3.3.0"
+description = "Mopidy extension for controlling Mopidy from MPD clients"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "Mopidy-MPD-3.3.0.tar.gz", hash = "sha256:09e2cc46a8fd73006f42b3b1ed71d557c3230e3c0ea2c38d565b0dda8faf4d53"},
+    {file = "Mopidy_MPD-3.3.0-py3-none-any.whl", hash = "sha256:9a8b98998896cbb77ba917c448548ae90460e6f0d22d9c6c810b79a5363938f3"},
+]
+
+[package.dependencies]
+Mopidy = ">=3.3.0"
+Pykka = ">=2.0.1"
+setuptools = "*"
+
+[package.extras]
+dev = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "flake8-import-order", "isort[pyproject]", "pytest", "pytest-cov"]
+lint = ["black", "check-manifest", "flake8", "flake8-black", "flake8-bugbear", "flake8-import-order", "isort[pyproject]"]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -769,4 +791,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "0c87c1721df9ff0e52073a3da545128d4452080b6ab759e29d4ba2ad4b9b2fcd"
+content-hash = "2419ef15af8195eddea82c6cdea3221bb3a17e0bcdea0023a0a8c1c7faaaa902"
