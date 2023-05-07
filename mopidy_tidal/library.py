@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from mopidy import backend, models
 from mopidy.models import Image, SearchResult
@@ -13,6 +13,9 @@ from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.playlists import PlaylistMetadataCache
 from mopidy_tidal.utils import apply_watermark
 from mopidy_tidal.workers import get_items
+
+if TYPE_CHECKING:
+    from mopidy_tidal.backend import TidalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +110,7 @@ class ImagesGetter:
 
 class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri="tidal:directory", name="Tidal")
+    backend: "TidalBackend"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -117,7 +121,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @property
     def _session(self):
-        return self.backend.session  # type: ignore
+        return self.backend.session
 
     def get_distinct(self, field, query=None):
         from mopidy_tidal.search import tidal_search

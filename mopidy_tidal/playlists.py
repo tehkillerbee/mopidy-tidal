@@ -7,7 +7,7 @@ import os
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event, Timer
-from typing import Collection, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Collection, List, Optional, Tuple, Union
 
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
@@ -21,6 +21,9 @@ from mopidy_tidal.helpers import to_timestamp
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.utils import mock_track
 from mopidy_tidal.workers import get_items
+
+if TYPE_CHECKING:
+    from mopidy_tidal.backend import TidalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +62,8 @@ class PlaylistMetadataCache(PlaylistCache):
 
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
+    backend: "TidalBackend"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._playlists_metadata = PlaylistMetadataCache()
@@ -70,7 +75,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self,
     ) -> Tuple[Collection[str], Collection[str]]:
         logger.info("Calculating playlist updates..")
-        session = self.backend.session  # type: ignore
+        session = self.backend.session
         updated_playlists = []
 
         with ThreadPoolExecutor(
@@ -265,7 +270,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def save(self, playlist):
         old_playlist = self._get_or_refresh_playlist(playlist.uri)
-        session = self.backend.session  # type: ignore
+        session = self.backend.session
         playlist_id = playlist.uri.split(":")[-1]
         assert old_playlist, f"No such playlist: {playlist.uri}"
         assert session, "No active session"
