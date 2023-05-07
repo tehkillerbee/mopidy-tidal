@@ -42,3 +42,13 @@ def test_lazy_config_no_connect_to_tidal():
         child.expect("Connecting to TIDAL... Quality = LOSSLESS")
         with pytest.raises(AssertionError):
             child.expect("Visit link.tidal.com/.* to log in")
+
+
+def test_lazy_config_generates_auth_url_on_access():
+    config = config_dir / "lazy.conf"
+    with spawn(f"mopidy --config {config.resolve()}") as child:
+        child.expect("Connecting to TIDAL... Quality = LOSSLESS")
+        with pytest.raises(AssertionError):
+            child.expect("Visit link.tidal.com/.* to log in")
+        with spawn("mpc list artist"):
+            child.expect("Visit link.tidal.com/.* to log in")

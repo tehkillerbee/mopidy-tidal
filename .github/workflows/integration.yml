@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Mopidy system-wide
-        run: sudo apt update && sudo apt install mopidy libgirepository1.0-dev
+        run: sudo apt update && sudo apt install mopidy libgirepository1.0-dev mpc
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2
       - name: Set up Python
