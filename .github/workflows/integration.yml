@@ -29,9 +29,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
-      - name: Install mopidy-tidal
-        run: |
-          poetry install --with complete
       - name: Correct mopidy version
         run: |
           if [ ${{ matrix.mopidy-version }} != "git" ]; then
@@ -40,5 +37,9 @@ jobs:
             poetry add "git+https://github.com/mopidy/mopidy.git"
           fi
           poetry show
+      - name: Install mopidy-tidal
+        run: |
+          rm poetry.lock
+          poetry install --with complete
       - name: Integration test
         run: make integration-test
