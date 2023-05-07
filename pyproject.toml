@@ -41,7 +41,7 @@ mopidy-iris = "^3.66.1"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[project.entry-points."mopidy.ext"]
+[tool.poetry.plugins."mopidy.ext"]
 tidal = "mopidy_tidal:Extension"
 
 
