@@ -126,7 +126,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         session = self._session
 
         if not query:  # library root
-            if field == "artist" or field == "albumartist":
+            if field in {"artist", "albumartist"}:
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.artists()
                 ]
@@ -143,7 +143,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.artists()
                 ]
-            elif field == "album" or field == "albumartist":
+            elif field in {"album", "albumartist"}:
                 artists, _, _ = tidal_search(session, query=query, exact=True)
                 if len(artists) > 0:
                     artist = artists[0]
