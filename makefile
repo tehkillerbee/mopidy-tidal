@@ -1,4 +1,4 @@
-.PHONY: lint test install format all system-venv
+.PHONY: lint test install format all system-venv integration-test
 POETRY ?= poetry run
 
 help:
@@ -27,3 +27,6 @@ test:
 	${POETRY} pytest tests/ \
 -k "not gt_$$(python3 --version | sed 's/Python \([0-9]\).\([0-9]*\)\..*/\1_\2/')" \
 --cov=mopidy_tidal --cov-report=html --cov-report=xml --cov-report=term-missing --cov-branch
+
+integration-test:
+	${POETRY} pytest integration_tests/ --cov=mopidy_tidal --cov-report=html --cov-report=xml --cov-report=term-missing --cov-branch
