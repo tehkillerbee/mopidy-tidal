@@ -29,4 +29,4 @@ test:
 --cov=mopidy_tidal --cov-report=html --cov-report=xml --cov-report=term-missing --cov-branch
 
 integration-test:
-	${POETRY} pytest integration_tests/ --cov=mopidy_tidal --cov-report=html --cov-report=xml --cov-report=term-missing --cov-branch
+	${POETRY} pytest integration_tests/
