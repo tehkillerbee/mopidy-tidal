@@ -109,7 +109,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
     root_directory = models.Ref.directory(uri="tidal:directory", name="Tidal")
 
     def __init__(self, *args, **kwargs):
-        super(TidalLibraryProvider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._artist_cache = LruCache()
         self._album_cache = LruCache()
         self._track_cache = LruCache()

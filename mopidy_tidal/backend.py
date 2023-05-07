@@ -19,7 +19,7 @@ def _connecting_log(msg: str, level="info"):
 
 class TidalBackend(ThreadingActor, backend.Backend):
     def __init__(self, config, audio):
-        super(TidalBackend, self).__init__()
+        super().__init__()
         self._active_session = None
         self._logged_in = False
         self._config = config

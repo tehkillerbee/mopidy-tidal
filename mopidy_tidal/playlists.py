@@ -60,7 +60,7 @@ class PlaylistMetadataCache(PlaylistCache):
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
     def __init__(self, *args, **kwargs):
-        super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._playlists_metadata = PlaylistMetadataCache()
         self._playlists = PlaylistCache()
         self._current_tidal_playlists = []
