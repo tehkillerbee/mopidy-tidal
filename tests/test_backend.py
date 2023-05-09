@@ -3,29 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from mopidy_tidal.backend import TidalBackend
-from mopidy_tidal.context import set_config
 from mopidy_tidal.library import TidalLibraryProvider
 from mopidy_tidal.playback import TidalPlaybackProvider
 from mopidy_tidal.playlists import TidalPlaylistsProvider
-
-
-@pytest.fixture
-def get_backend(mocker):
-    def _get_backend(config=mocker.MagicMock(), audio=mocker.Mock()):
-        backend = TidalBackend(config, audio)
-        session_factory = mocker.Mock()
-        session = mocker.Mock()
-        session.token_type = "token_type"
-        session.session_id = "session_id"
-        session.access_token = "access_token"
-        session.refresh_token = "refresh_token"
-        session_factory.return_value = session
-        mocker.patch("mopidy_tidal.backend.Session", session_factory)
-        return backend, config, audio, session_factory, session
-
-    yield _get_backend
-    set_config(None)
 
 
 @pytest.mark.gt_3_7
