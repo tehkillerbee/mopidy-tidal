@@ -10,18 +10,19 @@ from typing import TYPE_CHECKING, Collection, List, Optional, Tuple, Union
 
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
-from mopidy.models import Ref
+from mopidy.models import Ref, Track
 from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.full_models_mappers import create_mopidy_playlist
 from mopidy_tidal.helpers import to_timestamp
+from mopidy_tidal.login_hack import login_hack
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.utils import mock_track
 from mopidy_tidal.workers import get_items
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from mopidy_tidal.backend import TidalBackend
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
         return False
 
-    def as_list(self):
+    @login_hack(Ref.playlist)
+    def as_list(self) -> list[Ref]:
         if not self._playlists_loaded_event.is_set():
             added_ids, _ = self._calculate_added_and_removed_playlist_ids()
             if added_ids:
@@ -195,10 +197,12 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self._playlists_metadata.prune(uri)
         self._playlists.prune(uri)
 
-    def lookup(self, uri):
+    @login_hack
+    def lookup(self, uri) -> Optional[MopidyPlaylist]:
         return self._get_or_refresh_playlist(uri)
 
-    def refresh(self, *uris, include_items: bool = True):
+    @login_hack
+    def refresh(self, *uris, include_items: bool = True) -> dict[str, MopidyPlaylist]:
         if uris:
             logger.info("Looking up playlists: %r", uris)
         else:
@@ -251,6 +255,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         backend.BackendListener.send("playlists_loaded")
         logger.info("TIDAL playlists refreshed")
 
+    @login_hack
     def get_items(self, uri) -> Optional[List[Ref]]:
         playlist = self._get_or_refresh_playlist(uri)
         if not playlist:

@@ -2,19 +2,20 @@ from __future__ import unicode_literals
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from mopidy import backend, models
-from mopidy.models import Image, SearchResult
+from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
 from requests.exceptions import HTTPError
 
 from mopidy_tidal import full_models_mappers, ref_models_mappers
+from mopidy_tidal.login_hack import login_hack
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.playlists import PlaylistMetadataCache
 from mopidy_tidal.utils import apply_watermark
 from mopidy_tidal.workers import get_items
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from mopidy_tidal.backend import TidalBackend
 
 logger = logging.getLogger(__name__)
@@ -123,7 +124,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
     def _session(self):
         return self.backend.session
 
-    def get_distinct(self, field, query=None):
+    @login_hack(passthrough=True)
+    def get_distinct(self, field, query=None) -> set[str]:
         from mopidy_tidal.search import tidal_search
 
         logger.debug("Browsing distinct %s with query %r", field, query)
@@ -164,7 +166,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         return []
 
-    def browse(self, uri):
+    @login_hack
+    def browse(self, uri) -> list[Ref]:
         logger.info("Browsing uri %s", uri)
         if not uri or not uri.startswith("tidal:"):
             return []
@@ -241,7 +244,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         logger.debug("Unknown uri for browse request: %s", uri)
         return []
 
-    def search(self, query=None, uris=None, exact=False):
+    @login_hack
+    def search(self, query=None, uris=None, exact=False) -> Optional[SearchResult]:
         from mopidy_tidal.search import tidal_search
 
         try:
@@ -253,7 +257,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
             logger.info("EX")
             logger.info("%r", ex)
 
-    def get_images(self, uris):
+    @login_hack
+    def get_images(self, uris) -> dict[str, list[Image]]:
         logger.info("Searching Tidal for images for %r" % uris)
         images_getter = ImagesGetter(self._session)
 
@@ -265,8 +270,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
         images_getter.cache_update(images)
         return images
 
-    def lookup(self, uris=None):
-        logger.info("Lookup uris %r", uris)
+    @login_hack
+    def lookup(self, uris=None) -> list[Track]:
         if isinstance(uris, str):
             uris = [uris]
         if not hasattr(uris, "__iter__"):

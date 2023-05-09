@@ -32,6 +32,7 @@ class Extension(ext.Extension):
         schema["client_secret"] = config.String(optional=True)
         schema["playlist_cache_refresh_secs"] = config.Integer(optional=True)
         schema["lazy"] = config.Boolean(optional=True)
+        schema["login_method"] = config.String(choices=["BLOCK", "HACK"])
         return schema
 
     def setup(self, registry):

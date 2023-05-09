@@ -31,6 +31,7 @@ def config(tmp_path):
             "client_secret": "client_secret",
             "quality": "LOSSLESS",
             "lazy": False,
+            "login_method": "BLOCK",
         },
     }
     context.set_config(cfg)
