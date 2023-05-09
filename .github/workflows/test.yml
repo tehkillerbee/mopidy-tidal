@@ -11,26 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, "3.10"]
+        python-version: [3.9, "3.10", 3.11]
       # Run all the matrix jobs, even if one fails.
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
       - name: Set up Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+      - name: Install mopidy-tidal
+        run: |
+          poetry install
       - name: Lint
         run: |
-          pip install isort black
           make lint
       - name: Test
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install .
-          pip install -r test_requirements.txt
           make test
       - name: Upload coverage
         if: ${{ matrix.python-version  == '3.10' }}
@@ -38,4 +39,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
-      - run: echo ${{ matrix.python-version }}

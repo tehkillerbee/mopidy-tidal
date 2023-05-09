@@ -126,7 +126,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         session = self._session
 
         if not query:  # library root
-            if field == "artist" or field == "albumartist":
+            if field in {"artist", "albumartist"}:
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.artists()
                 ]
@@ -134,7 +134,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.albums()
                 ]
-            elif field == "track":
+            elif field in {"track", "track_name"}:
                 return [
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
                 ]
@@ -143,7 +143,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 return [
                     apply_watermark(a.name) for a in session.user.favorites.artists()
                 ]
-            elif field == "album" or field == "albumartist":
+            elif field in {"album", "albumartist"}:
                 artists, _, _ = tidal_search(session, query=query, exact=True)
                 if len(artists) > 0:
                     artist = artists[0]
@@ -152,7 +152,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                         apply_watermark(a.name)
                         for a in self._get_artist_albums(session, artist_id)
                     ]
-            elif field == "track":
+            elif field in {"track", "track_name"}:
                 return [
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
                 ]

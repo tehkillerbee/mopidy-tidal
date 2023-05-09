@@ -1,0 +1,45 @@
+name: Integration Test
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # weekly
+  push:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, "3.10", 3.11]
+        mopidy-version: [3.0, 3.1, 3.2, 3.3, 3.4, "git"]
+      # Run all the matrix jobs, even if one fails.
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Mopidy system-wide
+        run: sudo apt update && sudo apt install mopidy libgirepository1.0-dev mpc
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+      - name: Correct mopidy version
+        run: |
+          if [ ${{ matrix.mopidy-version }} != "git" ]; then
+            poetry add mopidy@${{ matrix.mopidy-version }}
+          else
+            poetry add "git+https://github.com/mopidy/mopidy.git"
+          fi
+          poetry show
+      - name: Install mopidy-tidal
+        run: |
+          rm poetry.lock
+          poetry install --with complete
+      - name: Integration test
+        run: make integration-test
