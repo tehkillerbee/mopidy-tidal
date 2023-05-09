@@ -20,11 +20,11 @@ NoneType = type(None)
 
 UNION_TYPES = {Union}
 
-try:
+try:  # pragma: no cover
     from types import UnionType
 
     UNION_TYPES |= {UnionType}
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 
