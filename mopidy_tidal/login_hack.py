@@ -4,7 +4,7 @@ from contextlib import suppress
 from functools import reduce, wraps
 from itertools import chain
 from pathlib import Path
-from types import FunctionType, NoneType, UnionType
+from types import FunctionType, UnionType
 from typing import TYPE_CHECKING, Optional, Union, get_args, get_origin
 from urllib.parse import urlencode
 
@@ -15,6 +15,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from backend import TidalBackend
 
 __all__ = ["login_hack", "speak_login_hack"]
+
+NoneType = type(None)
 
 
 def extract_types(possibly_union_type) -> list:
