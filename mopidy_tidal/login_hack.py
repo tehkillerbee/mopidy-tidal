@@ -4,7 +4,7 @@ from contextlib import suppress
 from functools import reduce, wraps
 from itertools import chain
 from pathlib import Path
-from types import FunctionType, UnionType
+from types import FunctionType
 from typing import TYPE_CHECKING, Optional, Union, get_args, get_origin
 from urllib.parse import urlencode
 
@@ -18,10 +18,19 @@ __all__ = ["login_hack", "speak_login_hack"]
 
 NoneType = type(None)
 
+UNION_TYPES = {Union}
+
+try:
+    from types import UnionType
+
+    UNION_TYPES |= {UnionType}
+except ImportError:
+    pass
+
 
 def extract_types(possibly_union_type) -> list:
     """Extract the real type from an optional type."""
-    if get_origin(possibly_union_type) in {Union, UnionType}:
+    if get_origin(possibly_union_type) in UNION_TYPES:
         return nonnull_types(possibly_union_type)
     return [possibly_union_type]
 
