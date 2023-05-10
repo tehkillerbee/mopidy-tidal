@@ -36,6 +36,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self._login_url: Optional[str] = None
         self.login_method = "BLOCK"
         self.data_dir = Path(Extension.get_data_dir(self._config))
+        self.lazy_connect = False
 
     @property
     def session(self):
@@ -67,6 +68,13 @@ class TidalBackend(ThreadingActor, backend.Backend):
         client_id = user_config["client_id"]
         client_secret = user_config["client_secret"]
         self.login_method = user_config["login_method"]
+        self.lazy_connect = user_config["lazy"]
+        if self.login_method == "HACK" and not user_config["lazy"]:
+            _connecting_log(
+                "HACK login implies lazy connection, setting lazy=True.",
+                level="warning",
+            )
+            self.lazy_connect = True
         _connecting_log(f"login method {self.login_method}.")
         if (client_id and not client_secret) or (client_secret and not client_id):
             _connecting_log(
@@ -84,7 +92,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
             _connecting_log("using default client id & client secret from python-tidal")
 
         self._active_session = Session(config)
-        if not user_config["lazy"]:
+        if not self.lazy_connect:
             self._login()
 
     def _login(self):

@@ -297,3 +297,12 @@ def test_already_logged_in_continues_unfazed(
         Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
     ]
     assert not audiof.exists()
+
+
+def test_login_hack_implies_lazy_connect(config, get_backend):
+    config["tidal"]["login_method"] = "HACK"
+    config["tidal"]["lazy"] = False
+    backend, *_ = get_backend(config=config)
+    assert not backend.lazy_connect
+    backend.on_start()
+    assert backend.lazy_connect
