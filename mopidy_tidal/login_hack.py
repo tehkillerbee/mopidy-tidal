@@ -50,7 +50,6 @@ def interesting_types(t) -> set:
 
 
 class Builder(ABC):
-    width = height = 150
     mapping: dict
 
     def build(self, t):
@@ -69,6 +68,8 @@ class Builder(ABC):
 
 
 class ObjectBuilder(Builder):
+    width = height = 150
+
     def __init__(self, *_, schema: str, uri: str, url: str, msg: str, **kwargs):
         self.schema = schema
         self.uri = uri
