@@ -132,7 +132,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
         return False
 
-    @login_hack(Ref.playlist)
+    @login_hack(list[Ref.playlist])
     def as_list(self) -> list[Ref]:
         if not self._playlists_loaded_event.is_set():
             added_ids, _ = self._calculate_added_and_removed_playlist_ids()

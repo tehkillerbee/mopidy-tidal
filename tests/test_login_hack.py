@@ -196,11 +196,13 @@ def test_playlist_as_list_with_hack_login_triggers_login(playlist_provider):
     result = pp.as_list()
     assert not backend.logged_in
     assert backend.logging_in
-    assert result == Ref(
-        name="Please visit https://link.tidal/URI to log in.",
-        type="playlist",
-        uri="tidal:playlist:login",
-    )
+    assert result == [
+        Ref(
+            name="Please visit https://link.tidal/URI to log in.",
+            type="playlist",
+            uri="tidal:playlist:login",
+        )
+    ]
 
 
 @pytest.fixture
