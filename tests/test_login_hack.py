@@ -284,7 +284,7 @@ def test_already_logged_in_continues_unfazed(
     playlist_provider, mocker, tidal_playlists
 ):
     backend, pp = playlist_provider
-    backend.logged_in = True
+    backend._logged_in = True
     audiof = backend.data_dir / "login_audio/URI.ogg"
     session = mocker.Mock(**{"user.favorites.playlists": tidal_playlists[:1]})
     backend._active_session = session
