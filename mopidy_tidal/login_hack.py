@@ -3,6 +3,7 @@ from abc import ABC
 from contextlib import suppress
 from functools import reduce, wraps
 from itertools import chain
+from logging import getLogger
 from pathlib import Path
 from types import FunctionType
 from typing import TYPE_CHECKING, Optional, Union, get_args, get_origin
@@ -26,6 +27,8 @@ try:  # pragma: no cover
     UNION_TYPES |= {UnionType}
 except ImportError:  # pragma: no cover
     pass
+
+logger = getLogger(__name__)
 
 
 def extract_types(possibly_union_type) -> list:
@@ -220,6 +223,7 @@ def login_hack(fn, type=None, passthrough=False):
             url = backend.login_url
             msg = f"Please visit {url} to log in."
 
+            logger.info("Not logged in. " + msg)
             if passthrough:
                 return PassthroughBuilder(by_type={str: lambda: msg}).build(return_type)
             else:
