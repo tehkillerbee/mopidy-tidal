@@ -1,15 +1,18 @@
 from __future__ import unicode_literals
 
 import logging
-import os
-import pathlib
 import pickle
 from collections import OrderedDict
+from pathlib import Path
 from typing import Optional
 
 from mopidy_tidal import Extension, context
 
 logger = logging.getLogger(__name__)
+
+
+def id_to_cachef(id: str) -> Path:
+    return Path(id.replace(":", "-") + ".cache")
 
 
 class LruCache(OrderedDict):
@@ -27,12 +30,10 @@ class LruCache(OrderedDict):
             assert max_size > 0, f"Invalid cache size: {max_size}"
 
         self._max_size = max_size or 0
-        self._cache_dir = os.path.join(
-            Extension.get_cache_dir(context.get_config()), directory
-        )
+        self._cache_dir = Path(Extension.get_cache_dir(context.get_config()), directory)
         self._persist = persist
         if persist:
-            pathlib.Path(self._cache_dir).mkdir(parents=True, exist_ok=True)
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._check_limit()
 
@@ -44,26 +45,26 @@ class LruCache(OrderedDict):
     def persist(self):
         return self._persist
 
-    def _cache_filename(self, key: str) -> str:
+    def cache_file(self, key: str, cache_dir: Optional[Path] = None) -> Path:
         parts = key.split(":")
         assert len(parts) > 2, f"Invalid TIDAL ID: {key}"
-        cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
-        pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        _, obj_type, id, *_ = parts
+        if not cache_dir:
+            cache_dir = Path(obj_type)
 
-        # Previous filename format
-        key = ":".join(parts)
-        cache_file = os.path.join(cache_dir, f"{key}.cache")
-        if os.path.isfile(cache_file):
-            return cache_file
+        cache_dir = self._cache_dir / cache_dir / id[:2]
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / id_to_cachef(key)
+        legacy_cache_file = cache_dir / f"{key}.cache"
+        if legacy_cache_file.is_file():
+            return legacy_cache_file
 
-        # New filename format
-        key = "-".join(parts)
-        return os.path.join(cache_dir, f"{key}.cache")
+        return cache_file
 
     def _get_from_storage(self, key):
-        cache_file = self._cache_filename(key)
+        cache_file = self.cache_file(key)
         err = KeyError(key)
-        if not os.path.isfile(cache_file):
+        if not cache_file.is_file():
             # Cache miss on the filesystem
             raise err
 
@@ -105,7 +106,7 @@ class LruCache(OrderedDict):
 
         super().__setitem__(key, value)
         if self.persist and _sync_to_fs:
-            cache_file = self._cache_filename(key)
+            cache_file = self.cache_file(key)
             with open(cache_file, "wb") as f:
                 pickle.dump(value, f)
 
@@ -115,9 +116,9 @@ class LruCache(OrderedDict):
         return self.get(key) is not None
 
     def _reset_stored_entry(self, key):
-        cache_file = self._cache_filename(key)
-        if os.path.isfile(cache_file):
-            os.unlink(cache_file)
+        cache_file = self.cache_file(key)
+        if cache_file.is_file():
+            cache_file.unlink()
 
     def get(self, key, default=None, *args, **kwargs):
         try:

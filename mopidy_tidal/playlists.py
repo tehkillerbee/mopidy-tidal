@@ -3,24 +3,27 @@ from __future__ import unicode_literals
 import difflib
 import logging
 import operator
-import os
-import pathlib
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event, Timer
-from typing import Collection, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Collection, List, Optional, Tuple, Union
 
 from mopidy import backend
 from mopidy.models import Playlist as MopidyPlaylist
-from mopidy.models import Ref
+from mopidy.models import Ref, Track
 from requests import HTTPError
 from tidalapi.playlist import Playlist as TidalPlaylist
 
 from mopidy_tidal import full_models_mappers
 from mopidy_tidal.full_models_mappers import create_mopidy_playlist
 from mopidy_tidal.helpers import to_timestamp
+from mopidy_tidal.login_hack import login_hack
 from mopidy_tidal.lru_cache import LruCache
 from mopidy_tidal.utils import mock_track
 from mopidy_tidal.workers import get_items
+
+if TYPE_CHECKING:  # pragma: no cover
+    from mopidy_tidal.backend import TidalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -49,18 +52,15 @@ class PlaylistCache(LruCache):
 
 
 class PlaylistMetadataCache(PlaylistCache):
-    def _cache_filename(self, key: str) -> str:
-        parts = key.split(":")
-        assert len(parts) > 2, f"Invalid TIDAL ID: {key}"
-        parts[1] += "_metadata"
-        cache_dir = os.path.join(self._cache_dir, parts[1], parts[2][:2])
-        pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
-        return os.path.join(cache_dir, f"{key}.cache")
+    def cache_file(self, key: str) -> Path:
+        return super().cache_file(key, Path("playlist_metadata"))
 
 
 class TidalPlaylistsProvider(backend.PlaylistsProvider):
+    backend: "TidalBackend"
+
     def __init__(self, *args, **kwargs):
-        super(TidalPlaylistsProvider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._playlists_metadata = PlaylistMetadataCache()
         self._playlists = PlaylistCache()
         self._current_tidal_playlists = []
@@ -70,7 +70,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self,
     ) -> Tuple[Collection[str], Collection[str]]:
         logger.info("Calculating playlist updates..")
-        session = self.backend.session  # type: ignore
+        session = self.backend.session
         updated_playlists = []
 
         with ThreadPoolExecutor(
@@ -132,7 +132,8 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
         return False
 
-    def as_list(self):
+    @login_hack(list[Ref.playlist])
+    def as_list(self) -> list[Ref]:
         if not self._playlists_loaded_event.is_set():
             added_ids, _ = self._calculate_added_and_removed_playlist_ids()
             if added_ids:
@@ -196,10 +197,12 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         self._playlists_metadata.prune(uri)
         self._playlists.prune(uri)
 
-    def lookup(self, uri):
+    @login_hack
+    def lookup(self, uri) -> Optional[MopidyPlaylist]:
         return self._get_or_refresh_playlist(uri)
 
-    def refresh(self, *uris, include_items: bool = True):
+    @login_hack
+    def refresh(self, *uris, include_items: bool = True) -> dict[str, MopidyPlaylist]:
         if uris:
             logger.info("Looking up playlists: %r", uris)
         else:
@@ -252,6 +255,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
         backend.BackendListener.send("playlists_loaded")
         logger.info("TIDAL playlists refreshed")
 
+    @login_hack
     def get_items(self, uri) -> Optional[List[Ref]]:
         playlist = self._get_or_refresh_playlist(uri)
         if not playlist:
@@ -265,7 +269,7 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
 
     def save(self, playlist):
         old_playlist = self._get_or_refresh_playlist(playlist.uri)
-        session = self.backend.session  # type: ignore
+        session = self.backend.session
         playlist_id = playlist.uri.split(":")[-1]
         assert old_playlist, f"No such playlist: {playlist.uri}"
         assert session, "No active session"

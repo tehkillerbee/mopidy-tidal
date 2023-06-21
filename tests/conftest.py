@@ -8,6 +8,8 @@ from tidalapi.media import Track
 from tidalapi.playlist import UserPlaylist
 
 from mopidy_tidal import context
+from mopidy_tidal.backend import TidalBackend
+from mopidy_tidal.context import set_config
 
 
 @pytest.fixture
@@ -29,6 +31,7 @@ def config(tmp_path):
             "client_secret": "client_secret",
             "quality": "LOSSLESS",
             "lazy": False,
+            "login_method": "BLOCK",
         },
     }
     context.set_config(cfg)
@@ -181,3 +184,21 @@ def compare():
     """
 
     return _compare
+
+
+@pytest.fixture
+def get_backend(mocker):
+    def _get_backend(config=mocker.MagicMock(), audio=mocker.Mock()):
+        backend = TidalBackend(config, audio)
+        session_factory = mocker.Mock()
+        session = mocker.Mock()
+        session.token_type = "token_type"
+        session.session_id = "session_id"
+        session.access_token = "access_token"
+        session.refresh_token = "refresh_token"
+        session_factory.return_value = session
+        mocker.patch("mopidy_tidal.backend.Session", session_factory)
+        return backend, config, audio, session_factory, session
+
+    yield _get_backend
+    set_config(None)

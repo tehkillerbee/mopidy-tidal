@@ -26,12 +26,13 @@ class Extension(ext.Extension):
         return config.read(conf_file)
 
     def get_config_schema(self):
-        schema = super(Extension, self).get_config_schema()
+        schema = super().get_config_schema()
         schema["quality"] = config.String(choices=["LOSSLESS", "HIGH", "LOW"])
         schema["client_id"] = config.String(optional=True)
         schema["client_secret"] = config.String(optional=True)
         schema["playlist_cache_refresh_secs"] = config.Integer(optional=True)
         schema["lazy"] = config.Boolean(optional=True)
+        schema["login_method"] = config.String(choices=["BLOCK", "HACK"])
         return schema
 
     def setup(self, registry):
