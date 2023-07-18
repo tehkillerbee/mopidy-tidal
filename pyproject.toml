@@ -19,7 +19,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9"
 Mopidy = "^3.0"
-tidalapi = {git = "https://github.com/BlackLight/python-tidal"}
+tidalapi = "^0.7.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
