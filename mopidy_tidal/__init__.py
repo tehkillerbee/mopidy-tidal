@@ -27,7 +27,7 @@ class Extension(ext.Extension):
 
     def get_config_schema(self):
         schema = super().get_config_schema()
-        schema["quality"] = config.String(choices=["LOSSLESS", "HIGH", "LOW"])
+        schema["quality"] = config.String(choices=["HI_RES", "LOSSLESS", "HIGH", "LOW"])
         schema["client_id"] = config.String(optional=True)
         schema["client_secret"] = config.String(optional=True)
         schema["playlist_cache_refresh_secs"] = config.Integer(optional=True)
