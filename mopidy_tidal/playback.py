@@ -24,7 +24,7 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
         parts = uri.split(":")
         track_id = int(parts[4])
         session = self.backend.session
-        if session.config.quality == Quality.master:
+        if session.config.quality == Quality.hi_res_lossless:
             if "HIRES_LOSSLESS" in session.track(track_id).media_metadata_tags:
                 logger.info("Playback quality: %s", session.config.quality)
             else:
