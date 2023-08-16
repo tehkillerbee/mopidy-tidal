@@ -72,8 +72,17 @@ class ImagesGetter:
             item_type = "album"
             item_id = parts[3]
             uri = ":".join([parts[0], "album", parts[3]])
-        else:
+        elif item_type == "album":
             item_id = parts[2]
+        elif item_type == "playlist":
+            item_id = parts[2]
+        elif item_type == "artist":
+            item_id = parts[2]
+        elif item_type == "mix":
+            item_id = parts[2]
+        else:
+            # uri has no ID associated to it (eg. tidal:mood, tidal:mixes, tidal:genres etc.)
+            return []
 
         if uri in self._image_cache:
             # Cache hit
@@ -265,8 +274,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         with ThreadPoolExecutor(4, thread_name_prefix="mopidy-tidal-images-") as pool:
             pool_res = pool.map(images_getter, uris)
 
-        images = {uri: item_images for uri, item_images in pool_res}
-
+        images = {uri: item_images for uri, item_images in pool_res if item_images}
         images_getter.cache_update(images)
         return images
 

@@ -9,9 +9,15 @@ Mopidy Extension for Tidal music service integration.
 ## Installation
 First install and configure Mopidy as per the instructions listed [here](https://docs.mopidy.com/en/latest/installation/). It is encouraged to install Mopidy as a systemd service, as per the instructions listed [here](https://docs.mopidy.com/en/latest/running/service/). 
 
-After installing Mopidy, you can now proceed installing the plugins, including Mopidy-Tidal. :
+After installing Mopidy, you can now proceed installing the plugins that you require, including Mopidy-Tidal. :
 ```
 sudo pip3 install Mopidy-Tidal
+```
+
+Poetry can also be used to install mopidy-tidal and its dependencies.
+```
+cd <mopidy-tidal source root>
+poetry install
 ```
 
 ##### Note: Make sure to install the Mopidy-Tidal plugin in the same python venv used by your Mopidy installation. Otherwise, the plugin will NOT be detected.
@@ -76,8 +82,9 @@ sudo systemctl restart mopidy
 
 ### Parameters
 
-**Quality:** Set to LOSSLESS, HIGH or LOW. Hi_RES(master) is currently not supported.
-Lossless quality (FLAC) requires Tidal HiFi Subscription.
+**Quality:** Set to either HI_RES, LOSSLESS, HIGH or LOW. 
+
+Note: `HI_RES` quality  (i.e. master) requires a Tidal HiFi Plus subscription, while `LOSSLESS` quality (i.e. HiFi lossless) requires a HiFi subscription.
 
 **client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
@@ -277,6 +284,9 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 - [Python-Tidal issue tracker](https://github.com/tamland/python-tidal/issues)
 
 ### Changelog
+
+#### v0.3.3
+- Added HI_RES (lossless master FLAC quality)
 
 #### v0.3.2
 - Implemented a configurable `playlist_cache_refresh_secs`

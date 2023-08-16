@@ -10,6 +10,7 @@ if TYPE_CHECKING:  # pragma: no cover
 import logging
 
 from mopidy import backend
+from tidalapi import Quality
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,14 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
         parts = uri.split(":")
         track_id = int(parts[4])
         session = self.backend.session
+        if session.config.quality == Quality.hi_res_lossless:
+            if "HIRES_LOSSLESS" in session.track(track_id).media_metadata_tags:
+                logger.info("Playback quality: %s", session.config.quality)
+            else:
+                logger.info(
+                    "No HI_RES available for this track; Using playback quality: %s",
+                    "LOSSLESS",
+                )
 
         newurl = session.track(track_id).get_url()
         logger.info("transformed into %s", newurl)
