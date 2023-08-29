@@ -1,5 +1,8 @@
 # Changelog
 
+#### v0.3.4
+- Added support for navigating For You, Explore pages.
+
 #### v0.3.3
 - Added HI_RES_LOSSLESS quality (Requires HiFi+ subscription)
 
