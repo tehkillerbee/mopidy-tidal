@@ -3,12 +3,16 @@ from __future__ import unicode_literals
 import logging
 
 from mopidy.models import Ref
+from tidalapi import Album, Artist, Mix, Playlist, Track
 
 logger = logging.getLogger(__name__)
 
 
 def create_root():
     return [
+        # Ref.directory(uri="tidal:home", name="Home"), This page takes forever to load...
+        Ref.directory(uri="tidal:for_you", name="For You"),
+        Ref.directory(uri="tidal:explore", name="Explore"),
         Ref.directory(uri="tidal:genres", name="Genres"),
         Ref.directory(uri="tidal:moods", name="Moods"),
         Ref.directory(uri="tidal:mixes", name="Mixes"),
@@ -55,6 +59,56 @@ def create_genres(tidal_genres):
 def create_genre(tidal_genre):
     genre_id = tidal_genre.path
     return Ref.directory(uri="tidal:genre:" + genre_id, name=tidal_genre.name)
+
+
+def create_mixed_directory(tidal_mixed):
+    res = [create_mixed_entry(m) for m in tidal_mixed]
+    # Remove None/Unsupported entries
+    res_filtered = [i for i in res if i is not None]
+    return res_filtered
+
+
+def create_mixed_entry(tidal_mixed):
+    if isinstance(tidal_mixed, Mix):
+        return Ref.playlist(
+            uri="tidal:mix:" + tidal_mixed.id,
+            name=f"{tidal_mixed.title} ({tidal_mixed.sub_title})",
+        )
+    elif isinstance(tidal_mixed, Album):
+        return Ref.album(
+            uri="tidal:album:" + str(tidal_mixed.id),
+            name=f"{tidal_mixed.name} ({tidal_mixed.artist.name})",
+        )
+    elif isinstance(tidal_mixed, Playlist):
+        return Ref.playlist(
+            uri="tidal:playlist:" + str(tidal_mixed.id),
+            name=f"{tidal_mixed.name}",
+        )
+    elif isinstance(tidal_mixed, Track):
+        return create_track(tidal_mixed)
+    elif isinstance(tidal_mixed, Artist):
+        return create_artist(tidal_mixed)
+    else:
+        if hasattr(tidal_mixed, "api_path"):
+            # Objects containing api_path are usually pages and must be processed further
+            return Ref.directory(
+                uri="tidal:page:" + tidal_mixed.api_path, name=tidal_mixed.title
+            )
+        elif hasattr(tidal_mixed, "artifact_id"):
+            # Objects containing artifact_id can be viewed directly
+            explore_id = tidal_mixed.artifact_id
+            name = f"{tidal_mixed.short_header} ({tidal_mixed.short_sub_header})"
+            if tidal_mixed.type == "PLAYLIST":
+                return Ref.playlist(
+                    uri="tidal:playlist:" + explore_id,
+                    name=name,
+                )
+            else:
+                # Unsupported type (eg. interview, exturl)
+                return None
+        else:
+            # Unsupported type (eg. Video)
+            return None
 
 
 def create_mixes(tidal_mixes):
