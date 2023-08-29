@@ -7,7 +7,7 @@ from importlib import metadata
 
 from mopidy import config, ext
 
-__version__ = metadata.version("mopidy_tidal")
+__version__ = "0.3.3"
 
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
