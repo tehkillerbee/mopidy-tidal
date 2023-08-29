@@ -80,27 +80,33 @@ Restart the Mopidy service after adding the Tidal configuration
 sudo systemctl restart mopidy
 ```
 
-### Parameters
+### Plugin configuration
+The plugin configuration is usually set in your mopidy configuration:
+```
+[tidal]
+enabled = true
+quality = LOSSLESS
+#playlist_cache_refresh_secs = 0
+lazy = true
+login_method = HACK
+#client_id =
+#client_secret =
+```
+* **quality:** Set to either HI_RES_LOSSLESS, LOSSLESS, HIGH or LOW. Make sure to use a quality level supported by your current subscription
 
-**Quality:** Set to either HI_RES, LOSSLESS, HIGH or LOW. 
+    * Note: `HI_RES_LOSSLESS` quality  (i.e. Max quality) requires a Tidal HiFi Plus subscription, while `LOSSLESS` quality (i.e. HiFi lossless) requires a HiFi subscription.
 
-Note: `HI_RES` quality  (i.e. master) requires a Tidal HiFi Plus subscription, while `LOSSLESS` quality (i.e. HiFi lossless) requires a HiFi subscription.
-
-**client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
-
-**playlist_cache_refresh_secs (Optional):** Tells if (and how often) playlist
+* **playlist_cache_refresh_secs (Optional):** Tells if (and how often) playlist
 content should be refreshed upon lookup.
+  * `0` (default): The default value (`0`) means that playlists won't be refreshed after the
+  extension has started, unless they are explicitly modified from mopidy.
+  * `>0`: A non-zero value expresses for how long (in seconds) a cached playlist is
+  considered valid. For example, a value of `300` means that the cached snapshot
+  of a playlist will be used if a new `lookup` occurs within 5 minutes from the
+  previous one, but the playlist will be re-loaded via API if a lookup request
+  occurs later.
 
-The default value (`0`) means that playlists won't be refreshed after the
-extension has started, unless they are explicitly modified from mopidy.
-
-A non-zero value expresses for how long (in seconds) a cached playlist is
-considered valid. For example, a value of `300` means that the cached snapshot
-of a playlist will be used if a new `lookup` occurs within 5 minutes from the
-previous one, but the playlist will be re-loaded via API if a lookup request
-occurs later.
-
-The preferred setting for this value is a trade-off between UI responsiveness
+  The preferred setting for this value is a trade-off between UI responsiveness
 and responsiveness to changes. If you perform a lot of playlist changes from
 other clients and you want your playlists to be instantly updated on mopidy,
 then you may choose a low value for this setting, albeit this will result in
@@ -113,37 +119,40 @@ to be reflected in the loaded playlists, but the UI will be more responsive
 when playlists are looked up. A value of zero makes the behaviour of
 `mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
 
-**lazy (Optional):**: Whether to connect lazily, i.e. when required, rather than
-at startup.  In lazy mode Mopidy-Tidal will only try to connect when something
-tries to access a resource provided by Tidal.  Since failed connections due to
-network errors do not overwrite cached credentials (see below) and Mopidy
-handles exceptions in plugins gracefully, lazy mode allows Mopidy to continue to
-run even with intermittent or non-existent network access (although you will
-obviously be unable to play any streamed music if you cannot access the
-network).  When the network comes back Mopidy will be able to play tidal content
-again.  This may be desirable on mobile internet connections, or when a server
-is used with multiple backends and a failure with Tidal should not prevent
-other services from running.
-
-Lazy mode is off by default for backwards compatibility and to make the first
-login easier (since mopidy will not block in lazy mode until you try to access
-Tidal).
+* **lazy (Optional):**: Whether to connect lazily, i.e. when required, rather than
+at startup.
+  * `false` (default): Lazy mode is off by default for backwards compatibility and to make the first login easier (since mopidy will not block in lazy mode until you try to access Tidal).
+  * `true`: Mopidy-Tidal will only try to connect when something
+  tries to access a resource provided by Tidal.  
+  
+  Since failed connections due to
+  network errors do not overwrite cached credentials (see below) and Mopidy
+  handles exceptions in plugins gracefully, lazy mode allows Mopidy to continue to
+  run even with intermittent or non-existent network access (although you will
+  obviously be unable to play any streamed music if you cannot access the
+  network).  When the network comes back Mopidy will be able to play tidal content
+  again.  This may be desirable on mobile internet connections, or when a server
+  is used with multiple backends and a failure with Tidal should not prevent
+  other services from running.
+* **login_method (Optional):**: This setting configures the OAuth login process. 
+  * `BLOCK` (block): The user is REQUIRED to complete the OAuth login flow, otherwise mopidy will hang.
+  * `HACK`: Mopidy will start as usual but the user will be prompted to complete the OAuth login flow. The link is provided through a dummy track (i.e. HACK)
+* **client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
 ## OAuth Flow
+The first time you use the plugin, you will have to use the OAuth flow to login.:
 
-Using the OAuth flow, you have to visit a link to connect the mopidy app to your Tidal account.
-
-1. When you restart the Mopidy server, check the latest systemd logs and find a line like:
+1. After restarting the Mopidy server, check the latest systemd logs and find a line like:
 ```
 journalctl -u mopidy | tail -10
 ...
 Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
-2. Go to that link in your browser, approve it, and that should be it.
+2. Visit the link to connect the mopidy tidal plugin to your Tidal account.
 
 The OAuth session will be reloaded automatically when Mopidy is restarted. It
 will be necessary to perform these steps again if/when the session expires or if
-the json file is moved.
+the json file is moved/deleted.
 
 ##### Note: Login process is a **blocking** action, so Mopidy + Web interface will stop loading until you approve the application.
 
@@ -286,7 +295,7 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 ### Changelog
 
 #### v0.3.3
-- Added HI_RES (lossless master FLAC quality)
+- Added HI_RES_LOSSLESS quality (Requires HiFi+ subscription)
 
 #### v0.3.2
 - Implemented a configurable `playlist_cache_refresh_secs`
