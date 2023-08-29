@@ -6,7 +6,19 @@
 
 Mopidy Extension for Tidal music service integration.
 
-## Installation
+### Changelog
+Find the latest changelog [here](CHANGELOG.md)
+
+### Contributions
+- Current maintainer: [tehkillerbee](https://github.com/tehkillerbee)
+- Original author: [mones88](https://github.com/mones88)
+- [Contributors](https://github.com/tehkillerbee/mopidy-tidal/graphs/contributors)
+
+Questions related to Mopidy-Tidal, feature suggestions, bug reports and Pull Requests are very welcome.
+
+If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check [Python-Tidal/Tidalapi repository](https://github.com/tamland/python-tidal) for relevant issues.
+
+## Getting started
 First install and configure Mopidy as per the instructions listed [here](https://docs.mopidy.com/en/latest/installation/). It is encouraged to install Mopidy as a systemd service, as per the instructions listed [here](https://docs.mopidy.com/en/latest/running/service/). 
 
 After installing Mopidy, you can now proceed installing the plugins that you require, including Mopidy-Tidal. :
@@ -139,7 +151,7 @@ at startup.
   * `HACK`: Mopidy will start as usual but the user will be prompted to complete the OAuth login flow. The link is provided through a dummy track (i.e. HACK)
 * **client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
-## OAuth Flow
+### OAuth Flow
 The first time you use the plugin, you will have to use the OAuth flow to login.:
 
 1. After restarting the Mopidy server, check the latest systemd logs and find a line like:
@@ -167,189 +179,10 @@ by inspecting the specific failure from `python-tidal`) would probably be more
 fragile.
 
 ## Development
-### Installation
-
-- [Install poetry](https://python-poetry.org/docs/#installation)
-- run `poetry install` to install all dependencies, including for development
-- run `poetry shell` to activate the virtual environment
-
-## Test Suite
-Mopidy-Tidal has a test suite which currently has 100% coverage.  Ideally
-contributions would come with tests to keep this coverage up, but we can help in
-writing them if need be.
-
-Install using poetry, and then run:
-
-```bash
-pytest tests/ -k "not gt_3_10" --cov=mopidy_tidal --cov-report=html
---cov-report=term-missing --cov-branch
-```
-
-substituting the correct python version (e.g. `-k "not gt_3.8"`).  This is
-unlikely to be necessary beyond 3.9 as the python language has become very
-standard.  It's only really needed to exclude a few tests which check that
-dict-like objects behave the way modern dicts do, with `|`.
-
-If you are on *nix, you can simply run:
-
-```bash
-make test
-```
-
-Currently the code is not very heavily documented.  The easiest way to see how
-something is supposed to work is probably to have a look at the tests.
-
-
-### Code Style
-Code should be formatted with `isort` and `black`:
-
-```bash
-isort --profile=black mopidy_tidal tests
-black mopidy_tidal tests
-```
-
-if you are on *nix you can run:
-
-```bash
-make format
-```
-
-The CI workflow will fail on linting as well as test failures.
-
-### Installing a development version system-wide
-
-```bash
-rm -rf dist
-poetry build
-pip install dist/*.whl
-```
-
-This installs the built package, without any of the development dependencies.
-If you are on *nix you can just run:
-
-```bash
-make install
-```
-
-### Running mopidy against development code
-
-Mopidy can be run against a local (development) version of Mopidy-Tidal.  There
-are two ways to do this: using the system mopidy installation to provide audio
-support, or installing `PyGObject` inside the virtualenv.  The former is
-recommended by Mopidy; the latter is used in our integration tests for two reasons:
-
-- at the time of writing, poetry system-site-packages support is broken
-- when integration testing, the version of PyGObject should be pinned (reproducible builds)
-
-To install a completely isolated mopidy inside the virtualenv with `PyGObject`,
-`mopidy-local` and `mopidy-iris` run
-
-```bash
-poetry install --with complete
-```
-
-This will compile a shim for gobject.  On any system other than a Raspberry
-pi this will not take more than a minute, and is a once off.
-
-Alternatively you can use a virtualenv which can see system-site-packages (which
-still needs mopidy installed locally, as plugins use pip to register
-themselves).  Until [#6035](https://github.com/python-poetry/poetry/issues/6035)
-is resolved this requires a hack:
-
-```bash
-python -m venv .venv --system-site-packages
-source ".venv/bin/activate" #or activate.csh or activate.fish or activate.ps1 as required
-poetry install
-```
-
-*nix users can just run
-
-```bash
-make system-venv
-source ".venv/bin/activate" #or activate.csh or activate.fish
-```
-(Make runs in a subshell and cannot modify the parent shell, so there's no way
-by design of entering the venv permanently from within the makefile.)
-
-
-In either case, run `mopidy` inside the virtualenv to launch mopidy with your
-development version of Mopidy-Tidal.
-
-## Contributions
-Source contributions, suggestions and pull requests are very welcome.
-
-If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check [Python-Tidal/Tidalapi repository](https://github.com/tamland/python-tidal) for relevant issues.
-
-### Contributor(s)
-- Current maintainer: [tehkillerbee](https://github.com/tehkillerbee)
-- Original author: [mones88](https://github.com/mones88)
-- [Contributors](https://github.com/tehkillerbee/mopidy-tidal/graphs/contributors)
-
+Please see the [development guidelines](DEVELOPMENT.md) to get you started.
 
 ### Project resources
 - [Source code](https://github.com/tehkillerbee/mopidy-tidal)
 - [Issue tracker](https://github.com/tehkillerbee/mopidy-tidal/issues)
 - [Python-Tidal repository](https://github.com/tamland/python-tidal)
 - [Python-Tidal issue tracker](https://github.com/tamland/python-tidal/issues)
-
-### Changelog
-
-#### v0.3.3
-- Added HI_RES_LOSSLESS quality (Requires HiFi+ subscription)
-
-#### v0.3.2
-- Implemented a configurable `playlist_cache_refresh_secs`
-- Replace colons in cache filenames with hyphens to add FAT32/NTFS compatibility
-
-(Thanks [BlackLight](https://github.com/BlackLight) for the above PRs)
-
-#### v0.3.1
-- Added support for tidalapi 0.7.x. Tidalapi >=0.7.x is now required.
-- Added support for Moods, Mixes, track/album release date.
-- Speed, cache improvements and Iris bugfixes.
-- Overhauled Test suite
-- Support for playlist editing
-
-(Major thanks [BlackLight](https://github.com/BlackLight) and [2e0byo](https://github.com/2e0byo) for the above improvements and all testers involved)
-
-#### v0.2.8
-- Major caching improvements to avoid slow intialization at startup. Code cleanup, bugfixes and refactoring (Thanks [BlackLight](https://github.com/BlackLight), [fmarzocca](https://github.com/fmarzocca))
-- Reduced default album art, author and track image size.
-- Improved Iris integration
-
-#### v0.2.7
-- Use path extension for Tidal OAuth cache file
-- Improved error handling for missing images, unplayable albums
-- Improved playlist browsing
-
-#### v0.2.6
-- Improved reliability of OAuth cache file generation.
-- Added optional client_id & client_secret to [tidal] in mopidy config (thanks Glog78)
-- Removed username/pass, as it is not needed by OAuth (thanks tbjep)
-
-#### v0.2.5
-- Reload existing OAuth session on Mopidy restart
-- Added OAuth login support from tidalapi (thanks to greggilbert)
-
-#### v0.2.4
-- Added track caching (thanks to MrSurly and kingosticks)
-
-#### v0.2.3
-- fixed python 3 compatibility issues
-- Change dependency tidalapi4mopidy back to tidalapi (thanks to stevedenman)
-
-#### v0.2.2
-- added support browsing of favourite tracks, moods, genres and playlists (thanks to SERVCUBED)
-
-#### v0.2.1
-- implemented get_images method
-- updated tidal's api key
-
-#### v0.2.0
-- playlist support (read-only)
-- implemented artists lookup
-- high and low quality streams should now work correctly
-- cache search results (to be improved in next releases)
-
-#### v0.1.0
-- Initial release.
