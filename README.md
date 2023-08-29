@@ -18,6 +18,9 @@ Questions related to Mopidy-Tidal, feature suggestions, bug reports and Pull Req
 
 If you are experiencing playback issues unrelated to this plugin, please report this to the Mopidy-Tidal issue tracker and/or check [Python-Tidal/Tidalapi repository](https://github.com/tamland/python-tidal) for relevant issues.
 
+### Development guidelines
+Please refer to [this document](DEVELOPMENT.md) to get you started.
+
 ## Getting started
 First install and configure Mopidy as per the instructions listed [here](https://docs.mopidy.com/en/latest/installation/). It is encouraged to install Mopidy as a systemd service, as per the instructions listed [here](https://docs.mopidy.com/en/latest/running/service/). 
 
@@ -177,12 +180,3 @@ unnecessarily requests new credentials.  This bug has never been reported in the
 wild and is only mildly annoying, whereas any logic to detect it (for instance
 by inspecting the specific failure from `python-tidal`) would probably be more
 fragile.
-
-## Development
-Please see the [development guidelines](DEVELOPMENT.md) to get you started.
-
-### Project resources
-- [Source code](https://github.com/tehkillerbee/mopidy-tidal)
-- [Issue tracker](https://github.com/tehkillerbee/mopidy-tidal/issues)
-- [Python-Tidal repository](https://github.com/tamland/python-tidal)
-- [Python-Tidal issue tracker](https://github.com/tamland/python-tidal/issues)
