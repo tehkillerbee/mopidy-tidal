@@ -109,7 +109,7 @@ def test_get_distinct_album_no_results(library_provider, backend, mocker, field)
 
 
 @pytest.mark.parametrize("field", ("album", "albumartist"))
-def test_get_distinct_album_new_api(library_provider, backend, mocker, field):
+def test_get_distinct_album(library_provider, backend, mocker, field):
     session = backend.session
     session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
 
@@ -132,7 +132,7 @@ def test_get_distinct_album_new_api(library_provider, backend, mocker, field):
 
 
 @pytest.mark.parametrize("field", ("album", "albumartist"))
-def test_get_distinct_album_new_api_no_artist(library_provider, backend, mocker, field):
+def test_get_distinct_album_no_artist(library_provider, backend, mocker, field):
     session = backend.session
     session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
 
@@ -207,7 +207,7 @@ def test_browse_playlists(library_provider, backend, mocker):
     as_list.assert_called_once_with()
 
 
-def test_moods_new_api(library_provider, backend, mocker):
+def test_moods(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(("moods",))
     mood = mocker.Mock(spec=("title", "title", "api_path"))
@@ -220,7 +220,7 @@ def test_moods_new_api(library_provider, backend, mocker):
     session.moods.assert_called_once_with()
 
 
-def test_mixes_new_api(library_provider, backend, mocker):
+def test_mixes(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(("mixes",))
     mix = mocker.Mock()
@@ -234,7 +234,7 @@ def test_mixes_new_api(library_provider, backend, mocker):
     session.mixes.assert_called_once_with()
 
 
-def test_genres_new_api(library_provider, backend, mocker):
+def test_genres(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(
         (
@@ -252,7 +252,7 @@ def test_genres_new_api(library_provider, backend, mocker):
     session.genre.get_genres.assert_called_once_with()
 
 
-def test_specific_album_new_api(library_provider, backend, mocker, tidal_albums):
+def test_specific_album(library_provider, backend, mocker, tidal_albums):
     session = backend.session
     session.mock_add_spec(("album",))
     album = tidal_albums[0]
@@ -264,7 +264,7 @@ def test_specific_album_new_api(library_provider, backend, mocker, tidal_albums)
     album.tracks.assert_called_once_with()
 
 
-def test_specific_album_new_api_none(library_provider, backend, mocker):
+def test_specific_album_none(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(("album",))
     session.album.return_value = None
@@ -272,7 +272,7 @@ def test_specific_album_new_api_none(library_provider, backend, mocker):
     session.album.assert_called_once_with("1")
 
 
-def test_specific_playlist_new_api(library_provider, backend, mocker, tidal_tracks):
+def test_specific_playlist(library_provider, backend, mocker, tidal_tracks):
     session = backend.session
     session.mock_add_spec(("playlist",))
     playlist = mocker.Mock(name="Playlist")
@@ -290,7 +290,7 @@ def test_specific_playlist_new_api(library_provider, backend, mocker, tidal_trac
     playlist.tracks.assert_has_calls([mocker.call(100, 0)])
 
 
-def test_specific_mood_new_api(library_provider, backend, mocker):
+def test_specific_mood(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(("moods",))
     playlist = mocker.Mock()
@@ -312,7 +312,7 @@ def test_specific_mood_new_api(library_provider, backend, mocker):
     mood.get.assert_called_once_with()
 
 
-def test_specific_mood_new_api_none(library_provider, backend, mocker, tidal_tracks):
+def test_specific_mood_none(library_provider, backend, mocker, tidal_tracks):
     session = backend.session
     session.mock_add_spec(("moods",))
     playlist_2 = mocker.Mock()
@@ -321,7 +321,7 @@ def test_specific_mood_new_api_none(library_provider, backend, mocker, tidal_tra
     assert not library_provider.browse("tidal:mood:1")
 
 
-def test_specific_genre_new_api(library_provider, backend, mocker):
+def test_specific_genre(library_provider, backend, mocker):
     session = backend.session
     session.mock_add_spec(("genre", "genre.get_genres"))
     playlist = mocker.Mock()
@@ -342,7 +342,7 @@ def test_specific_genre_new_api(library_provider, backend, mocker):
     genre.items.assert_called_once_with(Playlist)
 
 
-def test_specific_genre_new_api_none(library_provider, backend, mocker, tidal_tracks):
+def test_specific_genre_none(library_provider, backend, mocker, tidal_tracks):
     session = backend.session
     session.mock_add_spec(("genre", "genre.get_genres"))
     playlist_2 = mocker.Mock()
@@ -376,7 +376,7 @@ def test_specific_mix_none(library_provider, backend, mocker):
     session.mixes.assert_called_once_with()
 
 
-def test_specific_artist_new_api(
+def test_specific_artist(
     library_provider, backend, mocker, tidal_albums, tidal_artists
 ):
     session = backend.session

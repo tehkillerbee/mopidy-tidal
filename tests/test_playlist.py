@@ -262,7 +262,7 @@ def api_test(tpp, mocker, api_method, tp):
     )
 
 
-def test_refresh_new_api(tpp, mocker):
+def test_refresh(tpp, mocker):
     tpp, backend = tpp
     session = backend.session
     session.mock_add_spec([])
