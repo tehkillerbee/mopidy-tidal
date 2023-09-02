@@ -539,7 +539,6 @@ def test_lookup_artist_cached(tlp, mocker, tidal_tracks, compare):
     session.artist.assert_called_once_with("1")
 
 
-@pytest.mark.gt_3_7
 def test_lookup_playlist(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend.session
@@ -557,7 +556,6 @@ def test_lookup_playlist(tlp, mocker, tidal_tracks, compare):
     assert len(playlist.tracks.mock_calls) == 5, "Didn't run five fetches in parallel."
 
 
-@pytest.mark.gt_3_7
 def test_lookup_playlist_cached(tlp, mocker, tidal_tracks, compare):
     tlp, backend = tlp
     session = backend.session

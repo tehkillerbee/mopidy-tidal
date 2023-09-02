@@ -57,8 +57,6 @@ def test_update(lru_cache):
     assert "tidal:uri:nonesuch" not in lru_cache
 
 
-@pytest.mark.gt_3_7
-@pytest.mark.gt_3_8
 def test_newstyle_update(lru_cache):
     assert "tidal:uri:val" not in lru_cache
     lru_cache |= {"tidal:uri:val": "hi", "tidal:uri:otherval": 17}

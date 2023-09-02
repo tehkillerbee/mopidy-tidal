@@ -8,7 +8,6 @@ from mopidy_tidal.playback import TidalPlaybackProvider
 from mopidy_tidal.playlists import TidalPlaylistsProvider
 
 
-@pytest.mark.gt_3_7
 def test_composition(get_backend):
     backend, *_ = get_backend()
     assert isinstance(backend.playback, TidalPlaybackProvider)
@@ -16,7 +15,6 @@ def test_composition(get_backend):
     assert isinstance(backend.playlists, TidalPlaylistsProvider)
 
 
-@pytest.mark.gt_3_7
 def test_setup(get_backend):
     backend, config, *_ = get_backend()
     assert tuple(backend.uri_schemes) == ("tidal",)  # TODO: why is this muteable?
@@ -24,7 +22,6 @@ def test_setup(get_backend):
     assert backend._config is config
 
 
-@pytest.mark.gt_3_7
 def test_initial_login_caches_credentials(get_backend, config):
     backend, _, _, _, session = get_backend(config=config)
     session.check_login.return_value = False
@@ -48,7 +45,6 @@ def test_initial_login_caches_credentials(get_backend, config):
     session.login_oauth_simple.assert_called_once()
 
 
-@pytest.mark.gt_3_7
 def test_login_after_failed_cached_credentials_overwrites_cached_credentials(
     get_backend, config
 ):
@@ -81,7 +77,6 @@ def test_login_after_failed_cached_credentials_overwrites_cached_credentials(
     session.login_oauth_simple.assert_called_once()
 
 
-@pytest.mark.gt_3_7
 def test_failed_login_does_not_overwrite_cached_credentials(
     get_backend, mocker, config, tmp_path
 ):
@@ -106,7 +101,6 @@ def test_failed_login_does_not_overwrite_cached_credentials(
     session.login_oauth_simple.assert_called_once()
 
 
-@pytest.mark.gt_3_7
 def test_failed_overall_login_throws_error(get_backend, tmp_path, mocker, config):
     backend, _, _, _, session = get_backend(config=config)
     session.check_login.return_value = False
@@ -117,7 +111,6 @@ def test_failed_overall_login_throws_error(get_backend, tmp_path, mocker, config
     assert not authf.exists()
 
 
-@pytest.mark.gt_3_7
 def test_logs_in(get_backend, mocker, config):
     backend, _, _, session_factory, session = get_backend(config=config)
     backend._active_session = session
@@ -135,7 +128,6 @@ def test_logs_in(get_backend, mocker, config):
     assert config_obj.client_secret == config["tidal"]["client_secret"]
 
 
-@pytest.mark.gt_3_7
 def test_accessing_session_triggers_lazy_login(get_backend, mocker, config):
     config["tidal"]["lazy"] = True
     backend, _, _, session_factory, session = get_backend(config=config)
@@ -157,7 +149,6 @@ def test_accessing_session_triggers_lazy_login(get_backend, mocker, config):
     assert config_obj.client_secret == config["tidal"]["client_secret"]
 
 
-@pytest.mark.gt_3_7
 def test_logs_in_only_client_secret(get_backend, mocker, config):
     config["tidal"]["client_id"] = ""
     backend, _, _, session_factory, session = get_backend(config=config)
@@ -179,7 +170,6 @@ def test_logs_in_only_client_secret(get_backend, mocker, config):
     )
 
 
-@pytest.mark.gt_3_7
 def test_logs_in_default_id_secret(get_backend, mocker, config):
     config["tidal"]["client_id"] = ""
     config["tidal"]["client_secret"] = ""
