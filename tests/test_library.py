@@ -165,6 +165,8 @@ def test_browse_wrong_uri(tlp):
 def test_browse_root(tlp):
     tlp, backend = tlp
     assert tlp.browse("tidal:directory") == [
+        Ref(name="For You", type="directory", uri="tidal:for_you"),
+        Ref(name="Explore", type="directory", uri="tidal:explore"),
         Ref(name="Genres", type="directory", uri="tidal:genres"),
         Ref(name="Moods", type="directory", uri="tidal:moods"),
         Ref(name="Mixes", type="directory", uri="tidal:mixes"),
