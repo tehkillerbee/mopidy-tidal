@@ -162,38 +162,38 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
         if not query:  # library root
             if field in {"artist", "albumartist"}:
-                return [
+                return {
                     apply_watermark(a.name) for a in session.user.favorites.artists()
-                ]
+                }
             elif field == "album":
-                return [
+                return {
                     apply_watermark(a.name) for a in session.user.favorites.albums()
-                ]
+                }
             elif field in {"track", "track_name"}:
-                return [
+                return {
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
-                ]
+                }
         else:
             if field == "artist":
-                return [
+                return {
                     apply_watermark(a.name) for a in session.user.favorites.artists()
-                ]
+                }
             elif field in {"album", "albumartist"}:
                 artists, _, _ = tidal_search(session, query=query, exact=True)
                 if len(artists) > 0:
                     artist = artists[0]
                     artist_id = artist.uri.split(":")[2]
-                    return [
+                    return {
                         apply_watermark(a.name)
                         for a in self._get_artist_albums(session, artist_id)
-                    ]
+                    }
             elif field in {"track", "track_name"}:
-                return [
+                return {
                     apply_watermark(t.name) for t in session.user.favorites.tracks()
-                ]
+                }
             pass
 
-        return []
+        return set()
 
     @login_hack
     def browse(self, uri) -> list[Ref]:

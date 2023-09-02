@@ -75,8 +75,8 @@ def test_get_distinct_root(library_provider, backend, mocker, field):
     thing.name = "Thing"
     session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
     res = library_provider.get_distinct(field)
-    assert res[0] == "Thing [TIDAL]"
     assert len(res) == 1
+    assert res.pop() == "Thing [TIDAL]"
 
 
 def test_get_distinct_root_nonsuch(library_provider, mocker):
@@ -94,8 +94,8 @@ def test_get_distinct_ignore_query(library_provider, backend, mocker, field):
     thing.name = "Thing"
     session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
     res = library_provider.get_distinct(field, query={"any": "any"})
-    assert res[0] == "Thing [TIDAL]"
     assert len(res) == 1
+    assert res.pop() == "Thing [TIDAL]"
 
 
 @pytest.mark.parametrize("field", ("album", "albumartist"))
@@ -128,7 +128,7 @@ def test_get_distinct_album(library_provider, backend, mocker, field):
     session.artist.assert_called_once_with("1")
     artist.get_albums.assert_called_once_with()
     assert len(res) == 1
-    assert res[0] == "Thing [TIDAL]"
+    assert res.pop() == "Thing [TIDAL]"
 
 
 @pytest.mark.parametrize("field", ("album", "albumartist"))
