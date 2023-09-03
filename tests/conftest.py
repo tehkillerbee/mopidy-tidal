@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Optional
 from unittest.mock import Mock
 
 import pytest
@@ -82,8 +82,8 @@ def _make_tidal_track(
     id: int,
     artist: Artist,
     album: Album,
-    name: str | None = None,
-    duration: int | None = None,
+    name: Optional[str] = None,
+    duration: Optional[int] = None,
 ):
     track = Mock(spec=Track, name=next(track_counter))
     track.id = id
@@ -97,7 +97,7 @@ def _make_tidal_track(
     return track
 
 
-def _make_tidal_artist(*, name: str, id: int, top_tracks: list[Track] | None = None):
+def _make_tidal_artist(*, name: str, id: int, top_tracks: Optional[list[Track]] = None):
     """A list of tidal artists."""
     artist = Mock(spec=Artist, name=next(artist_counter))
     artist.id = id  # Can't set id when making a mock
@@ -106,7 +106,7 @@ def _make_tidal_artist(*, name: str, id: int, top_tracks: list[Track] | None = N
     return artist
 
 
-def _make_tidal_album(*, name: str, id: int, tracks: list[dict] | None = None):
+def _make_tidal_album(*, name: str, id: int, tracks: Optional[list[dict]] = None):
     album = Mock(spec=Album, name=next(album_counter))
     album.name = name
     album.id = id
