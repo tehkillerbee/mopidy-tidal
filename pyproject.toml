@@ -51,6 +51,8 @@ tidal = "mopidy_tidal:Extension"
 [tool.pytest.ini_options]
 markers = [
     "gt_3_10: Mark a test as requiring python > 3.10.",
+    "poor_test: Mark a test in need of improvement",
+    "insufficiently_decoupled: Mark a test as insufficiently decoupled from implementation",
 ]
 filterwarnings = [
     "error::DeprecationWarning:mopidy[.*]",
