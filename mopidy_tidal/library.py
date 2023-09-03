@@ -299,7 +299,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 return []
 
         except ValueError:
-            logger.error("Unable to parse uri '%s' for browse.", uri)
+            logger.exception("Unable to parse uri '%s' for browse.", uri)
             return []
 
     @login_hack
