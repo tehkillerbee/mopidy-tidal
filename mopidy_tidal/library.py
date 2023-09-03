@@ -301,6 +301,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         except ValueError:
             logger.exception("Unable to parse uri '%s' for browse.", uri)
             return []
+        except HTTPError:
+            logger.exception("Unable to retrieve object from uri '%s'", uri)
+            return []
 
     @login_hack
     def search(self, query=None, uris=None, exact=False) -> Optional[SearchResult]:
