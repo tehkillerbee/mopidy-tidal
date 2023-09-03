@@ -2,9 +2,12 @@ from typing import Iterable
 from unittest.mock import Mock
 
 import pytest
+from tidalapi import Genre, Session
 from tidalapi.album import Album
 from tidalapi.artist import Artist
 from tidalapi.media import Track
+from tidalapi.mix import Mix
+from tidalapi.page import Page, PageCategory
 from tidalapi.playlist import UserPlaylist
 
 from mopidy_tidal import context
@@ -58,18 +61,102 @@ def tidal_search(config, mocker):
     yield tidal_search
 
 
-def make_track(track_id, artist, album):
-    track = Mock(spec=Track, name=f"Track: {track_counter()}")
-    track.id = track_id
-    track.name = f"Track-{track_id}"
-    track.full_name = f"{track.name} (version)"
+def counter(msg: str):
+    """A counter for providing sequential names."""
+    x = 0
+    while True:
+        yield msg.format(x)
+        x += 1
+
+
+# Giving each mock a unique name really helps when inspecting funny behaviour.
+track_counter = counter("Mock Track #{}")
+album_counter = counter("Mock Album #{}")
+artist_counter = counter("Mock Artist #{}")
+page_counter = counter("Mock Page #{}")
+mix_counter = counter("Mock Mix #{}")
+genre_counter = counter("Mock Genre #{}")
+
+
+def _make_tidal_track(
+    id: int,
+    artist: Artist,
+    album: Album,
+    name: str | None = None,
+    duration: int | None = None,
+):
+    track = Mock(spec=Track, name=next(track_counter))
+    track.id = id
+    track.name = name or f"Track-{id}"
     track.artist = artist
     track.album = album
-    track.uri = f"tidal:track:{artist.id}:{album.id}:{track_id}"
-    track.duration = 100 + track_id
-    track.track_num = track_id
-    track.disc_num = track_id
+    track.uri = f"tidal:track:{artist.id}:{album.id}:{id}"
+    track.duration = duration or (100 + id)
+    track.track_num = id
+    track.disc_num = id
     return track
+
+
+def _make_tidal_artist(*, name: str, id: int, top_tracks: list[Track] | None = None):
+    """A list of tidal artists."""
+    artist = Mock(spec=Artist, name=next(artist_counter))
+    artist.id = id  # Can't set id when making a mock
+    artist.get_top_tracks.return_value = top_tracks
+    artist.name = name  # other name was the *mock's* name
+    return artist
+
+
+def _make_tidal_album(*, name: str, id: int):
+    album = Mock(spec=Album, name=next(album_counter))
+    album.name = name
+    album.id = id
+    return album
+
+
+def _make_tidal_page(*, title: str, categories: list[PageCategory], api_path: str):
+    return Mock(spec=Page, title=title, categories=categories, api_path=api_path)
+
+
+def _make_tidal_mix(*, title: str, sub_title: str, id: int):
+    return Mock(
+        spec=Mix, title=title, sub_title=sub_title, name=next(mix_counter), id=str(id)
+    )
+
+
+def _make_tidal_genre(*, name: str, path: str):
+    genre = Mock(sepc=Genre, name=next(genre_counter), path=path)
+    genre.name = name
+    return genre
+
+
+@pytest.fixture()
+def make_tidal_genre():
+    return _make_tidal_genre
+
+
+@pytest.fixture()
+def make_tidal_artist():
+    return _make_tidal_artist
+
+
+@pytest.fixture()
+def make_tidal_album():
+    return _make_tidal_album
+
+
+@pytest.fixture()
+def make_tidal_track():
+    return _make_tidal_track
+
+
+@pytest.fixture()
+def make_tidal_page():
+    return _make_tidal_page
+
+
+@pytest.fixture()
+def make_tidal_mix():
+    return _make_tidal_mix
 
 
 @pytest.fixture()
@@ -82,13 +169,10 @@ def tidal_artists(mocker):
     for i, artist in enumerate(artists):
         artist.id = i
         artist.name = f"Artist-{i}"
-        artist.get_top_tracks.return_value = [make_track((i + 1) * 100, artist, album)]
+        artist.get_top_tracks.return_value = [
+            _make_tidal_track((i + 1) * 100, artist, album)
+        ]
     return artists
-
-
-def track_counter(i=[0]):
-    i[0] += 1
-    return i
 
 
 @pytest.fixture()
@@ -102,7 +186,7 @@ def tidal_albums(mocker):
         album.id = i
         album.name = f"Album-{i}"
         album.artist = artist
-        album.tracks.return_value = [make_track(i, artist, album)]
+        album.tracks.return_value = [_make_tidal_track(i, artist, album)]
     return albums
 
 
@@ -110,7 +194,7 @@ def tidal_albums(mocker):
 def tidal_tracks(mocker, tidal_artists, tidal_albums):
     """A list of tidal tracks."""
     return [
-        make_track(i, artist, album)
+        _make_tidal_track(i, artist, album)
         for i, (artist, album) in enumerate(zip(tidal_artists, tidal_albums))
     ]
 
@@ -203,3 +287,26 @@ def get_backend(mocker):
 
     yield _get_backend
     set_config(None)
+
+
+class SessionForTest(Session):
+    """Session has an attribute genre which is set in __init__ doesn't exist on
+    the class.  Thus mock gets the spec wrong, i.e. forbids access to genre.
+    This is a bug in Session, but until it's fixed we mock it here.
+
+    See https://docs.python.org/3/library/unittest.mock.html#auto-speccing
+
+    Tracked at https://github.com/tamland/python-tidal/issues/192
+    """
+
+    genre = None
+
+
+@pytest.fixture
+def session(mocker):
+    return mocker.Mock(spec=SessionForTest)
+
+
+@pytest.fixture
+def backend(mocker, session):
+    return mocker.Mock(session=session)
