@@ -106,10 +106,13 @@ def _make_tidal_artist(*, name: str, id: int, top_tracks: list[Track] | None = N
     return artist
 
 
-def _make_tidal_album(*, name: str, id: int):
+def _make_tidal_album(*, name: str, id: int, tracks: list[dict] | None = None):
     album = Mock(spec=Album, name=next(album_counter))
     album.name = name
     album.id = id
+    tracks = tracks or []
+    tracks = [_make_tidal_track(**spec, album=album) for spec in tracks]
+    album.tracks.return_value = tracks
     return album
 
 

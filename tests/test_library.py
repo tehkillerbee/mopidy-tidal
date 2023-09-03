@@ -1,5 +1,6 @@
 import pytest
 from mopidy.models import Album, Artist, Image, Ref, SearchResult, Track
+from requests import HTTPError
 from tidalapi.playlist import Playlist
 
 from mopidy_tidal.library import HTTPError, TidalLibraryProvider
@@ -267,24 +268,33 @@ class TestBrowse:
         session.genre.get_genres.assert_called_once_with()
 
 
-def test_specific_album(library_provider, backend, mocker, tidal_albums):
-    session = backend.session
-    session.mock_add_spec(("album",))
-    album = tidal_albums[0]
-    session.album.return_value = album
-    assert library_provider.browse("tidal:album:1") == [
-        Ref(name="Track-0", type="track", uri="tidal:track:1234:0:0")
-    ]
-    session.album.assert_called_once_with("1")
-    album.tracks.assert_called_once_with()
+class TestBrowseAlbum:
+    def test_missing_album_returns_empty_list(self, library_provider, session):
+        session.album.side_effect = HTTPError("No such album")
+        assert library_provider.browse("tidal:album:1") == []
+        session.album.assert_called_once_with("1")
 
-
-def test_specific_album_none(library_provider, backend, mocker):
-    session = backend.session
-    session.mock_add_spec(("album",))
-    session.album.return_value = None
-    assert not library_provider.browse("tidal:album:1")
-    session.album.assert_called_once_with("1")
+    def test_album_returns_tracks(
+        self,
+        library_provider,
+        session,
+        make_tidal_album,
+        make_tidal_artist,
+    ):
+        artist = make_tidal_artist(name="Arty", id=789)
+        album = make_tidal_album(
+            name="Alby",
+            id=17,
+            tracks=[
+                dict(name="Traction", id=17, artist=artist),
+                dict(name="Tracky", id=65, artist=artist),
+            ],
+        )
+        session.album.return_value = album
+        assert library_provider.browse("tidal:album:1") == [
+            Ref(name="Traction", type="track", uri="tidal:track:789:17:17"),
+            Ref(name="Tracky", type="track", uri="tidal:track:789:17:65"),
+        ]
 
 
 def test_specific_playlist(library_provider, backend, mocker, tidal_tracks):
