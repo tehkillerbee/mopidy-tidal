@@ -63,7 +63,7 @@ def create_mopidy_track(artist, album, tidal_track):
     track_len = tidal_track.duration * 1000
     return Track(
         uri=uri,
-        name=tidal_track.name,
+        name=tidal_track.full_name,
         track_no=tidal_track.track_num,
         artists=[artist],
         album=album,
