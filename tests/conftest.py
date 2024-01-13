@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Sized
 from unittest.mock import Mock
 
 import pytest
@@ -13,6 +13,29 @@ from tidalapi.playlist import UserPlaylist
 from mopidy_tidal import context
 from mopidy_tidal.backend import TidalBackend
 from mopidy_tidal.context import set_config
+
+
+def _make_mock(mock: Mock | None = None, **kwargs) -> Mock:
+    """Make a mock with the desired properties.
+
+    This exists to work around name collisions in `Mock(**kwargs)`, which
+    prevents settings some values, such as `name`.  If desired a configured
+    mock can be passed in, in which case this is simply a wrapper around
+    setting attributes.
+
+    >>> from unittest.mock import Mock
+    >>>  # shadowed: sets the *mock name*, not the attribute
+    >>> assert Mock(name="foo").name != "foo"
+    >>> assert make_mock(name="foo").name == "foo"
+    """
+    mock = mock or Mock()
+    for k, v in kwargs.items():
+        setattr(mock, k, v)
+
+    return mock
+
+
+make_mock = pytest.fixture(lambda: _make_mock)
 
 
 @pytest.fixture
@@ -85,33 +108,35 @@ def _make_tidal_track(
     name: Optional[str] = None,
     duration: Optional[int] = None,
 ):
-    track = Mock(spec=Track, name=next(track_counter))
-    track.id = id
-    track.name = name or f"Track-{id}"
-    track.artist = artist
-    track.album = album
-    track.uri = f"tidal:track:{artist.id}:{album.id}:{id}"
-    track.duration = duration or (100 + id)
-    track.track_num = id
-    track.disc_num = id
-    return track
+    return _make_mock(
+        mock=Mock(spec=Track, name=next(track_counter)),
+        id=id,
+        name=name or f"Track-{id}",
+        artist=artist,
+        album=album,
+        uri=f"tidal:track:{artist.id}:{album.id}:{id}",
+        duration=duration or (100 + id),
+        track_num=id,
+        disc_num=id,
+    )
 
 
 def _make_tidal_artist(*, name: str, id: int, top_tracks: Optional[list[Track]] = None):
-    """A list of tidal artists."""
-    artist = Mock(spec=Artist, name=next(artist_counter))
-    artist.id = id  # Can't set id when making a mock
-    artist.get_top_tracks.return_value = top_tracks
-    artist.name = name  # other name was the *mock's* name
-    return artist
+    return _make_mock(
+        make=Mock(spec=Artist, name=next(artist_counter)),
+        **{
+            "id": id,
+            "get_top_tracks.return_value": top_tracks,
+            "name": name,
+        },
+    )
 
 
 def _make_tidal_album(*, name: str, id: int, tracks: Optional[list[dict]] = None):
-    album = Mock(spec=Album, name=next(album_counter))
-    album.name = name
-    album.id = id
-    tracks = tracks or []
-    tracks = [_make_tidal_track(**spec, album=album) for spec in tracks]
+    album = _make_mock(
+        mock=Mock(spec=Album, name=next(album_counter)), name=name, id=id
+    )
+    tracks = [_make_tidal_track(**spec, album=album) for spec in (tracks or [])]
     album.tracks.return_value = tracks
     return album
 
@@ -127,9 +152,9 @@ def _make_tidal_mix(*, title: str, sub_title: str, id: int):
 
 
 def _make_tidal_genre(*, name: str, path: str):
-    genre = Mock(sepc=Genre, name=next(genre_counter), path=path)
-    genre.name = name
-    return genre
+    return _make_mock(
+        mock=Mock(spec=Genre, name=next(genre_counter), path=path), name=name
+    )
 
 
 @pytest.fixture()
@@ -194,7 +219,7 @@ def tidal_albums(mocker):
 
 
 @pytest.fixture
-def tidal_tracks(mocker, tidal_artists, tidal_albums):
+def tidal_tracks(tidal_artists, tidal_albums):
     """A list of tidal tracks."""
     return [
         _make_tidal_track(i, artist, album)
@@ -203,18 +228,19 @@ def tidal_tracks(mocker, tidal_artists, tidal_albums):
 
 
 def make_playlist(playlist_id, tracks):
-    playlist = Mock(spec=UserPlaylist, session=Mock())
-    playlist.name = f"Playlist-{playlist_id}"
-    playlist.id = str(playlist_id)
-    playlist.uri = f"tidal:playlist:{playlist_id}"
-    playlist.tracks = tracks
-    playlist.num_tracks = len(tracks)
-    playlist.last_updated = 10
-    return playlist
+    return _make_mock(
+        mock=Mock(spec=UserPlaylist, session=Mock()),
+        name=f"Playlist-{playlist_id}",
+        id=str(playlist_id),
+        uri=f"tidal:playlist:{playlist_id}",
+        tracks=tracks,
+        num_tracks=len(tracks),
+        last_updated=10,
+    )
 
 
 @pytest.fixture
-def tidal_playlists(mocker, tidal_tracks):
+def tidal_playlists(tidal_tracks):
     return [
         make_playlist(101, tidal_tracks[:2]),
         make_playlist(222, tidal_tracks[1:]),
@@ -255,14 +281,7 @@ _compare_map = {
 }
 
 
-def _compare(tidal: Iterable, mopidy: Iterable, type: str):
-    assert len(tidal) == len(mopidy)
-    for t, m in zip(tidal, mopidy):
-        _compare_map[type](t, m)
-
-
-@pytest.fixture
-def compare():
+def _compare(tidal: list, mopidy: list, type: str):
     """Compare artists, tracks or albums.
 
     Args:
@@ -270,8 +289,12 @@ def compare():
         mopidy: The mopidy tracks.
         type: The type of comparison: one of "artist", "album" or "track".
     """
+    assert len(tidal) == len(mopidy)
+    for t, m in zip(tidal, mopidy):
+        _compare_map[type](t, m)
 
-    return _compare
+
+compare = pytest.fixture(lambda: _compare)
 
 
 @pytest.fixture
