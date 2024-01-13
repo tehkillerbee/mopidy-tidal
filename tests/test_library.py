@@ -303,6 +303,22 @@ class TestBrowseAlbum:
         ]
 
 
+class TestGetImages:
+    def test_track_uri_resolves_to_album_images(
+        self, library_provider, session, mocker
+    ):
+        session.album.return_value.image.return_value = "tidal:album:1-1-1"
+
+        images = library_provider.get_images(["tidal:track:0-0-0:1-1-1:2-2-2"])
+
+        assert images == {
+            "tidal:track:0-0-0:1-1-1:2-2-2": [
+                Image(height=320, uri="tidal:album:1-1-1", width=320)
+            ]
+        }
+        session.album.assert_called_once_with("1-1-1")
+
+
 def test_specific_playlist(library_provider, backend, mocker, tidal_tracks):
     session = backend.session
     session.mock_add_spec(("playlist",))
