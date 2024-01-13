@@ -15,24 +15,6 @@ def library_provider(backend, config):
     return lp
 
 
-def test_search_no_match(library_provider, backend, tidal_search):
-    assert not library_provider.search("nonsuch")
-
-
-def test_search(mocker, library_provider, backend):
-    query, exact = object(), object()
-    artists = [mocker.Mock(spec=Artist)]
-    albums = [mocker.Mock(spec=Album)]
-    tracks = [mocker.Mock(spec=Track)]
-    tidal_search = mocker.Mock()
-    tidal_search.return_value = (artists, albums, tracks)
-    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
-    assert library_provider.search(query=query, exact=exact) == SearchResult(
-        artists=artists, albums=albums, tracks=tracks
-    )
-    tidal_search.assert_called_once_with(backend.session, query=query, exact=exact)
-
-
 def test_get_track_images(library_provider, backend, mocker):
     uris = ["tidal:track:0-0-0:1-1-1:2-2-2"]
     get_album = mocker.Mock()
@@ -64,11 +46,31 @@ def test_get_noimages(library_provider, backend):
     assert library_provider.get_images(uris) == {uris[0]: []}
 
 
+class TestSearch:
+    def test_defers_to_tidal_search(self, library_provider, mocker):
+        artists = [mocker.Mock(spec=Artist)]
+        albums = [mocker.Mock(spec=Album)]
+        tracks = [mocker.Mock(spec=Track)]
+        tidal_search = mocker.patch(
+            "mopidy_tidal.search.tidal_search", return_value=(artists, albums, tracks)
+        )
 
+        result = library_provider.search(query="songs", exact=False)
 
+        assert result == SearchResult(artists=artists, albums=albums, tracks=tracks)
+        tidal_search.assert_called_once()
+        assert tidal_search.mock_calls[0].kwargs["query"] == "songs"
+        assert tidal_search.mock_calls[0].kwargs["exact"] is False
 
+    def test_returns_none_if_no_match(self, library_provider, mocker):
+        tidal_search = mocker.patch(
+            "mopidy_tidal.search.tidal_search", return_value=None
+        )
 
+        assert not library_provider.search("nonsuch")
 
+        tidal_search.assert_called_once()
+        assert tidal_search.mock_calls[0].kwargs["query"] == "nonsuch"
 
 
 class TestBrowse:
