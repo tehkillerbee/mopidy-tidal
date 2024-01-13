@@ -64,84 +64,11 @@ def test_get_noimages(library_provider, backend):
     assert library_provider.get_images(uris) == {uris[0]: []}
 
 
-@pytest.mark.parametrize("field", ("artist", "album", "track"))
-def test_get_distinct_root(library_provider, backend, mocker, field):
-    session = backend.session
-    thing = mocker.Mock()
-    thing.name = "Thing"
-    session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
-    res = library_provider.get_distinct(field)
-    assert len(res) == 1
-    assert res.pop() == "Thing [TIDAL]"
 
 
-def test_get_distinct_root_nonsuch(library_provider):
-    assert not library_provider.get_distinct("nonsuch")
 
 
-def test_get_distinct_query_nonsuch(library_provider):
-    assert not library_provider.get_distinct("nonsuch", query={"any": "any"})
 
-
-@pytest.mark.parametrize("field", ("artist", "track"))
-def test_get_distinct_ignore_query(library_provider, backend, mocker, field):
-    session = backend.session
-    thing = mocker.Mock()
-    thing.name = "Thing"
-    session.configure_mock(**{f"user.favorites.{field}s.return_value": [thing]})
-    res = library_provider.get_distinct(field, query={"any": "any"})
-    assert len(res) == 1
-    assert res.pop() == "Thing [TIDAL]"
-
-
-@pytest.mark.parametrize("field", ("album", "albumartist"))
-def test_get_distinct_album_no_results(library_provider, backend, mocker, field):
-    session = backend.session
-    tidal_search = mocker.Mock()
-    tidal_search.return_value = ([], [], [])
-    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
-    assert not library_provider.get_distinct(field, query={"any": "any"})
-    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
-
-
-@pytest.mark.parametrize("field", ("album", "albumartist"))
-def test_get_distinct_album(library_provider, backend, mocker, field):
-    session = backend.session
-    session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
-
-    artist = mocker.Mock()
-    artist.uri = "tidal:artist:1"
-    thing = mocker.Mock()
-    thing.name = "Thing"
-    artist.get_albums.return_value = [thing]
-
-    tidal_search = mocker.Mock()
-    tidal_search.return_value = ([artist], [], [])
-    session.artist.return_value = artist
-    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
-    res = library_provider.get_distinct(field, query={"any": "any"})
-    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
-    session.artist.assert_called_once_with("1")
-    artist.get_albums.assert_called_once_with()
-    assert len(res) == 1
-    assert res.pop() == "Thing [TIDAL]"
-
-
-@pytest.mark.parametrize("field", ("album", "albumartist"))
-def test_get_distinct_album_no_artist(library_provider, backend, mocker, field):
-    session = backend.session
-    session.mock_add_spec(("tidal_search", "artist", "artist.get_albums"))
-
-    artist = mocker.Mock()
-    artist.uri = "tidal:artist:1"
-
-    tidal_search = mocker.Mock()
-    tidal_search.return_value = ([artist], [], [])
-    session.artist.return_value = None
-    mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
-    assert not library_provider.get_distinct(field, query={"any": "any"})
-    tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
-    session.artist.assert_called_once_with("1")
 
 
 class TestBrowse:
@@ -317,6 +244,85 @@ class TestGetImages:
             ]
         }
         session.album.assert_called_once_with("1-1-1")
+
+
+class TestGetDistinct:
+    @pytest.mark.parametrize("field", ("artist", "album", "track"))
+    def test_returns_all_favourites_with_watermark_when_no_query_given(
+        self, library_provider, session, field, make_mock
+    ):
+        titles = [make_mock(name=f"Title-{i}") for i in range(2)]
+        session.configure_mock(**{f"user.favorites.{field}s.return_value": titles})
+
+        res = library_provider.get_distinct(field)
+
+        assert len(res) == 2
+        assert res == {"Title-0 [TIDAL]", "Title-1 [TIDAL]"}
+
+    def test_returns_empty_set_when_no_match(self, library_provider):
+        assert library_provider.get_distinct("nonsuch") == set()
+
+    def test_returns_empty_set_when_no_match_with_query(self, library_provider):
+        assert library_provider.get_distinct("nonsuch", query={"any": "any"}) == set()
+
+    @pytest.mark.parametrize("field", ("artist", "track"))
+    def test_query_ignored_when_field_is_not_album_or_albumartist(  # TODO why do we do this?
+        self, library_provider, session, field, make_mock
+    ):
+        titles = [make_mock(name=f"Title-{i}") for i in range(2)]
+        session.configure_mock(**{f"user.favorites.{field}s.return_value": titles})
+
+        res = library_provider.get_distinct(field, query={"any": "any"})
+
+        assert len(res) == 2
+        assert res == {"Title-0 [TIDAL]", "Title-1 [TIDAL]"}
+
+    @pytest.mark.parametrize("field", ("album", "albumartist"))
+    def test_get_distinct_returns_empty_set_when_search_returns_no_results(
+        self, library_provider, session, mocker, field
+    ):
+        tidal_search = mocker.Mock(return_value=([], [], []))
+        mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+
+        res = library_provider.get_distinct(field, query={"any": "any"})
+
+        assert res == set()
+        tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+
+    @pytest.mark.parametrize("field", ("album", "albumartist"))
+    def test_get_distinct_returns_search_results_with_watermark(
+        self, library_provider, session, mocker, field, make_mock
+    ):
+        arty_albums = [make_mock(name=f"Arty Album {i}") for i in range(2)]
+        artist = make_mock(
+            mock=mocker.Mock(**{"get_albums.return_value": arty_albums}),
+            name="Arty",
+            uri="tidal:artist:1",
+        )
+        tidal_search = mocker.Mock(return_value=([artist], [], []))
+        session.artist.return_value = artist
+        mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+
+        res = library_provider.get_distinct(field, query={"any": "any"})
+
+        tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+        session.artist.assert_called_once_with("1")
+        artist.get_albums.assert_called_once_with()
+        assert len(res) == 2
+        assert res == {"Arty Album 0 [TIDAL]", "Arty Album 1 [TIDAL]"}
+
+    @pytest.mark.parametrize("field", ("album", "albumartist"))
+    def test_get_distinct_returns_empty_set_when_artist_not_found(
+        self, library_provider, session, mocker, field, make_mock
+    ):
+        artist = make_mock(name="Arty", uri="tidal:artist:1")
+        tidal_search = mocker.Mock(return_value=([artist], [], []))
+        mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
+        session.artist.return_value = None  # looking up artist fails
+
+        assert library_provider.get_distinct(field, query={"any": "any"}) == set()
+        tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)
+        session.artist.assert_called_once_with("1")
 
 
 def test_specific_playlist(library_provider, backend, mocker, tidal_tracks):
