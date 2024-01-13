@@ -164,28 +164,28 @@ class TestBrowse:
         ]
 
     def test_my_artists_returns_favourite_artists_from_tidal_as_refs(
-        self, library_provider, backend, mocker, make_tidal_artist
+        self, library_provider, session, mocker, make_tidal_artist
     ):
-        session = backend.session
         session.user.favorites.artists = [
             make_tidal_artist(name="Arty", id=1),
             make_tidal_artist(name="Arthur", id=1_000),
         ]
         mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+
         assert library_provider.browse("tidal:my_artists") == [
             Ref(name="Arty", type="artist", uri="tidal:artist:1"),
             Ref(name="Arthur", type="artist", uri="tidal:artist:1000"),
         ]
 
     def test_my_albums_returns_favourite_albums_from_tidal_as_refs(
-        self, library_provider, backend, mocker, make_tidal_album
+        self, library_provider, session, mocker, make_tidal_album
     ):
-        session = backend.session
         session.user.favorites.albums = [
             make_tidal_album(name="Alby", id=7),
             make_tidal_album(name="Albion", id=7_000),
         ]
         mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+
         assert library_provider.browse("tidal:my_albums") == [
             Ref(name="Alby", type="album", uri="tidal:album:7"),
             Ref(name="Albion", type="album", uri="tidal:album:7000"),
@@ -194,13 +194,12 @@ class TestBrowse:
     def test_my_tracks_returns_favourite_tracks_from_tidal_as_refs(
         self,
         library_provider,
-        backend,
+        session,
         mocker,
         make_tidal_track,
         make_tidal_album,
         make_tidal_artist,
     ):
-        session = backend.session
         artist = make_tidal_artist(name="Arty", id=6)
         album = make_tidal_album(name="Albion", id=7)
         session.user.favorites.tracks = [
@@ -208,6 +207,7 @@ class TestBrowse:
             make_tidal_track(name="Traction", id=13, artist=artist, album=album),
         ]
         mocker.patch("mopidy_tidal.library.get_items", lambda x: x)
+
         assert library_provider.browse("tidal:my_tracks") == [
             Ref(name="Tracky", type="track", uri="tidal:track:6:7:12"),
             Ref(name="Traction", type="track", uri="tidal:track:6:7:13"),
@@ -222,11 +222,12 @@ class TestBrowse:
         This test asserts that our test of backend_as_list covers the code.
         But it's not a good test all the same as it's tied to our implementation.
         """
-        as_list = mocker.Mock()
         uniq = object()
-        as_list.return_value = uniq
+        as_list = mocker.Mock(return_value=uniq)
         backend.playlists.as_list = as_list
+
         assert library_provider.browse("tidal:my_playlists") is uniq
+
         as_list.assert_called_once_with()
 
     def test_moods_returns_moods_from_tidal_as_refs(
@@ -234,9 +235,10 @@ class TestBrowse:
     ):
         mood = make_tidal_page(title="Moody", categories=[], api_path="0/0/18")
         session.moods.return_value = [mood]
-        assert library_provider.browse("tidal:moods") == [
-            Ref(name="Moody", type="directory", uri="tidal:mood:18")
-        ]
+
+        result = library_provider.browse("tidal:moods")
+
+        assert result == [Ref(name="Moody", type="directory", uri="tidal:mood:18")]
         session.moods.assert_called_once_with()
 
     def test_mixes_returns_mixes_from_tidal_as_refs(
@@ -246,6 +248,7 @@ class TestBrowse:
             make_tidal_mix(title="Mick's mix", sub_title="Micky mouse", id=19_678),
             make_tidal_mix(title="Micky", sub_title="Mouse", id=6),
         ]
+
         assert library_provider.browse("tidal:mixes") == [
             Ref(
                 name="Mick's mix (Micky mouse)", type="playlist", uri="tidal:mix:19678"
@@ -261,6 +264,7 @@ class TestBrowse:
             make_tidal_genre(name="Jean Re", path="12"),
             make_tidal_genre(name="John Ra", path="1345"),
         ]
+
         assert library_provider.browse("tidal:genres") == [
             Ref(name="Jean Re", type="directory", uri="tidal:genre:12"),
             Ref(name="John Ra", type="directory", uri="tidal:genre:1345"),
@@ -271,6 +275,7 @@ class TestBrowse:
 class TestBrowseAlbum:
     def test_missing_album_returns_empty_list(self, library_provider, session):
         session.album.side_effect = HTTPError("No such album")
+
         assert library_provider.browse("tidal:album:1") == []
         session.album.assert_called_once_with("1")
 
@@ -291,6 +296,7 @@ class TestBrowseAlbum:
             ],
         )
         session.album.return_value = album
+
         assert library_provider.browse("tidal:album:1") == [
             Ref(name="Traction", type="track", uri="tidal:track:789:17:17"),
             Ref(name="Tracky", type="track", uri="tidal:track:789:17:65"),
