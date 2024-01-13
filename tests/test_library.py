@@ -327,6 +327,25 @@ class TestGetDistinct:
         session.artist.assert_called_once_with("1")
 
 
+class TestLookup:
+    def test_raises_when_no_uri_passed(self, library_provider):
+        with pytest.raises(Exception):
+            library_provider.lookup()
+
+    @pytest.mark.parametrize("uri", ("", "this_isn't_a_uri"))
+    def test_raises_with_invalid_uri(self, library_provider, uri):
+        with pytest.raises(Exception):
+            library_provider.lookup(uri)
+
+    def test_returns_empty_list_if_http_request_fails(
+        self, library_provider, session, mocker
+    ):
+        album = mocker.Mock(**{"tracks.side_effect": HTTPError})
+        session.album.return_value = album
+
+        assert library_provider.lookup("tidal:track:0:1:0") == []
+
+
 def test_specific_playlist(library_provider, backend, mocker, tidal_tracks):
     session = backend.session
     session.mock_add_spec(("playlist",))
@@ -447,24 +466,6 @@ def test_specific_artist(
     artist.get_top_tracks.assert_called_once_with()
     artist.get_albums.assert_called_once_with()
     session.artist.assert_has_calls([mocker.call("1"), mocker.call("1")])
-
-
-def test_lookup_no_uris(library_provider, mocker):
-    with pytest.raises(Exception):  # just check it raises
-        library_provider.lookup()
-    with pytest.raises(Exception):
-        library_provider.lookup("")
-    with pytest.raises(Exception):
-        library_provider.lookup("somethingwhichisntauri")
-    assert not library_provider.lookup("tidal:nonsuch:11")
-
-
-def test_lookup_http_error(library_provider, backend, mocker):
-    session = backend.session
-    album = mocker.Mock()
-    album.tracks.side_effect = HTTPError
-    session.album.return_value = album
-    assert not library_provider.lookup("tidal:track:0:1:0")
 
 
 def test_lookup_track(library_provider, backend, mocker, tidal_tracks, compare):
