@@ -62,6 +62,7 @@ def make_track(track_id, artist, album):
     track = Mock(spec=Track, name=f"Track: {track_counter()}")
     track.id = track_id
     track.name = f"Track-{track_id}"
+    track.full_name = f"{track.name} (version)"
     track.artist = artist
     track.album = album
     track.uri = f"tidal:track:{artist.id}:{album.id}:{track_id}"
@@ -135,7 +136,7 @@ def tidal_playlists(mocker, tidal_tracks):
 
 def compare_track(tidal, mopidy):
     assert tidal.uri == mopidy.uri
-    assert tidal.name == mopidy.name
+    assert tidal.full_name == mopidy.name
     assert tidal.duration * 1000 == mopidy.length
     assert tidal.disc_num == mopidy.disc_no
     assert tidal.track_num == mopidy.track_no

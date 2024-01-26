@@ -234,6 +234,7 @@ def api_test(tpp, mocker, api_method, tp):
         track.id = i
         track.uri = f"tidal:track:{i}:{i}:{i}"
         track.name = f"Track-{i}"
+        track.full_name = f"{track.name} (version)"
         track.artist.name = "artist_name"
         track.artist.id = i
         track.album.name = "album_name"
@@ -253,11 +254,11 @@ def api_test(tpp, mocker, api_method, tp):
     assert playlist.name == "Playlist-1"
     assert playlist.uri == "tidal:playlist:1-1-1"
     assert len(playlist.tracks) == 2 * len(api_method.mock_calls)
-    attr_map = {"disc_num": "disc_no"}
+    attr_map = {"disc_num": "disc_no", "full_name": "name"}
     assert all(
         getattr(orig_tr, k) == getattr(tr, attr_map.get(k, k))
         for orig_tr, tr in zip(tracks, playlist.tracks)
-        for k in {"name", "uri", "disc_num"}
+        for k in {"uri", "disc_num", "full_name"}
     )
 
 
@@ -440,6 +441,7 @@ def test_get_items_mix(tpp, mocker):
         track.id = i
         track.uri = f"tidal:track:{i}:{i}:{i}"
         track.name = f"Track-{i}"
+        track.full_name = f"{track.name} (version)"
         track.artist.name = "artist_name"
         track.artist.id = i
         track.album.name = "album_name"
@@ -454,6 +456,6 @@ def test_get_items_mix(tpp, mocker):
     playlist = mocker.MagicMock(last_modified=9, tracks=tracks)
     tpp._playlists["tidal:mix:0-1-2"] = playlist
     assert tpp.get_items("tidal:mix:0-1-2") == [
-        Ref(name="Track-0", type="track", uri="tidal:track:0:0:0"),
-        Ref(name="Track-1", type="track", uri="tidal:track:1:1:1"),
+        Ref(name="Track-0 (version)", type="track", uri="tidal:track:0:0:0"),
+        Ref(name="Track-1 (version)", type="track", uri="tidal:track:1:1:1"),
     ]
