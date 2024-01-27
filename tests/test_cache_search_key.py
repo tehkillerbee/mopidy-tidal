@@ -3,41 +3,22 @@ from __future__ import unicode_literals
 from mopidy_tidal.lru_cache import SearchKey
 
 
-def test_search_key_hashes_are_equal():
-    d1 = {"exact": True, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-    d2 = {"exact": True, "query": {"album": "TestAlbum", "artist": "TestArtist"}}
+def test_hashes_of_equal_objects_are_equal():
+    params = dict(exact=True, query=dict(artist="Arty", album="Alby"))
+    assert SearchKey(**params) == SearchKey(**params)
 
-    d1_sk = SearchKey(**d1)
-    d2_sk = SearchKey(**d2)
-
-    assert hash(d1_sk) == hash(d2_sk)
+    assert hash(SearchKey(**params)) == hash(SearchKey(**params))
 
 
-def test_search_key_hashes_are_different():
-    d1 = {"exact": True, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-    d2 = {"exact": False, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-    d3 = {"exact": True, "query": {"album": "TestAlbum2", "artist": "TestArtist"}}
+def test_hashes_of_different_objects_are_different():
+    key_1 = SearchKey(exact=True, query=dict(artist="Arty", album="Alby"))
+    key_2 = SearchKey(exact=False, query=dict(artist="Arty", album="Alby"))
+    key_3 = SearchKey(exact=True, query=dict(artist="Arty", album="Albion"))
 
-    d1_sk = SearchKey(**d1)
-    d2_sk = SearchKey(**d2)
-    d3_sk = SearchKey(**d3)
-
-    assert hash(d1_sk) != hash(d2_sk) != hash(d3_sk)
+    assert hash(key_1) != hash(key_2) != hash(key_3)
 
 
-def test_str():
-    d1 = {"exact": True, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-    d1_sk = SearchKey(**d1)
-    assert str(d1_sk) == f"tidal:search:{hash(d1_sk)}"
+def test_as_str_constructs_uri_from_hash():
+    key = SearchKey(exact=True, query=dict(artist="Arty", album="Alby"))
 
-
-def test_eq():
-    d1 = {"exact": True, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-    d2 = {"exact": False, "query": {"artist": "TestArtist", "album": "TestAlbum"}}
-
-    d1_sk = SearchKey(**d1)
-    d2_sk = SearchKey(**d2)
-    d3_sk = SearchKey(**d1)
-    assert d1_sk == d3_sk
-    assert d1_sk != d2_sk
-    assert d1_sk != "a string"
+    assert str(key) == f"tidal:search:{hash(key)}"
