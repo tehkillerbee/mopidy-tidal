@@ -4,6 +4,11 @@ import pytest
 from mopidy_tidal import context
 
 
+@pytest.fixture(autouse=True)
+def config():
+    """Override fixture which sets up config: here we want to do it manually."""
+
+
 def test_get_config_raises_until_set():
     config = {"k": "v"}
 

@@ -5,20 +5,17 @@ import pytest
 from mopidy_tidal.playlists import PlaylistCache, PlaylistMetadataCache, TidalPlaylist
 
 
-def test_metadata_cache(config):
+def test_metadata_cache():
     cache = PlaylistMetadataCache(directory="cache")
     uniq = object()
-    outf = (
-        Path(config["core"]["cache_dir"], "tidal/cache/playlist_metadata/00")
-        / "tidal-playlist-00-1-2.cache"
-    )
+    outf = cache.cache_file("tidal:playlist:00-1-2")
     assert not outf.exists()
     cache["tidal:playlist:00-1-2"] = uniq
     assert outf.exists()
     assert cache["tidal:playlist:00-1-2"] is uniq
 
 
-def test_cached_as_str(config):
+def test_cached_as_str():
     cache = PlaylistCache(persist=False)
     uniq = object()
     cache["tidal:playlist:0-1-2"] = uniq
@@ -26,7 +23,7 @@ def test_cached_as_str(config):
     assert cache["0-1-2"] is uniq
 
 
-def test_not_updated(config, mocker):
+def test_not_updated(mocker):
     cache = PlaylistCache(persist=False)
     session = mocker.Mock()
     key = mocker.Mock(spec=TidalPlaylist, session=session, playlist_id="0-1-2")
@@ -39,7 +36,7 @@ def test_not_updated(config, mocker):
     assert cache[key] is playlist
 
 
-def test_updated(config, mocker):
+def test_updated(mocker):
     cache = PlaylistCache(persist=False)
     session = mocker.Mock()
     resp = mocker.Mock(headers={"etag": None})

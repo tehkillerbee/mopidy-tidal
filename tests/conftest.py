@@ -38,7 +38,7 @@ def _make_mock(mock: Mock | None = None, **kwargs) -> Mock:
 make_mock = pytest.fixture(lambda: _make_mock)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def config(tmp_path):
     """Set up config.
 
@@ -66,7 +66,7 @@ def config(tmp_path):
 
 
 @pytest.fixture
-def tidal_search(config, mocker):
+def tidal_search(mocker):
     """Provide an uncached tidal_search.
 
     Tidal search is cached with a decorator, so we have to mock before we

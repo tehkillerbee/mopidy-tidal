@@ -7,11 +7,6 @@ import pytest
 from mopidy_tidal.lru_cache import LruCache, SearchCache
 
 
-@pytest.fixture(autouse=True)
-def mock_config_so_cache_uses_tmp_dir(config):
-    ...
-
-
 @pytest.fixture
 def lru_disk_cache() -> LruCache:
     return LruCache(max_size=8, persist=True, directory="cache")
