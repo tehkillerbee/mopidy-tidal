@@ -1,8 +1,9 @@
 from mopidy_tidal.full_models_mappers import create_mopidy_album, create_mopidy_artist
 
 
-def test_create_mopidy_artist_none():
-    assert not create_mopidy_artist(None)
+class TestCreateMopidyArtist:
+    def test_returns_none_if_tidal_artist_none(self):
+        assert create_mopidy_artist(tidal_artist=None) is None
 
 
 def test_create_mopidy_album_no_release_date(mocker, tidal_albums, compare):
