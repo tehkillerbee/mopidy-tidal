@@ -3,7 +3,7 @@ import pytest
 from mopidy_tidal.playback import TidalPlaybackProvider
 
 
-@pytest.mark.xfail(reason="mock doesn't provide config so fails")
+@pytest.mark.xfail(reason="Requires mock tidal object")
 def test_playback(mocker):
     uniq = object()
     session = mocker.Mock(spec=["track"])
