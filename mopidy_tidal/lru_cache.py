@@ -154,9 +154,9 @@ class LruCache(OrderedDict):
 
 
 class SearchCache(LruCache):
-    def __init__(self, func):
+    def __init__(self, search_function):
         super().__init__(persist=False)
-        self._func = func
+        self._search_function = search_function
 
     def __call__(self, *args, **kwargs):
         key = str(SearchKey(**kwargs))
@@ -165,7 +165,7 @@ class SearchCache(LruCache):
             "Search cache miss" if cached_result is None else "Search cache hit"
         )
         if cached_result is None:
-            cached_result = self._func(*args, **kwargs)
+            cached_result = self._search_function(*args, **kwargs)
             self[key] = cached_result
 
         return cached_result
