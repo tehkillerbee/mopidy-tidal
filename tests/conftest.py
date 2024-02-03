@@ -123,7 +123,7 @@ def _make_tidal_track(
 
 def _make_tidal_artist(*, name: str, id: int, top_tracks: Optional[list[Track]] = None):
     return _make_mock(
-        make=Mock(spec=Artist, name=next(artist_counter)),
+        mock=Mock(spec=Artist, name=next(artist_counter)),
         **{
             "id": id,
             "get_top_tracks.return_value": top_tracks,
@@ -132,9 +132,20 @@ def _make_tidal_artist(*, name: str, id: int, top_tracks: Optional[list[Track]] 
     )
 
 
-def _make_tidal_album(*, name: str, id: int, tracks: Optional[list[dict]] = None):
+def _make_tidal_album(
+    *,
+    name: str,
+    id: int,
+    tracks: Optional[list[dict]] = None,
+    artist: Optional[Artist] = None,
+    **kwargs,
+):
     album = _make_mock(
-        mock=Mock(spec=Album, name=next(album_counter)), name=name, id=id
+        mock=Mock(spec=Album, name=next(album_counter)),
+        name=name,
+        id=id,
+        artist=artist or _make_tidal_artist(name="Album Artist", id=id + 1234),
+        **kwargs,
     )
     tracks = [_make_tidal_track(**spec, album=album) for spec in (tracks or [])]
     album.tracks.return_value = tracks
