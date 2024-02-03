@@ -15,7 +15,7 @@ from mopidy_tidal.backend import TidalBackend
 from mopidy_tidal.context import set_config
 
 
-def _make_mock(mock: Mock | None = None, **kwargs) -> Mock:
+def _make_mock(mock: Optional[Mock] = None, **kwargs) -> Mock:
     """Make a mock with the desired properties.
 
     This exists to work around name collisions in `Mock(**kwargs)`, which
