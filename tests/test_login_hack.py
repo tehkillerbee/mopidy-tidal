@@ -21,6 +21,8 @@ def library_provider(get_backend, config, mocker):
     future.running.return_value = True
     session.login_oauth.return_value = (url, future)
     backend.on_start()
+    assert not backend.logged_in
+    assert not backend.logging_in
     return backend, TidalLibraryProvider(backend=backend)
 
 
@@ -44,27 +46,21 @@ def library_provider(get_backend, config, mocker):
 )
 def test_library_browse_with_hack_login_triggers_login(type, uri, library_provider):
     backend, lp = library_provider
-    assert not backend.logged_in
-    assert not backend.logging_in
-    things = lp.browse(uri)
+
+    browse_results = lp.browse(uri)
+
     assert not backend.logged_in
     assert backend.logging_in
-    assert len(things) == 1
-    thing = things[0]
-    assert isinstance(thing, Ref)
-    assert thing.type == type
-    assert "link.tidal/URI" in thing.name
-    assert thing.uri == uri
-    # _, schema, *_ = uri.split(":")
-    # schema = schema.replace("my_", "").rstrip("s")
-    # login_uri = f"tidal:{schema}:login"
-    # assert login_uri == thing.uri
+    assert len(browse_results) == 1
+    browse_result = browse_results[0]
+    assert isinstance(browse_result, Ref)
+    assert browse_result.type == type
+    assert "link.tidal/URI" in browse_result.name
+    assert browse_result.uri == uri
 
 
 def test_get_image_with_hack_login_triggers_login(library_provider):
     backend, lp = library_provider
-    assert not backend.logged_in
-    assert not backend.logging_in
     images = lp.get_images(["tidal:playlist:uri"])
     assert not backend.logged_in
     assert backend.logging_in
