@@ -8,16 +8,20 @@ from mopidy_tidal.playback import TidalPlaybackProvider
 from mopidy_tidal.playlists import TidalPlaylistsProvider
 
 
-def test_composition(get_backend):
+def test_backend_composed_of_correct_parts(get_backend):
     backend, *_ = get_backend()
+
     assert isinstance(backend.playback, TidalPlaybackProvider)
     assert isinstance(backend.library, TidalLibraryProvider)
     assert isinstance(backend.playlists, TidalPlaylistsProvider)
 
 
-def test_setup(get_backend):
+def test_backend_begins_in_correct_state(get_backend):
+    """This test tests private attributes and is thus *BAD*.  But we can keep
+    it till it breaks."""
     backend, config, *_ = get_backend()
-    assert tuple(backend.uri_schemes) == ("tidal",)  # TODO: why is this muteable?
+
+    assert backend.uri_schemes == ("tidal",)
     assert not backend._active_session
     assert backend._config is config
 
@@ -33,7 +37,9 @@ def test_initial_login_caches_credentials(get_backend, config):
     backend._active_session = session
     authf = Path(config["core"]["data_dir"], "tidal/tidal-oauth.json")
     assert not authf.exists()
+
     backend._login()
+
     with authf.open() as f:
         data = load(f)
     assert data == {
@@ -66,6 +72,7 @@ def test_login_after_failed_cached_credentials_overwrites_cached_credentials(
     authf.write_text(dumps(cached_data))
 
     backend._login()
+
     with authf.open() as f:
         data = load(f)
     assert data == {
@@ -106,8 +113,10 @@ def test_failed_overall_login_throws_error(get_backend, tmp_path, mocker, config
     session.check_login.return_value = False
     backend._active_session = session
     authf = tmp_path / "auth.json"
+
     with pytest.raises(ConnectionError):
         backend.on_start()
+
     assert not authf.exists()
 
 
@@ -120,7 +129,9 @@ def test_logs_in(get_backend, mocker, config):
 
     session.login_oauth_simple.side_effect = set_logged_in
     session.check_login.return_value = False
+
     backend.on_start()
+
     session_factory.assert_called_once()
     config_obj = session_factory.mock_calls[0].args[0]
     assert config_obj.quality == config["tidal"]["quality"]
@@ -137,7 +148,9 @@ def test_accessing_session_triggers_lazy_login(get_backend, mocker, config):
 
     session.check_login.return_value = False
     session.login_oauth_simple.side_effect = set_logged_in
+
     backend.on_start()
+
     session.login_oauth_simple.assert_not_called()
     assert not backend._active_session.check_login()
     assert backend.session
@@ -158,7 +171,9 @@ def test_logs_in_only_client_secret(get_backend, mocker, config):
 
     session.login_oauth_simple.side_effect = set_logged_in
     session.check_login.return_value = False
+
     backend.on_start()
+
     session.login_oauth_simple.assert_called_once()
     session_factory.assert_called_once()
     config_obj = session_factory.mock_calls[0].args[0]
@@ -180,7 +195,9 @@ def test_logs_in_default_id_secret(get_backend, mocker, config):
 
     session.login_oauth_simple.side_effect = set_logged_in
     session.check_login.return_value = False
+
     backend.on_start()
+
     session.login_oauth_simple.assert_called_once()
     session_factory.assert_called_once()
     config_obj = session_factory.mock_calls[0].args[0]
@@ -205,7 +222,9 @@ def test_loads_session(get_backend, mocker, config):
     with authf.open("w") as f:
         dump(data, f)
     session.check_login.return_value = True
+
     backend.on_start()
+
     args = {k: v["data"] for k, v in data.items() if k != "session_id"}
     session.login_oauth_simple.assert_not_called()
     session.load_oauth_session.assert_called_once_with(**args)
