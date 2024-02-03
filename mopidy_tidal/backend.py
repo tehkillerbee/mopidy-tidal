@@ -32,7 +32,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         # Session parameters
         self._active_session: Optional[Session] = None
         self._logged_in: bool = False
-        self.uri_schemes: [str] = ["tidal"]
+        self.uri_schemes: tuple[str] = ("tidal",)
         self._login_future: Optional[Future] = None
         self._login_url: Optional[str] = None
         self.data_dir: Path = Path(Extension.get_data_dir(self._config))
