@@ -112,6 +112,7 @@ def _make_tidal_track(
         mock=Mock(spec=Track, name=next(track_counter)),
         id=id,
         name=name or f"Track-{id}",
+        full_name=name or f"Track-{id}",
         artist=artist,
         album=album,
         uri=f"tidal:track:{artist.id}:{album.id}:{id}",
