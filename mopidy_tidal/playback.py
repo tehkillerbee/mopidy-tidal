@@ -11,6 +11,9 @@ import logging
 
 from mopidy import backend
 from tidalapi import Quality
+from pathlib import Path
+
+from . import Extension, context
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,15 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
                     "No HI_RES available for this track; Using playback quality: %s",
                     "LOSSLESS",
                 )
-
-        newurl = session.track(track_id).get_url()
-        logger.info("transformed into %s", newurl)
+        if session.is_pkce:
+            manifest = session.track(track_id).get_stream().get_stream_manifest()
+            hls = manifest.get_hls()
+            hls_path = Path(Extension.get_cache_dir(context.get_config()), "hls.m3u8")
+            with open(hls_path, "w") as my_file:
+                my_file.write(hls)
+            logger.info("Starting playback of {}, (codec:{}, sampling rate:{} Hz)".format(hls_path, manifest.get_codecs(), manifest.get_sampling_rate()))
+            return "file://{}".format(hls_path)
+        else:
+            newurl = session.track(track_id).get_url()
+            logger.info("transformed into %s", newurl)
         return newurl
