@@ -71,7 +71,18 @@ When using High and Low quality, be sure to install gstreamer bad-plugins, e.g.:
 ```
 sudo apt-get install gstreamer1.0-plugins-bad
 ```
-This is mandatory to be able to play m4a streams.
+This is mandatory to be able to play m4a streams and for playback of hls streams. Otherwise, you will likely get an error:
+```
+WARNING  [MainThread] mopidy.audio.actor Could not find a application/x-hls decoder to handle media.
+WARNING  [MainThread] mopidy.audio.gst GStreamer warning: No decoder available for type 'application/x-hls'.
+ERROR    [MainThread] mopidy.audio.gst GStreamer error: Your GStreamer installation is missing a plug-in.
+```
+
+Check your installation
+```
+ gst-inspect-1.0 | grep hlsdemux
+ ...
+```
 
 ## Plugin Configuration
 
