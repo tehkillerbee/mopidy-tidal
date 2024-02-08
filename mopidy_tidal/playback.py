@@ -49,16 +49,18 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
                 stream.sample_rate,
             )
         )
+
         if stream.manifest_mime_type == ManifestMimeType.MPD.value:
-            hls = manifest.get_hls()
-            if hls:
-                hls_path = Path(
-                    Extension.get_cache_dir(context.get_config()), "hls.m3u8"
+            data = stream.get_manifest_data()
+            if data:
+                mpd_path = Path(
+                    Extension.get_cache_dir(context.get_config()), "manifest.mpd"
                 )
-                with open(hls_path, "w") as my_file:
-                    my_file.write(hls)
-                return "file://{}".format(hls_path)
+                with open(mpd_path, "w") as file:
+                    file.write(data)
+
+                return "file://{}".format(mpd_path)
             else:
-                raise AttributeError("No HLS stream available")
+                raise AttributeError("No MPD manifest available!")
         elif stream.manifest_mime_type == ManifestMimeType.BTS.value:
             return manifest.get_urls()
