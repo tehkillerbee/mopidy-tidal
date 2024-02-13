@@ -1,59 +1,43 @@
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
+
+TIDAL_PAGE_SIZE = 50  # Highly recommended
 
 
-def func_wrapper(args):
-    (f, offset, *args) = args
-    items = f(*args)
-    return list((i + offset, item) for i, item in enumerate(items))
+def paginated(call, limit=TIDAL_PAGE_SIZE, total=None):
+    if total:
+        pages = (total // limit) + min(1, total % limit)
+        for items in sorted_threaded(*(
+            partial(call, limit=limit, offset=limit * idx)
+            for idx in range(pages)
+        )):
+            yield items
+    else:
+        idx = 0
+        while True:
+            results = call(limit=limit, offset=limit * idx)
+            yield results
+            if len(results) < limit:
+                break
+            idx += 1
 
 
-def get_items(
-    func: Callable,
-    *args,
-    parse: Callable = lambda _: _,
-    chunk_size: int = 100,
-    processes: int = 5,
-):
-    """
-    This function performs pagination on a function that supports
-    `limit`/`offset` parameters and it runs API requests in parallel to speed
-    things up.
-    """
-    items = []
-    offsets = [-chunk_size]
-    remaining = chunk_size * processes
-
+def _threaded(*args, max_workers=None):
+    thread_count = len(args)
     with ThreadPoolExecutor(
-        processes, thread_name_prefix=f"mopidy-tidal-{func.__name__}-"
-    ) as pool:
-        while remaining == chunk_size * processes:
-            offsets = [offsets[-1] + chunk_size * (i + 1) for i in range(processes)]
+            max_workers=min(max_workers, thread_count) if max_workers else thread_count,
+            thread_name_prefix=f"mopidy-tidal-split-",
+    ) as executor:
+        futures = {executor.submit(call): call for call in args}
+        for future in as_completed(futures):
+            yield futures[future], future.result()
 
-            pool_results = pool.map(
-                func_wrapper,
-                [
-                    (
-                        func,
-                        offset,
-                        *args,
-                        chunk_size,  # limit
-                        offset,  # offset
-                    )
-                    for offset in offsets
-                ],
-            )
 
-            new_items = []
-            for results in pool_results:
-                new_items.extend(results)
+def threaded(*args, **kwargs):
+    for _, result in _threaded(*args, **kwargs):
+        yield result
 
-            remaining = len(new_items)
-            items.extend(new_items)
 
-    items = [_ for _ in items if _]
-    sorted_items = list(
-        map(lambda item: item[1], sorted(items, key=lambda item: item[0]))
-    )
-
-    return list(map(parse, sorted_items))
+def sorted_threaded(*args, **kwargs):
+    results = dict(_threaded(*args, **kwargs))
+    return [results[call] for call in args]
