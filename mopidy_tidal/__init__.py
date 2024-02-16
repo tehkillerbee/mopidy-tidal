@@ -35,6 +35,7 @@ class Extension(ext.Extension):
         schema["playlist_cache_refresh_secs"] = config.Integer(optional=True)
         schema["lazy"] = config.Boolean(optional=True)
         schema["login_method"] = config.String(choices=["BLOCK", "HACK"])
+        schema["pkce_enabled"] = config.Boolean(optional=True)
         return schema
 
     def setup(self, registry):
