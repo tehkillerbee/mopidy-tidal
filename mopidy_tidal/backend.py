@@ -49,13 +49,14 @@ class TidalBackend(ThreadingActor, backend.Backend):
         # Lazy: Connect lazily, i.e. login only when user starts browsing TIDAL directories
         self.lazy_connect: bool = False
         # Login Method:
-        #   BLOCK:  Immediately prompt user for login (This will block mopidy startup!)
-        #   HACK:   Display URI with login URL. When clicked QR code and TTS is generated
+        #   BLOCK:       Immediately prompt user for login (This will block mopidy startup!)
+        #   HACK/AUTO:   Display dummy track with login URL. When clicked, QR code and TTS is generated
         self.login_method: str = "BLOCK"
-        # pkce_enabled: If true, TIDAL session will use PKCE auth. Otherwise OAuth2
+        # pkce_enabled: If true, TIDAL session will use PKCE auth. Otherwise OAuth2 is used
+        self.auth_method: str = "OAUTH"
         self.pkce_enabled: bool = False
-        # login_web_port: Port to use for login HTTP server, eg. localhost:<port>
-        self.login_web_port: Optional[int] = None
+        # login_server_port: Port to use for login HTTP server, eg. localhost:<port>
+        self.login_server_port: Optional[int] = None
 
     @property
     def session(self):
@@ -80,10 +81,15 @@ class TidalBackend(ThreadingActor, backend.Backend):
         quality = self._tidal_config["quality"]
         client_id = self._tidal_config["client_id"]
         client_secret = self._tidal_config["client_secret"]
+        self.auth_method = self._tidal_config["auth_method"]
+        if self.auth_method == "PKCE":
+            self.pkce_enabled = True
+        self.login_server_port = self._tidal_config["login_server_port"]
         self.login_method = self._tidal_config["login_method"]
+        if self.login_method == "AUTO":
+            # Add AUTO as alias to HACK login method
+            self.login_method = "HACK"
         self.lazy_connect = self._tidal_config["lazy"]
-        self.pkce_enabled = self._tidal_config["pkce_enabled"]
-        self.login_web_port = self._tidal_config["login_web_port"]
         logger.info("Quality: %s", quality)
         logger.info("Authentication: %s", "PKCE" if self.pkce_enabled else "OAuth")
         config = Config(quality=Quality(quality))
@@ -94,8 +100,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
         else:
             self.session_file_path = Path(self.data_dir, "tidal-oauth.json")
 
-        if self.login_method == "HACK" and not self._tidal_config["lazy"]:
-            logger.warning("HACK login implies lazy connection, setting lazy=True.")
+        if (self.login_method == "HACK") and not self._tidal_config["lazy"]:
+            logger.warning("AUTO login implies lazy connection, setting lazy=True.")
             self.lazy_connect = True
         logger.info("Login method: %s", self.login_method)
 
@@ -121,7 +127,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
                 "Loaded existing TIDAL session from file %s...", self.session_file_path
             )
         if not self.session_valid:
-            if not self.login_web_port:
+            if not self.login_server_port:
                 # A. Default login, user must find login URL in Mopidy log
                 logger.info("Creating new session (OAuth)...")
                 self._active_session.login_oauth_simple(function=logger.info)
@@ -136,24 +142,24 @@ class TidalBackend(ThreadingActor, backend.Backend):
                     login_url = self._active_session.pkce_login_url()
                     logger.info(
                         "Please visit 'http://localhost:%s' to authenticate",
-                        self.login_web_port,
+                        self.login_server_port,
                     )
                     # Enable web server for interactive login + callback on form Submit
                     self.web_auth_server.set_callback(self._web_auth_callback)
                     self.web_auth_server.start_oauth_daemon(
-                        login_url, self.login_web_port, self.pkce_enabled
+                        login_url, self.login_server_port, self.pkce_enabled
                     )
                 else:
                     # OAuth login
                     login_url = self.login_url
                     logger.info(
                         "Please visit 'http://localhost:%s' or '%s' to authenticate",
-                        self.login_web_port,
+                        self.login_server_port,
                         login_url,
                     )
                     # Enable web server for interactive login (no callback)
                     self.web_auth_server.start_oauth_daemon(
-                        login_url, self.login_web_port, self.pkce_enabled
+                        login_url, self.login_server_port, self.pkce_enabled
                     )
 
                 # Wait for user to complete interactive login sequence
@@ -218,10 +224,10 @@ class TidalBackend(ThreadingActor, backend.Backend):
         else:
             if not self._logged_in and not self.web_auth_server.is_daemon_running:
                 login_url = self._active_session.pkce_login_url()
-                self._login_url = "http://localhost:{}".format(self.login_web_port)
+                self._login_url = "http://localhost:{}".format(self.login_server_port)
                 # Enable web server for interactive login + callback on form Submit
                 self.web_auth_server.set_callback(self._web_auth_callback)
                 self.web_auth_server.start_oauth_daemon(
-                    login_url, self.login_web_port, self.pkce_enabled
+                    login_url, self.login_server_port, self.pkce_enabled
                 )
             return f"{self._login_url}" if self._login_url else None
