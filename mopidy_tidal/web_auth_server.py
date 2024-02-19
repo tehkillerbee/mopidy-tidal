@@ -21,7 +21,7 @@ HTML_BODY = """<!DOCTYPE html>
 """.format
 
 INTERACTIVE_HTML_BODY = """
-<p>...then, after login, copy the whole final URL of the page you ended up to.</p>
+<p>...then, after login, copy the complete URL of the page you were redirected to.</p>
 <p>Probably a "Oops / Not found" page, nevertheless we need the whole URL as is.</p>
 <form method="post">
   <label for="code">Paste the response URL here:</label>
