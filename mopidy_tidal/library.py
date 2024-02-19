@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 from mopidy import backend, models
 from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
 from requests.exceptions import HTTPError
+from tidalapi.exceptions import ObjectNotFound
 
 from mopidy_tidal import full_models_mappers, ref_models_mappers
 from mopidy_tidal.login_hack import login_hack
@@ -110,7 +111,7 @@ class ImagesGetter:
     def __call__(self, uri: str) -> Tuple[str, List[Image]]:
         try:
             return uri, self._get_images(uri)
-        except (AssertionError, AttributeError, HTTPError) as err:
+        except (AssertionError, AttributeError, ObjectNotFound, HTTPError) as err:
             logger.error("%s when processing URI %r: %s", type(err), uri, err)
             return uri, []
 
@@ -348,7 +349,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @classmethod
     def _get_playlist_tracks(cls, session, playlist_id):
-        pl = session.playlist(playlist_id)
+        try:
+            pl = session.playlist(playlist_id)
+        except ObjectNotFound:
+            logger.debug("No such playlist: %s", playlist_id)
+            return []
         getter_args = tuple()
         return get_items(pl.tracks, *getter_args)
 
@@ -391,20 +396,20 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_artist_albums(session, artist_id):
-        artist = session.artist(artist_id)
-        if not artist:
-            logger.warning("No such artist: %s", artist_id)
+        try:
+            artist = session.artist(artist_id)
+        except ObjectNotFound:
+            logger.debug("No such artist: %s", artist_id)
             return []
-
         return artist.get_albums()
 
     @staticmethod
     def _get_album_tracks(session, album_id):
-        album = session.album(album_id)
-        if not album:
-            logger.warning("No such album: %s", album_id)
+        try:
+            album = session.album(album_id)
+        except ObjectNotFound:
+            logger.debug("No such album: %s", album_id)
             return []
-
         return album.tracks()
 
     def _lookup_track(self, session, parts):
@@ -416,11 +421,15 @@ class TidalLibraryProvider(backend.LibraryProvider):
             album_id = parts[3]
             track_id = parts[4]
         tracks = self._get_album_tracks(session, album_id)
-        # We get a spurious coverage error since the next expression should never raise StopIteration
-        track = next(t for t in tracks if t.id == int(track_id))  # pragma: no cover
-        artist = full_models_mappers.create_mopidy_artist(track.artist)
-        album = full_models_mappers.create_mopidy_album(track.album, artist)
-        return [full_models_mappers.create_mopidy_track(artist, album, track)]
+        # If album is unavailable, no tracks will be returned
+        if tracks:
+            # We get a spurious coverage error since the next expression should never raise StopIteration
+            track = next(t for t in tracks if t.id == int(track_id))  # pragma: no cover
+            artist = full_models_mappers.create_mopidy_artist(track.artist)
+            album = full_models_mappers.create_mopidy_album(track.album, artist)
+            return [full_models_mappers.create_mopidy_track(artist, album, track)]
+        else:
+            return []
 
     def _lookup_album(self, session, parts):
         album_id = parts[2]

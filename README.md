@@ -21,7 +21,7 @@ If you are experiencing playback issues unrelated to this plugin, please report 
 ### Development guidelines
 Please refer to [this document](DEVELOPMENT.md) to get you started.
 
-## Getting started
+### Getting started
 First install and configure Mopidy as per the instructions listed [here](https://docs.mopidy.com/en/latest/installation/). It is encouraged to install Mopidy as a systemd service, as per the instructions listed [here](https://docs.mopidy.com/en/latest/running/service/). 
 
 After installing Mopidy, you can now proceed installing the plugins that you require, including Mopidy-Tidal. :
@@ -64,53 +64,53 @@ sudo pip3 install --upgrade tidalapi
 ```
 
 After upgrading Python-Tidal/tidalapi, it will often be necessary to delete the existing json file and restart mopidy.
-The file is usually stored in `/var/lib/mopidy/tidal/tidal-oauth.json`, depending on your system configuration.
+The file is usually stored in `/var/lib/mopidy/tidal/tidal-<session_type>.json`, depending on your system configuration.
 
 ### GStreamer
 When using High and Low quality, be sure to install gstreamer bad-plugins, e.g.:
 ```
 sudo apt-get install gstreamer1.0-plugins-bad
 ```
-This is mandatory to be able to play m4a streams.
+This is mandatory to be able to play m4a streams and for playback of MPEG-DASH streams. Otherwise, you will likely get an error:
+```
+WARNING  [MainThread] mopidy.audio.actor Could not find a application/x-hls decoder to handle media.
+WARNING  [MainThread] mopidy.audio.gst GStreamer warning: No decoder available for type 'application/x-hls'.
+ERROR    [MainThread] mopidy.audio.gst GStreamer error: Your GStreamer installation is missing a plug-in.
+```
 
-## Plugin Configuration
+## Configuration
 
 Before starting Mopidy, you must add configuration for Mopidy-Tidal to your Mopidy configuration file, if it is not already present.
+ Run `sudo mopidyctl config` to see the current effective config used by Mopidy
 
-Run `sudo mopidyctl config` to see the current effective config used by Mopidy
+The configuration is usually stored in `/etc/mopidy/mopidy.conf`, depending on your system configuration. Add the configuration listed below in the respective configuration file and set the relevant fields.
 
-The configuration is usually stored in `/etc/mopidy/mopidy.conf`, depending on your system configuration. Add the configuration listed below in the respective configuration file:
-```
-[tidal]
-enabled = true
-quality = LOSSLESS
-#client_id =
-#client_secret =
-#playlist_cache_refresh_secs = 0
-#lazy = false
-```
-
-Restart the Mopidy service after adding the Tidal configuration
-```
-sudo systemctl restart mopidy
-```
+Restart the Mopidy service after adding/changing the Tidal configuration
+`sudo systemctl restart mopidy`
 
 ### Plugin configuration
-The plugin configuration is usually set in your mopidy configuration:
+The configuration is usually stored in `/etc/mopidy/mopidy.conf`, depending on your system configuration. Add the configuration listed below in the respective configuration file and set the relevant fields.
 ```
 [tidal]
 enabled = true
 quality = LOSSLESS
 #playlist_cache_refresh_secs = 0
-lazy = true
-login_method = HACK
+#lazy = true
+#login_method = AUTO
+#auth_method = OAUTH
+#login_server_port = 8989
 #client_id =
 #client_secret =
 ```
-* **quality:** Set to either HI_RES_LOSSLESS, LOSSLESS, HIGH or LOW. Make sure to use a quality level supported by your current subscription
-
-    * Note: `HI_RES_LOSSLESS` quality  (i.e. Max quality) requires a Tidal HiFi Plus subscription, while `LOSSLESS` quality (i.e. HiFi lossless) requires a HiFi subscription.
-
+### Plugin parameters
+* **quality:** Set to one of the following quality types.. Make sure to use a quality level supported by your current subscription.
+  * `HI_RES_LOSSLESS`, `HI_RES` `LOSSLESS`, `HIGH` or `LOW`
+      * `HI_RES_LOSSLESS` quality  (i.e. Max quality) requires a Tidal HiFi Plus subscription
+      * `LOSSLESS` quality (i.e. HiFi lossless FLAC) and below requires a HiFi subscription.
+* **auth_method (Optional):**: Select the authentication mode to use.
+  * `OAUTH` used as default and allows qualities up to `LOSSLESS` (HiFi)
+  * `PKCE` is **required** for `HI_RES` (HiFi+) playback. This method also requires the `login_web_port`to be set.
+* **login_web_port (Optional):**: Port to use for the authentication HTTP Server. This is **required** for PKCE authentication.
 * **playlist_cache_refresh_secs (Optional):** Tells if (and how often) playlist
 content should be refreshed upon lookup.
   * `0` (default): The default value (`0`) means that playlists won't be refreshed after the
@@ -133,7 +133,6 @@ when mopidy restarts. This means that it will take longer for external changes
 to be reflected in the loaded playlists, but the UI will be more responsive
 when playlists are looked up. A value of zero makes the behaviour of
 `mopidy-tidal` quite akin to the current behaviour of `mopidy-spotify`.
-
 * **lazy (Optional):**: Whether to connect lazily, i.e. when required, rather than
 at startup.
   * `false` (default): Lazy mode is off by default for backwards compatibility and to make the first login easier (since mopidy will not block in lazy mode until you try to access Tidal).
@@ -149,34 +148,40 @@ at startup.
   again.  This may be desirable on mobile internet connections, or when a server
   is used with multiple backends and a failure with Tidal should not prevent
   other services from running.
-* **login_method (Optional):**: This setting configures the OAuth login process. 
-  * `BLOCK` (block): The user is REQUIRED to complete the OAuth login flow, otherwise mopidy will hang.
-  * `HACK`: Mopidy will start as usual but the user will be prompted to complete the OAuth login flow. The link is provided through a dummy track (i.e. HACK)
+* **login_method (Optional):**: This setting configures the auth login process. 
+  * `BLOCK` (default): The user is REQUIRED to complete the OAuth login flow, otherwise mopidy will hang.
+  * `AUTO`/`HACK`: Mopidy will start as usual but the user will be prompted to complete the auth login flow by visiting a link. The link is provided as a dummy track and as a log message.
 * **client_id, _secret (Optional):**: Tidal API `client_id`, `client_secret` can be overridden by the user if necessary.
 
-### OAuth Flow
-The first time you use the plugin, you will have to use the OAuth flow to login.:
+## Login
+Before TIDAL can be accessed from Mopidy, it is necessary to login, using either the OAuth or PKCE flow described below.
 
-1. After restarting the Mopidy server, check the latest systemd logs and find a line like:
+Both methods require visiting an URL to complete the login process. The URL can be found either:
+1. In the Mopidy logs, as listed below
 ```
 journalctl -u mopidy | tail -10
 ...
 Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
-2. Visit the link to connect the mopidy tidal plugin to your Tidal account.
+2. Displayed in the Mopidy web client as a "dummy" track when the `login_method` is set to `AUTO`
+3. Through the auth. webserver `localhost:<login_web_port>` when the `login_web_port` mode is enabled
 
-The OAuth session will be reloaded automatically when Mopidy is restarted. It
-will be necessary to perform these steps again if/when the session expires or if
-the json file is moved/deleted.
+### OAuth Flow
+When using OAuth authentication mode, you will be prompted to visit an URL to login. 
+This URL will be displayed in the Mopidy logs and/or in the Mopidy-Web client as a dummy track.
 
-##### Note: Login process is a **blocking** action, so Mopidy + Web interface will stop loading until you approve the application.
+When prompted, visit the URL to complete the OAuth login flow. No extra steps are required.
 
-If for some reason loading cached credentials fails, `mopidy-tidal` will restart
-the oauth flow (potentially blocking mopidy).  If connection failed for a
-network error and this new connection also fails, your cached credentials will
-not be overwritten.  There is, however, a potential race condition where the
-network comes back online after a failed connection and `mopidy-tidal`
-unnecessarily requests new credentials.  This bug has never been reported in the
-wild and is only mildly annoying, whereas any logic to detect it (for instance
-by inspecting the specific failure from `python-tidal`) would probably be more
-fragile.
+### PKCE Flow
+For `HI_RES` and `HI_RES_LOSSLESS` playback, the PKCE login flow is required. 
+This procedure also requires visiting an URL but requires an extra step:
+1. Visit the URL listed in the logs or in the Mopidy client. Usually, this should be `localhost:<login_web_port>`.
+2. You will be greeted with a link to the TIDAL login page and a form where you can paste the response URL 
+3. Visit the TIDAL URL and login using your normal credentials. 
+4. Copy the complete URL of the page you were redirected to. This webpage normally lists "Oops" or something similar; this is normal.
+5. Paste this URL into the web authentication page and click "Submit". You can now close the web page. 
+
+### General login tips
+##### Note: When the `login_method` is set to BLOCK, all login processes are **blocking** actions, so Mopidy + Web interface will stop loading until you approve the application.
+##### Note: using the `lazy` mode, the login process will not be started until browsing the TIDAL related directories.
+##### Note: session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if the json file is moved/deleted.

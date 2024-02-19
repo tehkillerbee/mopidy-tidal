@@ -8,9 +8,13 @@ if TYPE_CHECKING:  # pragma: no cover
     from mopidy_tidal.backend import TidalBackend
 
 import logging
+from pathlib import Path
 
 from mopidy import backend
 from tidalapi import Quality
+from tidalapi.media import ManifestMimeType
+
+from . import Extension, context
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +37,30 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
                     "LOSSLESS",
                 )
 
-        newurl = session.track(track_id).get_url()
-        logger.info("transformed into %s", newurl)
-        return newurl
+        stream = session.track(track_id).get_stream()
+        manifest = stream.get_stream_manifest()
+        logger.info("MimeType:{}".format(stream.manifest_mime_type))
+        logger.info(
+            "Starting playback of track:{}, (quality:{}, codec:{}, {}bit/{}Hz)".format(
+                track_id,
+                stream.audio_quality,
+                manifest.get_codecs(),
+                stream.bit_depth,
+                stream.sample_rate,
+            )
+        )
+
+        if stream.manifest_mime_type == ManifestMimeType.MPD.value:
+            data = stream.get_manifest_data()
+            if data:
+                mpd_path = Path(
+                    Extension.get_cache_dir(context.get_config()), "manifest.mpd"
+                )
+                with open(mpd_path, "w") as file:
+                    file.write(data)
+
+                return "file://{}".format(mpd_path)
+            else:
+                raise AttributeError("No MPD manifest available!")
+        elif stream.manifest_mime_type == ManifestMimeType.BTS.value:
+            return manifest.get_urls()
