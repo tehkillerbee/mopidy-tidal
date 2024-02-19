@@ -1,15 +1,23 @@
 from __future__ import unicode_literals
 
 import logging
+import time
 from concurrent.futures import Future
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from mopidy import backend
 from pykka import ThreadingActor
 from tidalapi import Config, Quality, Session
 
-from mopidy_tidal import Extension, context, library, playback, playlists
+from mopidy_tidal import (
+    Extension,
+    context,
+    library,
+    playback,
+    playlists,
+)
+from mopidy_tidal.web_auth_server import WebAuthServer
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +43,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self._login_url: Optional[str] = None
         self.data_dir: Path = Path(Extension.get_data_dir(self._config))
         self.session_file_path: Path = Path("")
+        self.web_auth_server: WebAuthServer = WebAuthServer()
 
         # Config parameters
         # Lazy: Connect lazily, i.e. login only when user starts browsing TIDAL directories
@@ -45,6 +54,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self.login_method: str = "BLOCK"
         # pkce_enabled: If true, TIDAL session will use PKCE auth. Otherwise OAuth2
         self.pkce_enabled: bool = False
+        # login_web_port: Port to use for login HTTP server, eg. localhost:<port>
+        self.login_web_port: Optional[int] = None
 
     @property
     def session(self):
@@ -56,7 +67,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
     def logged_in(self):
         if not self._logged_in:
             if self._active_session.load_session_from_file(self.session_file_path):
-                logger.info("Loaded tidal session from file %s", self.session_file_path)
+                logger.info("Loaded TIDAL session from file %s", self.session_file_path)
                 self._logged_in = True
         return self._logged_in
 
@@ -67,14 +78,15 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
     def on_start(self):
         quality = self._tidal_config["quality"]
-        config = Config(quality=Quality(quality))
         client_id = self._tidal_config["client_id"]
         client_secret = self._tidal_config["client_secret"]
         self.login_method = self._tidal_config["login_method"]
         self.lazy_connect = self._tidal_config["lazy"]
         self.pkce_enabled = self._tidal_config["pkce_enabled"]
+        self.login_web_port = self._tidal_config["login_web_port"]
         logger.info("Quality: %s", quality)
         logger.info("Authentication: %s", "PKCE" if self.pkce_enabled else "OAuth")
+        config = Config(quality=Quality(quality))
 
         # Set the session filename, depending on the type of session
         if self.pkce_enabled:
@@ -85,7 +97,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         if self.login_method == "HACK" and not self._tidal_config["lazy"]:
             logger.warning("HACK login implies lazy connection, setting lazy=True.")
             self.lazy_connect = True
-        logger.info("Login method %s", self.login_method)
+        logger.info("Login method: %s", self.login_method)
 
         if client_id and client_secret:
             logger.info("Using client id & client secret from config")
@@ -106,25 +118,82 @@ class TidalBackend(ThreadingActor, backend.Backend):
         """Load session at startup or create a new session"""
         if self._active_session.load_session_from_file(self.session_file_path):
             logger.info(
-                "Loaded existing tidal session from file %s...", self.session_file_path
+                "Loaded existing TIDAL session from file %s...", self.session_file_path
             )
         if not self.session_valid:
-            # Attempt to create new session
-            if self.pkce_enabled:
-                logger.info("Creating new session (PKCE)...")
-                self._active_session.login_oauth_simple(function=logger.info)
-                # self._active_session.save_session_to_file(self.session_file_path)
-            else:
+            if not self.login_web_port:
+                # A. Default login, user must find login URL in Mopidy log
                 logger.info("Creating new session (OAuth)...")
                 self._active_session.login_oauth_simple(function=logger.info)
-                # self._active_session.save_session_to_file(self.session_file_path)
+            else:
+                # B. Interactive login, user must perform login using web auth
+                logger.info(
+                    "Creating new session (%s)...",
+                    "PKCE" if self.pkce_enabled else "OAuth",
+                )
+                if self.pkce_enabled:
+                    # PKCE Login
+                    login_url = self._active_session.pkce_login_url()
+                    logger.info(
+                        "Please visit 'http://localhost:%s' to authenticate",
+                        self.login_web_port,
+                    )
+                    # Enable web server for interactive login + callback on form Submit
+                    self.web_auth_server.set_callback(self._web_auth_callback)
+                    self.web_auth_server.start_oauth_daemon(
+                        login_url, self.login_web_port, self.pkce_enabled
+                    )
+                else:
+                    # OAuth login
+                    login_url = self.login_url
+                    logger.info(
+                        "Please visit 'http://localhost:%s' or '%s' to authenticate",
+                        self.login_web_port,
+                        login_url,
+                    )
+                    # Enable web server for interactive login (no callback)
+                    self.web_auth_server.start_oauth_daemon(
+                        login_url, self.login_web_port, self.pkce_enabled
+                    )
 
+                # Wait for user to complete interactive login sequence
+                max_time = time.time() + 300
+                while time.time() < max_time:
+                    if self._logged_in:
+                        if not self.pkce_enabled:
+                            self._complete_login()
+                        return
+                    logger.info(
+                        "Time left to complete authentication: %s sec",
+                        int(max_time - time.time()),
+                    )
+                    time.sleep(5)
+                raise TimeoutError("You took too long to log in")
+
+    def _web_auth_callback(self, url_redirect: str):
+        """Callback triggered on web auth completion
+        :param url_redirect: URL of the 'Ooops' page, where the user was redirected to after login.
+        :type url_redirect: str
+        """
+        if self.pkce_enabled:
+            try:
+                # Query for auth tokens
+                json: dict[
+                    str, Union[str, int]
+                ] = self._active_session.pkce_get_auth_token(url_redirect)
+                # Parse and set tokens.
+                self._active_session.process_auth_token(json)
+                self.is_pkce = True
+                self._logged_in = True
+            except:
+                raise ValueError("Response code is required for PKCE login!")
+        # Store session after auth completion
         self._complete_login()
 
     def _complete_login(self):
         """Perform final steps of login sequence; save session to file"""
         if self.session_valid:
-            # Check if session is valid after login
+            # Only store current session if valid
             logger.info("TIDAL Login OK")
             self._active_session.save_session_to_file(self.session_file_path)
             self._logged_in = True
@@ -140,8 +209,19 @@ class TidalBackend(ThreadingActor, backend.Backend):
     @property
     def login_url(self) -> Optional[str]:
         """Start a new login sequence (if not active) and get the latest login URL"""
-        if not self._logged_in and not self.logging_in:
-            login_url, self._login_future = self._active_session.login_oauth()
-            self._login_future.add_done_callback(lambda *_: self._complete_login())
-            self._login_url = login_url.verification_uri_complete
-        return f"https://{self._login_url}" if self._login_url else None
+        if not self.pkce_enabled:
+            if not self._logged_in and not self.logging_in:
+                login_url, self._login_future = self._active_session.login_oauth()
+                self._login_future.add_done_callback(lambda *_: self._complete_login())
+                self._login_url = login_url.verification_uri_complete
+            return f"https://{self._login_url}" if self._login_url else None
+        else:
+            if not self._logged_in and not self.web_auth_server.is_daemon_running:
+                login_url = self._active_session.pkce_login_url()
+                self._login_url = "http://localhost:{}".format(self.login_web_port)
+                # Enable web server for interactive login + callback on form Submit
+                self.web_auth_server.set_callback(self._web_auth_callback)
+                self.web_auth_server.start_oauth_daemon(
+                    login_url, self.login_web_port, self.pkce_enabled
+                )
+            return f"{self._login_url}" if self._login_url else None

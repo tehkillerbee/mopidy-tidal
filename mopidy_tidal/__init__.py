@@ -36,6 +36,9 @@ class Extension(ext.Extension):
         schema["lazy"] = config.Boolean(optional=True)
         schema["login_method"] = config.String(choices=["BLOCK", "HACK"])
         schema["pkce_enabled"] = config.Boolean(optional=True)
+        schema["login_web_port"] = config.Integer(
+            optional=True, choices=range(8000, 9000)
+        )
         return schema
 
     def setup(self, registry):
