@@ -10,9 +10,10 @@ logger = logging.getLogger(__name__)
 
 def create_root():
     return [
-        # Ref.directory(uri="tidal:home", name="Home"), This page takes forever to load...
+        Ref.directory(uri="tidal:home", name="Home"),
         Ref.directory(uri="tidal:for_you", name="For You"),
         Ref.directory(uri="tidal:explore", name="Explore"),
+        Ref.directory(uri="tidal:hires", name="HiRes"),
         Ref.directory(uri="tidal:genres", name="Genres"),
         Ref.directory(uri="tidal:moods", name="Moods"),
         Ref.directory(uri="tidal:mixes", name="Mixes"),
@@ -20,6 +21,7 @@ def create_root():
         Ref.directory(uri="tidal:my_albums", name="My Albums"),
         Ref.directory(uri="tidal:my_playlists", name="My Playlists"),
         Ref.directory(uri="tidal:my_tracks", name="My Tracks"),
+        Ref.directory(uri="tidal:my_mixes", name="My Mixes & Radios"),
     ]
 
 
@@ -59,6 +61,25 @@ def create_genres(tidal_genres):
 def create_genre(tidal_genre):
     genre_id = tidal_genre.path
     return Ref.directory(uri="tidal:genre:" + genre_id, name=tidal_genre.name)
+
+
+def create_category_directories(uri, tidal_page):
+    res = []
+    for idx, category in enumerate(tidal_page.categories):
+        if category.title == "":
+            res.extend(
+                [create_mixed_entry(item) for idx, item in enumerate(category.items)]
+            )
+        else:
+            res.append(create_category_directory(uri, idx, category.title))
+
+    # Remove None/Unsupported entries
+    res_filtered = [i for i in res if i is not None]
+    return res_filtered
+
+
+def create_category_directory(uri, idx, name):
+    return Ref.directory(uri="{}:category:{}".format(uri, idx), name=name)
 
 
 def create_mixed_directory(tidal_mixed):

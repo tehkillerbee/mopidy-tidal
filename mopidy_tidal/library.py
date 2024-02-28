@@ -199,21 +199,25 @@ class TidalLibraryProvider(backend.LibraryProvider):
             )
         elif uri == "tidal:my_playlists":
             return self.backend.playlists.as_list()
+        elif uri == "tidal:my_mixes":
+            return ref_models_mappers.create_mixes(session.user.favorites.mixes())
         elif uri == "tidal:my_tracks":
             return ref_models_mappers.create_tracks(
                 get_items(session.user.favorites.tracks)
             )
         elif uri == "tidal:home":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.home()]
-            )
+            return ref_models_mappers.create_category_directories(uri, session.home())
         elif uri == "tidal:for_you":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.for_you()]
+            return ref_models_mappers.create_category_directories(
+                uri, session.for_you()
             )
         elif uri == "tidal:explore":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.explore()]
+            return ref_models_mappers.create_category_directories(
+                uri, session.explore()
+            )
+        elif uri == "tidal:hires":
+            return ref_models_mappers.create_category_directories(
+                uri, session.hires_page()
             )
         elif uri == "tidal:moods":
             return ref_models_mappers.create_moods(session.moods())
@@ -263,9 +267,17 @@ class TidalLibraryProvider(backend.LibraryProvider):
             )
 
         if nr_of_parts == 3 and parts[1] == "page":
+            # User page (eg. page:for_you, page:home etc)
             return ref_models_mappers.create_mixed_directory(session.page.get(parts[2]))
 
-        logger.debug("Unknown uri for browse request: %s", uri)
+        if nr_of_parts == 4 and parts[2] == "category":
+            # Category nested on a page (eg. page(For You).category[0..n])
+            category = session.page.get("pages/{}".format(parts[1])).categories[
+                int(parts[3])
+            ]
+            return ref_models_mappers.create_mixed_directory(category.items)
+
+        logger.info("Unknown uri for browse request: %s", uri)
         return []
 
     @login_hack
