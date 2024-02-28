@@ -50,7 +50,7 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
             )
         )
 
-        if stream.manifest_mime_type == ManifestMimeType.MPD.value:
+        if stream.manifest_mime_type == ManifestMimeType.MPD:
             data = stream.get_manifest_data()
             if data:
                 mpd_path = Path(
@@ -62,5 +62,5 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
                 return "file://{}".format(mpd_path)
             else:
                 raise AttributeError("No MPD manifest available!")
-        elif stream.manifest_mime_type == ManifestMimeType.BTS.value:
+        elif stream.manifest_mime_type == ManifestMimeType.BTS:
             return manifest.get_urls()

@@ -92,7 +92,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self.lazy_connect = self._tidal_config["lazy"]
         logger.info("Quality: %s", quality)
         logger.info("Authentication: %s", "PKCE" if self.pkce_enabled else "OAuth")
-        config = Config(quality=Quality(quality))
+        config = Config(quality=quality)
 
         # Set the session filename, depending on the type of session
         if self.pkce_enabled:
