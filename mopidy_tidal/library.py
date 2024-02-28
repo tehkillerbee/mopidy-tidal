@@ -40,12 +40,19 @@ class ImagesGetter:
         method = None
 
         if hasattr(obj, "image"):
-            # Handle artists with missing images
-            if hasattr(obj, "picture") and getattr(obj, "picture", None) is None:
+            if hasattr(obj, "picture") and getattr(obj, "picture", None) is not None:
+                method = obj.image
+            elif (
+                hasattr(obj, "square_picture")
+                and getattr(obj, "square_picture", None) is not None
+            ):
+                method = obj.image
+            elif hasattr(obj, "cover") and getattr(obj, "cover", None) is not None:
+                method = obj.image
+            else:
+                # Handle artists/albums/playlists with missing images
                 cls._log_image_not_found(obj)
                 return
-
-            method = obj.image
         else:
             cls._log_image_not_found(obj)
             return
