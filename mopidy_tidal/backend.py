@@ -10,13 +10,7 @@ from mopidy import backend
 from pykka import ThreadingActor
 from tidalapi import Config, Quality, Session
 
-from mopidy_tidal import (
-    Extension,
-    context,
-    library,
-    playback,
-    playlists,
-)
+from mopidy_tidal import Extension, context, library, playback, playlists
 from mopidy_tidal.web_auth_server import WebAuthServer
 
 logger = logging.getLogger(__name__)
@@ -92,7 +86,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         self.lazy_connect = self._tidal_config["lazy"]
         logger.info("Quality: %s", quality)
         logger.info("Authentication: %s", "PKCE" if self.pkce_enabled else "OAuth")
-        config = Config(quality=Quality(quality))
+        config = Config(quality=quality)
 
         # Set the session filename, depending on the type of session
         if self.pkce_enabled:
@@ -103,7 +97,9 @@ class TidalBackend(ThreadingActor, backend.Backend):
         if (self.login_method == "HACK") and not self._tidal_config["lazy"]:
             logger.warning("AUTO login implies lazy connection, setting lazy=True.")
             self.lazy_connect = True
-        logger.info("Login method: %s", self.login_method)
+        logger.info(
+            "Login method: %s", "BLOCK" if self.pkce_enabled == "BLOCK" else "AUTO"
+        )
 
         if client_id and client_secret:
             logger.info("Using client id & client secret from config")
@@ -189,7 +185,6 @@ class TidalBackend(ThreadingActor, backend.Backend):
                 ] = self._active_session.pkce_get_auth_token(url_redirect)
                 # Parse and set tokens.
                 self._active_session.process_auth_token(json)
-                self.is_pkce = True
                 self._logged_in = True
             except:
                 raise ValueError("Response code is required for PKCE login!")

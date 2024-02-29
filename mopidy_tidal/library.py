@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 from mopidy import backend, models
 from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
 from requests.exceptions import HTTPError
-from tidalapi.exceptions import ObjectNotFound
+from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 
 from mopidy_tidal import full_models_mappers, ref_models_mappers
 from mopidy_tidal.login_hack import login_hack
@@ -40,12 +40,19 @@ class ImagesGetter:
         method = None
 
         if hasattr(obj, "image"):
-            # Handle artists with missing images
-            if hasattr(obj, "picture") and getattr(obj, "picture", None) is None:
+            if hasattr(obj, "picture") and getattr(obj, "picture", None) is not None:
+                method = obj.image
+            elif (
+                hasattr(obj, "square_picture")
+                and getattr(obj, "square_picture", None) is not None
+            ):
+                method = obj.image
+            elif hasattr(obj, "cover") and getattr(obj, "cover", None) is not None:
+                method = obj.image
+            else:
+                # Handle artists/albums/playlists with missing images
                 cls._log_image_not_found(obj)
                 return
-
-            method = obj.image
         else:
             cls._log_image_not_found(obj)
             return
@@ -87,6 +94,7 @@ class ImagesGetter:
 
         if uri in self._image_cache:
             # Cache hit
+            logger.debug("Cache hit for {}".format(uri))
             return self._image_cache[uri]
 
         logger.debug("Retrieving %r from the API", uri)
@@ -109,9 +117,17 @@ class ImagesGetter:
         return [Image(uri=img_uri, width=320, height=320)]
 
     def __call__(self, uri: str) -> Tuple[str, List[Image]]:
+        parts = uri.split(":")
+        item_type = parts[1]
+        if item_type not in ["artist", "album", "playlist"]:
+            logger.debug("URI %s type has no image getters", uri)
+            return uri, []
         try:
             return uri, self._get_images(uri)
-        except (AssertionError, AttributeError, ObjectNotFound, HTTPError) as err:
+        except (AssertionError, AttributeError, ObjectNotFound) as err:
+            logger.error("%s when processing URI %r: %s", type(err), uri, err)
+            return uri, []
+        except (HTTPError, TooManyRequests) as err:
             logger.error("%s when processing URI %r: %s", type(err), uri, err)
             return uri, []
 
@@ -199,21 +215,25 @@ class TidalLibraryProvider(backend.LibraryProvider):
             )
         elif uri == "tidal:my_playlists":
             return self.backend.playlists.as_list()
+        elif uri == "tidal:my_mixes":
+            return ref_models_mappers.create_mixes(session.user.favorites.mixes())
         elif uri == "tidal:my_tracks":
             return ref_models_mappers.create_tracks(
                 get_items(session.user.favorites.tracks)
             )
         elif uri == "tidal:home":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.home()]
-            )
+            return ref_models_mappers.create_category_directories(uri, session.home())
         elif uri == "tidal:for_you":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.for_you()]
+            return ref_models_mappers.create_category_directories(
+                uri, session.for_you()
             )
         elif uri == "tidal:explore":
-            return ref_models_mappers.create_mixed_directory(
-                [m for m in session.explore()]
+            return ref_models_mappers.create_category_directories(
+                uri, session.explore()
+            )
+        elif uri == "tidal:hires":
+            return ref_models_mappers.create_category_directories(
+                uri, session.hires_page()
             )
         elif uri == "tidal:moods":
             return ref_models_mappers.create_moods(session.moods())
@@ -263,9 +283,17 @@ class TidalLibraryProvider(backend.LibraryProvider):
             )
 
         if nr_of_parts == 3 and parts[1] == "page":
+            # User page (eg. page:for_you, page:home etc)
             return ref_models_mappers.create_mixed_directory(session.page.get(parts[2]))
 
-        logger.debug("Unknown uri for browse request: %s", uri)
+        if nr_of_parts == 4 and parts[2] == "category":
+            # Category nested on a page (eg. page(For You).category[0..n])
+            category = session.page.get("pages/{}".format(parts[1])).categories[
+                int(parts[3])
+            ]
+            return ref_models_mappers.create_mixed_directory(category.items)
+
+        logger.info("Unknown uri for browse request: %s", uri)
         return []
 
     @login_hack
