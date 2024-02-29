@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 from mopidy import backend, models
 from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
 from requests.exceptions import HTTPError
-from tidalapi.exceptions import ObjectNotFound
+from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 
 from mopidy_tidal import full_models_mappers, ref_models_mappers
 from mopidy_tidal.login_hack import login_hack
@@ -94,6 +94,7 @@ class ImagesGetter:
 
         if uri in self._image_cache:
             # Cache hit
+            logger.debug("Cache hit for {}".format(uri))
             return self._image_cache[uri]
 
         logger.debug("Retrieving %r from the API", uri)
@@ -116,9 +117,17 @@ class ImagesGetter:
         return [Image(uri=img_uri, width=320, height=320)]
 
     def __call__(self, uri: str) -> Tuple[str, List[Image]]:
+        parts = uri.split(":")
+        item_type = parts[1]
+        if item_type not in ["artist", "album", "playlist"]:
+            logger.debug("URI %s type has no image getters", uri)
+            return uri, []
         try:
             return uri, self._get_images(uri)
-        except (AssertionError, AttributeError, ObjectNotFound, HTTPError) as err:
+        except (AssertionError, AttributeError, ObjectNotFound) as err:
+            logger.error("%s when processing URI %r: %s", type(err), uri, err)
+            return uri, []
+        except (HTTPError, TooManyRequests) as err:
             logger.error("%s when processing URI %r: %s", type(err), uri, err)
             return uri, []
 
