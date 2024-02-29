@@ -185,7 +185,6 @@ class TidalBackend(ThreadingActor, backend.Backend):
                 ] = self._active_session.pkce_get_auth_token(url_redirect)
                 # Parse and set tokens.
                 self._active_session.process_auth_token(json)
-                self.is_pkce = True
                 self._logged_in = True
             except:
                 raise ValueError("Response code is required for PKCE login!")
