@@ -410,10 +410,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_mix_tracks(session, mix_id):
-        filtered_mixes = [m for m in session.mixes() if mix_id == m.id]
-        if filtered_mixes:
-            return filtered_mixes[0].items()
-        return []
+        try:
+            return session.mix(mix_id).items()
+        except ObjectNotFound:
+            logger.debug("No such mix: %s", mix_id)
+            return []
 
     def _lookup_playlist(self, session, parts):
         playlist_id = parts[2]
