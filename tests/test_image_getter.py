@@ -11,7 +11,7 @@ def images_getter(mocker, config):
 
 
 @pytest.mark.parametrize("dimensions", (750, 640, 480))
-def test_get_album_image_new_api(images_getter, mocker, dimensions):
+def test_get_album_image(images_getter, mocker, dimensions):
     ig, session = images_getter
     uri = "tidal:album:1-1-1"
     get_album = mocker.Mock()
@@ -36,7 +36,7 @@ def test_get_album_image_new_api(images_getter, mocker, dimensions):
     assert get_uri_args == [dimensions]
 
 
-def test_get_album_no_image_new_api(images_getter, mocker):
+def test_get_album_no_image(images_getter, mocker):
     ig, session = images_getter
     uri = "tidal:album:1-1-1"
     get_album = mocker.Mock()
@@ -49,7 +49,7 @@ def test_get_album_no_image_new_api(images_getter, mocker):
     assert ig(uri) == (uri, [])
 
 
-def test_get_album_no_getter_methods_new_api(images_getter, mocker):
+def test_get_album_no_getter_methods(images_getter, mocker):
     ig, session = images_getter
     uri = "tidal:album:1-1-1"
     get_album = mocker.Mock(spec={"id", "__name__"}, name="get_album", id="1")

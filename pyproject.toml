@@ -19,7 +19,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9"
 Mopidy = "^3.0"
-tidalapi = "^0.7.3"
+tidalapi = {git = "https://github.com/tamland/python-tidal"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
@@ -50,10 +50,9 @@ tidal = "mopidy_tidal:Extension"
 
 [tool.pytest.ini_options]
 markers = [
-    "gt_3_7: Mark a test as requiring python > 3.7.",
-    "gt_3_8: Mark a test as requiring python > 3.8.",
-    "gt_3_9: Mark a test as requiring python > 3.9.",
     "gt_3_10: Mark a test as requiring python > 3.10.",
+    "poor_test: Mark a test in need of improvement",
+    "insufficiently_decoupled: Mark a test as insufficiently decoupled from implementation",
 ]
 filterwarnings = [
     "error::DeprecationWarning:mopidy[.*]",

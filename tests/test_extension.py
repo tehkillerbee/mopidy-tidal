@@ -6,7 +6,7 @@ from mopidy_tidal import Extension
 from mopidy_tidal.backend import TidalBackend
 
 
-def test_get_default_config():
+def test_sanity_check_default_resembles_conf_file():
     ext = Extension()
 
     config = ext.get_default_config()
@@ -15,24 +15,32 @@ def test_get_default_config():
     assert "enabled = true" in config
 
 
-def test_get_config_schema():
+def test_config_schema_has_correct_keys():
+    """This is mostly a sanity check in case we forget to add a key."""
     ext = Extension()
 
     schema = ext.get_config_schema()
 
-    # Test the content of your config schema
-    assert "quality" in schema
-    assert "client_id" in schema
-    assert "client_secret" in schema
-    assert "lazy" in schema
+    assert set(schema.keys()) == {
+        "enabled",
+        "quality",
+        "client_id",
+        "client_secret",
+        "playlist_cache_refresh_secs",
+        "lazy",
+        "login_method",
+        "login_server_port",
+        "auth_method",
+    }
 
 
-@pytest.mark.gt_3_7
-def test_setup(mocker):
+def test_extension_setup_registers_tidal_backend(mocker):
     ext = Extension()
     registry = mocker.Mock()
+
     ext.setup(registry)
+
     registry.add.assert_called_once()
-    args = registry.add.mock_calls[0].args
-    assert args[0] == "backend"
-    assert type(args[1]) is type(TidalBackend)
+    plugin_type, obj = registry.add.mock_calls[0].args
+    assert plugin_type == "backend"
+    assert issubclass(obj, TidalBackend)

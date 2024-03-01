@@ -1,14 +1,13 @@
-from mopidy.models import Ref
-
 from mopidy_tidal import ref_models_mappers as rmm
 
 
-def test_root():
+def test_root_contains_entries_for_eachfield():
     root = rmm.create_root()
+
     uri_map = {
         "tidal:genres": "Genres",
         "tidal:moods": "Moods",
-        "tidal:mixes": "Mixes",
+        "tidal:mixes": "My Mixes",
         "tidal:my_artists": "My Artists",
         "tidal:my_albums": "My Albums",
         "tidal:my_playlists": "My Playlists",

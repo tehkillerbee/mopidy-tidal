@@ -14,5 +14,5 @@ from mopidy_tidal.helpers import to_timestamp
         (12, 12),
     ],
 )
-def test_to_timestamp(dt, res):
+def test_to_timestamp_converts_correctly(dt, res):
     assert to_timestamp(dt) == res
