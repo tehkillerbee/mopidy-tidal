@@ -49,8 +49,11 @@ class ImagesGetter:
                 method = obj.image
             elif hasattr(obj, "cover") and getattr(obj, "cover", None) is not None:
                 method = obj.image
+            elif hasattr(obj, "images") and getattr(obj, "images", None) is not None:
+                # Mix types contain images type with three small/medium/large image sizes
+                method = obj.image
             else:
-                # Handle artists/albums/playlists with missing images
+                # Handle artists/albums/playlists/mixes with missing images
                 cls._log_image_not_found(obj)
                 return
         else:
@@ -119,7 +122,7 @@ class ImagesGetter:
     def __call__(self, uri: str) -> Tuple[str, List[Image]]:
         parts = uri.split(":")
         item_type = parts[1]
-        if item_type not in ["artist", "album", "playlist"]:
+        if item_type not in ["artist", "album", "playlist", "mix"]:
             logger.debug("URI %s type has no image getters", uri)
             return uri, []
         try:
@@ -407,10 +410,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _get_mix_tracks(session, mix_id):
-        filtered_mixes = [m for m in session.mixes() if mix_id == m.id]
-        if filtered_mixes:
-            return filtered_mixes[0].items()
-        return []
+        try:
+            return session.mix(mix_id).items()
+        except ObjectNotFound:
+            logger.debug("No such mix: %s", mix_id)
+            return []
 
     def _lookup_playlist(self, session, parts):
         playlist_id = parts[2]
