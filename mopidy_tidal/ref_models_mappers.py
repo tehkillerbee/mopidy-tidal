@@ -4,6 +4,7 @@ import logging
 
 from mopidy.models import Ref
 from tidalapi import Album, Artist, Mix, Playlist, Track
+from tidalapi.mix import MixType
 
 logger = logging.getLogger(__name__)
 
@@ -133,14 +134,21 @@ def create_mixed_entry(tidal_mixed):
 
 
 def create_mixes(tidal_mixes):
-    return [create_mix(m) for m in tidal_mixes]
+    res = [create_mix(m) for m in tidal_mixes]
+    # Remove None/Unsupported entries
+    res_filtered = [i for i in res if i is not None]
+    return res_filtered
 
 
 def create_mix(tidal_mix):
-    return Ref.playlist(
-        uri="tidal:mix:" + tidal_mix.id,
-        name=f"{tidal_mix.title} ({tidal_mix.sub_title})",
-    )
+    if tidal_mix.mix_type is MixType.video_daily:
+        # Skip video mixes (not supported)
+        return None
+    else:
+        return Ref.playlist(
+            uri="tidal:mix:" + tidal_mix.id,
+            name=f"{tidal_mix.title} ({tidal_mix.sub_title})",
+        )
 
 
 def create_albums(tidal_albums):
