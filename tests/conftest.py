@@ -58,6 +58,8 @@ def config(tmp_path):
             "quality": "LOSSLESS",
             "lazy": False,
             "login_method": "BLOCK",
+            "auth_method": "OAUTH2",
+            "login_server_port": 8989,
         },
     }
     context.set_config(cfg)
