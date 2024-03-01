@@ -17,12 +17,12 @@ def create_root():
         Ref.directory(uri="tidal:hires", name="HiRes"),
         Ref.directory(uri="tidal:genres", name="Genres"),
         Ref.directory(uri="tidal:moods", name="Moods"),
-        Ref.directory(uri="tidal:mixes", name="Mixes"),
+        Ref.directory(uri="tidal:mixes", name="My Mixes"),
         Ref.directory(uri="tidal:my_artists", name="My Artists"),
         Ref.directory(uri="tidal:my_albums", name="My Albums"),
         Ref.directory(uri="tidal:my_playlists", name="My Playlists"),
         Ref.directory(uri="tidal:my_tracks", name="My Tracks"),
-        Ref.directory(uri="tidal:my_mixes", name="My Mixes & Radios"),
+        Ref.directory(uri="tidal:my_mixes", name="Mixes & Radio"),
     ]
 
 
