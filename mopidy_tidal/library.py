@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from mopidy import backend, models
@@ -245,59 +246,61 @@ class TidalLibraryProvider(backend.LibraryProvider):
         elif uri == "tidal:genres":
             return ref_models_mappers.create_genres(session.genre.get_genres())
 
-        # details
-        parts = uri.split(":")
-        nr_of_parts = len(parts)
-
-        if nr_of_parts == 3 and parts[1] == "album":
-            return ref_models_mappers.create_tracks(
-                self._get_album_tracks(session, parts[2])
-            )
-
-        if nr_of_parts == 3 and parts[1] == "artist":
-            top_10_tracks = ref_models_mappers.create_tracks(
-                self._get_artist_top_tracks(session, parts[2])[:10]
-            )
-
-            albums = ref_models_mappers.create_albums(
-                self._get_artist_albums(session, parts[2])
-            )
-
-            return albums + top_10_tracks
-
-        if nr_of_parts == 3 and parts[1] == "playlist":
-            return ref_models_mappers.create_tracks(
-                self._get_playlist_tracks(session, parts[2])
-            )
-
-        if nr_of_parts == 3 and parts[1] == "mood":
-            return ref_models_mappers.create_playlists(
-                self._get_mood_items(session, parts[2])
-            )
-
-        if nr_of_parts == 3 and parts[1] == "genre":
-            return ref_models_mappers.create_playlists(
-                self._get_genre_items(session, parts[2])
-            )
-
-        if nr_of_parts == 3 and parts[1] == "mix":
-            return ref_models_mappers.create_tracks(
-                self._get_mix_tracks(session, parts[2])
-            )
-
-        if nr_of_parts == 3 and parts[1] == "page":
-            # User page (eg. page:for_you, page:home etc)
-            return ref_models_mappers.create_mixed_directory(session.page.get(parts[2]))
-
-        if nr_of_parts == 4 and parts[2] == "category":
-            # Category nested on a page (eg. page(For You).category[0..n])
-            category = session.page.get("pages/{}".format(parts[1])).categories[
-                int(parts[3])
-            ]
+        # Category nested on a page (eg. page(For You).category[0..n])
+        # These have 3-part uris
+        with suppress(ValueError):
+            _, page_id, type, category_id = uri.split(":")
+            category = session.page.get(f"pages/{page_id}").categories[int(category_id)]
             return ref_models_mappers.create_mixed_directory(category.items)
 
-        logger.info("Unknown uri for browse request: %s", uri)
-        return []
+        # details with 2-part uris
+        try:
+            _, type, id = uri.split(":")
+
+            if type == "album":
+                return ref_models_mappers.create_tracks(
+                    self._get_album_tracks(session, id)
+                )
+
+            elif type == "artist":
+                top_10_tracks = ref_models_mappers.create_tracks(
+                    self._get_artist_top_tracks(session, id)[:10]
+                )
+
+                albums = ref_models_mappers.create_albums(
+                    self._get_artist_albums(session, id)
+                )
+
+                return albums + top_10_tracks
+
+            elif type == "playlist":
+                return ref_models_mappers.create_tracks(
+                    self._get_playlist_tracks(session, id)
+                )
+
+            elif type == "mood":
+                return ref_models_mappers.create_playlists(
+                    self._get_mood_items(session, id)
+                )
+
+            elif type == "genre":
+                return ref_models_mappers.create_playlists(
+                    self._get_genre_items(session, id)
+                )
+
+            elif type == "mix":
+                return ref_models_mappers.create_tracks(
+                    self._get_mix_tracks(session, id)
+                )
+
+            elif type == "page":
+                return ref_models_mappers.create_mixed_directory(session.page.get(id))
+            else:
+                return []
+
+        except ValueError:
+            logger.error("Unable to parse uri '%s' for browse.", uri)
+            return []
 
     @login_hack
     def search(self, query=None, uris=None, exact=False) -> Optional[SearchResult]:
