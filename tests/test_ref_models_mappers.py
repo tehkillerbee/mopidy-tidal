@@ -7,7 +7,7 @@ def test_root_contains_entries_for_eachfield():
     uri_map = {
         "tidal:genres": "Genres",
         "tidal:moods": "Moods",
-        "tidal:mixes": "Mixes",
+        "tidal:mixes": "My Mixes",
         "tidal:my_artists": "My Artists",
         "tidal:my_albums": "My Albums",
         "tidal:my_playlists": "My Playlists",
