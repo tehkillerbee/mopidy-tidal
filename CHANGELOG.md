@@ -1,5 +1,22 @@
 # Changelog
 
+#### v0.3.5
+- Fix HI_RES_LOSSLESS playback with PKCE authentication
+- Added support for two stage PKCE authentication using HTTP web server
+- Add new categories (HiRes, Mixes & Radio, My Mixes) 
+- Add helper functions (create_category_directories) for navigating sub-categories
+- Switch to using Stream MPEG-DASH MPD manifest directly for playback instead of direct URL
+- Refactor/cleanup backend, move load/save session to tidalapi.
+- Handle missing objects (ObjectNotFound) gracefully
+- Handle HTTP 429 (TooManyRequests) gracefully
+- Add auth_mode, login_server_port config params
+- Add HI_RES (MQA), add auth_method, login_server_port, AUTO login_method as alias
+- Fix missing pictures on some playlist types
+- Skip video_mixes when generating mix playlists
+- Rewrite test suite
+
+(Major thanks to [2e0byo](https://github.com/2e0byo) for test suite improvements, [quodrum-glas](https://github.com/quodrum-glas) for inspiration to use HTTP Server for PKCE authentication)
+
 #### v0.3.4
 - Added support for navigating For You, Explore pages.
 
