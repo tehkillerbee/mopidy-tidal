@@ -225,7 +225,6 @@ def test_loads_session(get_backend, mocker, config):
 
     backend.on_start()
 
-    args = {k: v["data"] for k, v in data.items() if k != "session_id"}
     session.login_oauth_simple.assert_not_called()
-    session.load_oauth_session.assert_called_once_with(**args)
+    session.load_session_from_file.assert_called_once()
     session_factory.assert_called_once()
