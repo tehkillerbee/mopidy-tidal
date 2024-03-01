@@ -49,8 +49,11 @@ class ImagesGetter:
                 method = obj.image
             elif hasattr(obj, "cover") and getattr(obj, "cover", None) is not None:
                 method = obj.image
+            elif hasattr(obj, "images") and getattr(obj, "images", None) is not None:
+                # Mix types contain images type with three small/medium/large image sizes
+                method = obj.image
             else:
-                # Handle artists/albums/playlists with missing images
+                # Handle artists/albums/playlists/mixes with missing images
                 cls._log_image_not_found(obj)
                 return
         else:
