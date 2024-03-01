@@ -81,15 +81,18 @@ class TestBrowse:
 
     def test_root_uri_returns_all_options_as_refs(self, library_provider):
         assert library_provider.browse("tidal:directory") == [
+            Ref(name="Home", type="directory", uri="tidal:home"),
             Ref(name="For You", type="directory", uri="tidal:for_you"),
             Ref(name="Explore", type="directory", uri="tidal:explore"),
+            Ref(name="HiRes", type="directory", uri="tidal:hires"),
             Ref(name="Genres", type="directory", uri="tidal:genres"),
             Ref(name="Moods", type="directory", uri="tidal:moods"),
-            Ref(name="Mixes", type="directory", uri="tidal:mixes"),
+            Ref(name="My Mixes", type="directory", uri="tidal:mixes"),
             Ref(name="My Artists", type="directory", uri="tidal:my_artists"),
             Ref(name="My Albums", type="directory", uri="tidal:my_albums"),
             Ref(name="My Playlists", type="directory", uri="tidal:my_playlists"),
             Ref(name="My Tracks", type="directory", uri="tidal:my_tracks"),
+            Ref(name="Mixes & Radio", type="directory", uri="tidal:my_mixes"),
         ]
 
     def test_my_artists_returns_favourite_artists_from_tidal_as_refs(
