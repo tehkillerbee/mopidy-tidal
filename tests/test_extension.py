@@ -29,6 +29,8 @@ def test_config_schema_has_correct_keys():
         "playlist_cache_refresh_secs",
         "lazy",
         "login_method",
+        "login_server_port",
+        "auth_method",
     }
 
 
