@@ -3,6 +3,7 @@
 #### v0.3.6
 - Bugfix: Fix missing images on tracks
 - Readme: PKCE logon details added
+- Print Mopidy-Tidal, Python-Tidal version info to log
 
 #### v0.3.5
 - Fix HI_RES_LOSSLESS playback with PKCE authentication
