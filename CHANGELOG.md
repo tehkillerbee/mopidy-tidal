@@ -1,5 +1,9 @@
 # Changelog
 
+#### v0.3.6
+- Bugfix: Fix missing images on tracks
+- Readme: PKCE logon details added
+
 #### v0.3.5
 - Fix HI_RES_LOSSLESS playback with PKCE authentication
 - Added support for two stage PKCE authentication using HTTP web server
