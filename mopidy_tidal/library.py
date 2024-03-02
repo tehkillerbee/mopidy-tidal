@@ -124,7 +124,7 @@ class ImagesGetter:
         parts = uri.split(":")
         item_type = parts[1]
         if item_type not in ["artist", "album", "playlist", "mix", "track"]:
-            logger.error("URI %s type has no image getters", uri)
+            logger.debug("URI %s type has no image getters", uri)
             return uri, []
         try:
             return uri, self._get_images(uri)
