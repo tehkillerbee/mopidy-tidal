@@ -49,8 +49,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
         # pkce_enabled: If true, TIDAL session will use PKCE auth. Otherwise OAuth2 is used
         self.auth_method: str = "OAUTH"
         self.pkce_enabled: bool = False
-        # login_server_port: Port to use for login HTTP server, eg. localhost:<port>
-        self.login_server_port: Optional[int] = None
+        # login_server_port: Port to use for login HTTP server, eg. <host_ip>:<port>. Default <host_ip>:8989
+        self.login_server_port: int = 8989
 
     @property
     def session(self):
@@ -79,6 +79,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
         if self.auth_method == "PKCE":
             self.pkce_enabled = True
         self.login_server_port = self._tidal_config["login_server_port"]
+        logger.info("PKCE login web server port: %s", self.login_server_port)
         self.login_method = self._tidal_config["login_method"]
         if self.login_method == "AUTO":
             # Add AUTO as alias to HACK login method
