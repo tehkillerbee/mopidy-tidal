@@ -9,9 +9,11 @@ from typing import Optional, Union
 from mopidy import backend
 from pykka import ThreadingActor
 from tidalapi import Config, Quality, Session
+from tidalapi import __version__ as tidalapi_ver
 
 from mopidy_tidal import Extension, context, library, playback, playlists
 from mopidy_tidal.web_auth_server import WebAuthServer
+from mopidy_tidal import __version__ as mopidy_tidal_ver
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,8 @@ class TidalBackend(ThreadingActor, backend.Backend):
         return self._active_session.check_login()
 
     def on_start(self):
+        logger.info("Mopidy-Tidal version: v%s", mopidy_tidal_ver)
+        logger.info("Python-Tidal version: v%s", tidalapi_ver)
         quality = self._tidal_config["quality"]
         client_id = self._tidal_config["client_id"]
         client_secret = self._tidal_config["client_secret"]
