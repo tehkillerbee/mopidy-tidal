@@ -105,12 +105,12 @@ quality = LOSSLESS
 ### Plugin parameters
 * **quality:** Set to one of the following quality types.. Make sure to use a quality level supported by your current subscription.
   * `HI_RES_LOSSLESS`, `HI_RES` `LOSSLESS`, `HIGH` or `LOW`
-      * `HI_RES_LOSSLESS` quality  (i.e. Max quality) requires a Tidal HiFi Plus subscription
+      * `HI_RES_LOSSLESS` quality  (i.e. HiRes lossless FLAC) and `HI_RES` quality (MQA) requires a Tidal HiFi Plus subscription
       * `LOSSLESS` quality (i.e. HiFi lossless FLAC) and below requires a HiFi subscription.
 * **auth_method (Optional):**: Select the authentication mode to use.
-  * `OAUTH` used as default and allows qualities up to `LOSSLESS` (HiFi)
-  * `PKCE` is **required** for `HI_RES` (HiFi+) playback. This method also requires the `login_web_port`to be set.
-* **login_web_port (Optional):**: Port to use for the authentication HTTP Server. This is **required** for PKCE authentication.
+  * `OAUTH` used as default and allows playback up to `LOSSLESS` (HiFi)
+  * `PKCE` is **required** for `HI_RES`, `HI_RES_LOSSLESS` (HiFi+) playback. This method uses the HTTP server for completing the authentication step.
+* **login_web_port (Optional):**: Port to use for the authentication HTTP Server. Default port: `8989`, i.e. web server will be available on `<host_ip:>:8989` eg. `localhost:8989`.
 * **playlist_cache_refresh_secs (Optional):** Tells if (and how often) playlist
 content should be refreshed upon lookup.
   * `0` (default): The default value (`0`) means that playlists won't be refreshed after the
@@ -156,15 +156,21 @@ at startup.
 ## Login
 Before TIDAL can be accessed from Mopidy, it is necessary to login, using either the OAuth or PKCE flow described below.
 
-Both methods require visiting an URL to complete the login process. The URL can be found either:
-1. In the Mopidy logs, as listed below
+Both OAuth and PKCE flow require visiting an URL to complete the login process. The URL can be found either:
+* In the Mopidy logs, as listed below
 ```
 journalctl -u mopidy | tail -10
 ...
 Visit link.tidal.com/AAAAA to log in, the code will expire in 300 seconds.
 ```
-2. Displayed in the Mopidy web client as a "dummy" track when the `login_method` is set to `AUTO`
-3. Through the auth. webserver `localhost:<login_web_port>` when the `login_web_port` mode is enabled
+* Displayed in the Mopidy web client as a "dummy" track when the `login_method` is set to `AUTO`
+* By playing the "dummy" track, a QR code will be displayed and the URL will be read aloud.
+* Displayed as a link when accessing the auth. webserver `localhost:<login_web_port>` when PKCE authentication is used.
+
+### General login tips
+* When the `login_method` is set to BLOCK, all login processes are **blocking** actions, so Mopidy + Web interface will stop loading until you approve the application.
+* When using the `lazy` mode, the login process will not be started until browsing the TIDAL related directories.
+* Session is reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if the json file is moved/deleted.
 
 ### OAuth Flow
 When using OAuth authentication mode, you will be prompted to visit an URL to login. 
@@ -173,15 +179,12 @@ This URL will be displayed in the Mopidy logs and/or in the Mopidy-Web client as
 When prompted, visit the URL to complete the OAuth login flow. No extra steps are required.
 
 ### PKCE Flow
-For `HI_RES` and `HI_RES_LOSSLESS` playback, the PKCE login flow is required. 
-This procedure also requires visiting an URL but requires an extra step:
-1. Visit the URL listed in the logs or in the Mopidy client. Usually, this should be `localhost:<login_web_port>`.
-2. You will be greeted with a link to the TIDAL login page and a form where you can paste the response URL 
-3. Visit the TIDAL URL and login using your normal credentials. 
+For `HI_RES` and `HI_RES_LOSSLESS` playback, the PKCE authentication method is required. 
+This PKCE flow also requires visiting an URL but requires an extra step to return the Tidal response URL to Python-Tidal
+1. Visit the URL listed in the logs or in the Mopidy client. Usually, this should be `<host_ip>:<login_web_port>`, eg. localhost:8989. When running a headless server, make sure to use the correct IP.
+2. You will be greeted with a link to the TIDAL login page and a form where you can paste the response URL:
+![web_auth](docs/docs0.png)
+3. Click the link and visit the TIDAL URL and login using your normal credentials. 
 4. Copy the complete URL of the page you were redirected to. This webpage normally lists "Oops" or something similar; this is normal.
-5. Paste this URL into the web authentication page and click "Submit". You can now close the web page. 
-
-### General login tips
-##### Note: When the `login_method` is set to BLOCK, all login processes are **blocking** actions, so Mopidy + Web interface will stop loading until you approve the application.
-##### Note: using the `lazy` mode, the login process will not be started until browsing the TIDAL related directories.
-##### Note: session will be reloaded automatically when Mopidy is restarted. It will be necessary to perform these steps again if the json file is moved/deleted.
+5. Paste this URL into the web authentication page and click "Submit". You can now close the web page.
+6. Refresh your Mopidy frontend. You should now be able to browse as usual.
