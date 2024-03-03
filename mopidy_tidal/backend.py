@@ -11,9 +11,10 @@ from pykka import ThreadingActor
 from tidalapi import Config, Quality, Session
 from tidalapi import __version__ as tidalapi_ver
 
-from mopidy_tidal import Extension, context, library, playback, playlists
-from mopidy_tidal.web_auth_server import WebAuthServer
+from mopidy_tidal import Extension
 from mopidy_tidal import __version__ as mopidy_tidal_ver
+from mopidy_tidal import context, library, playback, playlists
+from mopidy_tidal.web_auth_server import WebAuthServer
 
 logger = logging.getLogger(__name__)
 
