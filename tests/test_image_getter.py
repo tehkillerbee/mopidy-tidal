@@ -93,6 +93,7 @@ def test_get_artist_no_image_no_picture(images_getter, mocker):
     uri = "tidal:artist:2-2-2"
     get_artist = mocker.Mock()
     get_artist.picture = None
+    get_artist.image = None
     session.artist.return_value = get_artist
     assert ig(uri) == (uri, [])
 

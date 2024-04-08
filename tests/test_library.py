@@ -3,7 +3,7 @@ from mopidy.models import Album, Artist, Image, Ref, SearchResult, Track
 from requests import HTTPError
 from tidalapi.playlist import Playlist
 
-from mopidy_tidal.library import HTTPError, TidalLibraryProvider
+from mopidy_tidal.library import HTTPError, TidalLibraryProvider, ObjectNotFound
 
 
 @pytest.fixture
@@ -77,7 +77,8 @@ class TestBrowse:
     def test_invalid_uri_returns_empty_list(self, library_provider):
         assert library_provider.browse("") == []
         assert library_provider.browse("spotify:something:something_else") == []
-        assert library_provider.browse("tidal:album:oneid:oneidtoomany") == []
+        assert library_provider.browse("tidal:album:oneid:onemoreid") == []
+        assert library_provider.browse("tidal:album:oneid:onemoreid:oneidtoomany:") == []
 
     def test_root_uri_returns_all_options_as_refs(self, library_provider):
         assert library_provider.browse("tidal:directory") == [
@@ -323,7 +324,7 @@ class TestGetDistinct:
         artist = make_mock(name="Arty", uri="tidal:artist:1")
         tidal_search = mocker.Mock(return_value=([artist], [], []))
         mocker.patch("mopidy_tidal.search.tidal_search", tidal_search)
-        session.artist.return_value = None  # looking up artist fails
+        session.artist.side_effect = ObjectNotFound # looking up artist will result in ObjectNotFound
 
         assert library_provider.get_distinct(field, query={"any": "any"}) == set()
         tidal_search.assert_called_once_with(session, query={"any": "any"}, exact=True)

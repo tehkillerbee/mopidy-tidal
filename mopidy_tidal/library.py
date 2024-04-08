@@ -40,7 +40,7 @@ class ImagesGetter:
     def _get_image_uri(cls, obj):
         method = None
 
-        if hasattr(obj, "image"):
+        if hasattr(obj, "image") and getattr(obj, "image", None) is not None:
             if hasattr(obj, "picture") and getattr(obj, "picture", None) is not None:
                 method = obj.image
             elif (
@@ -417,10 +417,14 @@ class TidalLibraryProvider(backend.LibraryProvider):
     @staticmethod
     def _get_mix_tracks(session, mix_id):
         try:
-            return session.mix(mix_id).items()
+            mix_items = session.mix(mix_id)
         except ObjectNotFound:
             logger.debug("No such mix: %s", mix_id)
             return []
+        if mix_items is None:
+            return []
+        else:
+            return mix_items.items()
 
     def _lookup_playlist(self, session, parts):
         playlist_id = parts[2]
@@ -439,7 +443,10 @@ class TidalLibraryProvider(backend.LibraryProvider):
         except ObjectNotFound:
             logger.debug("No such artist: %s", artist_id)
             return []
-        return artist.get_albums()
+        if artist is None:
+            return []
+        else:
+            return artist.get_albums()
 
     @staticmethod
     def _get_album_tracks(session, album_id):
@@ -448,7 +455,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
         except ObjectNotFound:
             logger.debug("No such album: %s", album_id)
             return []
-        return album.tracks()
+        if album is None:
+            return []
+        else:
+            return album.tracks()
+
 
     def _lookup_track(self, session, parts):
         if len(parts) == 3:  # Track in format `tidal:track:<track_id>`
