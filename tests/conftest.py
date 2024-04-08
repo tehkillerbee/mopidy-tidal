@@ -339,8 +339,6 @@ class SessionForTest(Session):
     Tracked at https://github.com/tamland/python-tidal/issues/192
     """
 
-    genre = None
-
 
 @pytest.fixture
 def session(mocker):
