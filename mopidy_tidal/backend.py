@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from mopidy import backend
 from pykka import ThreadingActor
-from tidalapi import Config, Quality, Session
+from tidalapi import Config, Session
 from tidalapi import __version__ as tidalapi_ver
 
 from mopidy_tidal import Extension
@@ -132,7 +132,7 @@ class TidalBackend(ThreadingActor, backend.Backend):
             if not self.login_server_port:
                 # A. Default login, user must find login URL in Mopidy log
                 logger.info("Creating new session (OAuth)...")
-                self._active_session.login_oauth_simple(function=logger.info)
+                self._active_session.login_oauth_simple(fn_print=logger.info)
             else:
                 # B. Interactive login, user must perform login using web auth
                 logger.info(
@@ -186,9 +186,9 @@ class TidalBackend(ThreadingActor, backend.Backend):
         if self.pkce_enabled:
             try:
                 # Query for auth tokens
-                json: dict[
-                    str, Union[str, int]
-                ] = self._active_session.pkce_get_auth_token(url_redirect)
+                json: dict[str, Union[str, int]] = (
+                    self._active_session.pkce_get_auth_token(url_redirect)
+                )
                 # Parse and set tokens.
                 self._active_session.process_auth_token(json, is_pkce_token=True)
                 self._logged_in = True

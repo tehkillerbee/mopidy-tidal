@@ -77,9 +77,11 @@ class TidalPlaylistsProvider(backend.PlaylistsProvider):
             2, thread_name_prefix="mopidy-tidal-playlists-refresh-"
         ) as pool:
             pool_res = pool.map(
-                lambda func: get_items(func)
-                if func == session.user.favorites.playlists
-                else func(),
+                lambda func: (
+                    get_items(func)
+                    if func == session.user.favorites.playlists
+                    else func()
+                ),
                 [
                     session.user.favorites.playlists,
                     session.user.playlists,

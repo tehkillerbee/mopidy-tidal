@@ -1,4 +1,5 @@
 """Test context, which is used to manage config."""
+
 import pytest
 
 from mopidy_tidal import context
