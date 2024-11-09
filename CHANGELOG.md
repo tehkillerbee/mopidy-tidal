@@ -1,7 +1,13 @@
 # Changelog
 
+#### v0.3.8
+
+- tidalapi version bump to v0.8.1
+- Bugfix: Reverted auto-login only when AUTO enabled.
+
 #### v0.3.7
 
+-
 - tidalapi version bump to v0.8.0
 - Tests: Fixed unit tests
 
