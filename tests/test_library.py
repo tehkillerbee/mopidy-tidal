@@ -1,9 +1,9 @@
 import pytest
 from mopidy.models import Album, Artist, Image, Ref, SearchResult, Track
 from requests import HTTPError
+from tidalapi.playlist import Playlist
 
 from mopidy_tidal.library import HTTPError, ObjectNotFound, TidalLibraryProvider
-from tidalapi.playlist import Playlist
 
 
 @pytest.fixture

@@ -2,11 +2,11 @@ from concurrent.futures import Future
 
 import pytest
 from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
+from tidalapi.session import LinkLogin
 
 from mopidy_tidal.library import TidalLibraryProvider
 from mopidy_tidal.playback import TidalPlaybackProvider
 from mopidy_tidal.playlists import TidalPlaylistsProvider
-from tidalapi.session import LinkLogin
 
 
 @pytest.fixture

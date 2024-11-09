@@ -1,20 +1,20 @@
 from __future__ import unicode_literals
 
 import logging
+import time
 from concurrent.futures import Future
 from pathlib import Path
 from typing import Optional, Union
 
-import time
 from mopidy import backend
 from pykka import ThreadingActor
+from tidalapi import Config, Session
+from tidalapi import __version__ as tidalapi_ver
 
 from mopidy_tidal import Extension
 from mopidy_tidal import __version__ as mopidy_tidal_ver
 from mopidy_tidal import context, library, playback, playlists
 from mopidy_tidal.web_auth_server import WebAuthServer
-from tidalapi import Config, Session
-from tidalapi import __version__ as tidalapi_ver
 
 logger = logging.getLogger(__name__)
 
