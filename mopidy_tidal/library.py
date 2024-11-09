@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from mopidy import backend, models
-from mopidy.models import Album, Artist, Image, Playlist, Ref, SearchResult, Track
+from mopidy.models import Image, Ref, SearchResult, Track
 from requests.exceptions import HTTPError
 from tidalapi.exceptions import ObjectNotFound, TooManyRequests
 
@@ -417,10 +417,11 @@ class TidalLibraryProvider(backend.LibraryProvider):
     @staticmethod
     def _get_mix_tracks(session, mix_id):
         try:
-            return session.mix(mix_id).items()
+            mix = session.mix(mix_id)
         except ObjectNotFound:
             logger.debug("No such mix: %s", mix_id)
             return []
+        return mix.items()
 
     def _lookup_playlist(self, session, parts):
         playlist_id = parts[2]

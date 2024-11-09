@@ -1,4 +1,5 @@
 import pytest
+from tidalapi import Artist
 
 from mopidy_tidal.library import HTTPError, Image, ImagesGetter
 
@@ -87,12 +88,14 @@ def test_get_artist_image(images_getter, mocker):
 
 
 def test_get_artist_no_image_no_picture(images_getter, mocker):
-    # TODO: This follows exactly the strange logic about .image/.picture.
-    # However I'm not convinced that's correct anyhow.
+    # Handle artists with missing images
     ig, session = images_getter
     uri = "tidal:artist:2-2-2"
-    get_artist = mocker.Mock()
+    get_artist = mocker.Mock(spec=Artist)
+    # All image related entries should be None to trigger missing images
     get_artist.picture = None
+    get_artist.image = None
+    get_artist.square_picture = None
     session.artist.return_value = get_artist
     assert ig(uri) == (uri, [])
 
