@@ -2,12 +2,11 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import sys
-from importlib import metadata
 
+import sys
 from mopidy import config, ext
 
-__version__ = "0.3.6"
+__version__ = "0.3.7"
 
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
