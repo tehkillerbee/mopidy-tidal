@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 import logging
 import os
-
 import sys
+
 from mopidy import config, ext
 
 __version__ = "0.3.7"
