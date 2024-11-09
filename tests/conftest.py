@@ -1,4 +1,6 @@
-from typing import Iterable, Optional, Sized
+import json
+from concurrent.futures import Future
+from typing import Optional
 from unittest.mock import Mock
 
 import pytest
@@ -9,6 +11,7 @@ from tidalapi.media import Track
 from tidalapi.mix import Mix
 from tidalapi.page import Page, PageCategory
 from tidalapi.playlist import UserPlaylist
+from tidalapi.session import LinkLogin
 
 from mopidy_tidal import context
 from mopidy_tidal.backend import TidalBackend
@@ -316,13 +319,42 @@ def get_backend(mocker):
     def _get_backend(config=mocker.MagicMock(), audio=mocker.Mock()):
         backend = TidalBackend(config, audio)
         session_factory = mocker.Mock()
-        session = mocker.Mock()
+        # session = mocker.Mock()
+        session = mocker.Mock(spec=SessionForTest)
         session.token_type = "token_type"
         session.session_id = "session_id"
         session.access_token = "access_token"
         session.refresh_token = "refresh_token"
+        session.is_pkce = False
         session_factory.return_value = session
         mocker.patch("mopidy_tidal.backend.Session", session_factory)
+
+        # Mock web_auth
+        backend.web_auth_server.start_oauth_daemon = mocker.Mock()
+
+        # Mock login_oauth
+        url = mocker.Mock(spec=LinkLogin, verification_uri_complete="link.tidal/URI")
+        future = mocker.Mock(spec=Future)
+        session.login_oauth.return_value = (url, future)
+
+        def save_session_dummy(file_path):
+            data = {
+                "token_type": {"data": session.token_type},
+                "session_id": {"data": session.session_id},
+                "access_token": {"data": session.access_token},
+                "refresh_token": {"data": session.refresh_token},
+                "is_pkce": {"data": session.is_pkce},
+                # "expiry_time": {"data": self.expiry_time},
+            }
+            with file_path.open("w") as outfile:
+                json.dump(data, outfile)
+
+        # Saving a session will create a dummy file containing the expected data
+        session.save_session_to_file.side_effect = save_session_dummy
+
+        # Always start in logged-out state
+        session.check_login.return_value = False
+
         return backend, config, audio, session_factory, session
 
     yield _get_backend

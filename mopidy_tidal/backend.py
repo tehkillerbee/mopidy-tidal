@@ -63,10 +63,11 @@ class TidalBackend(ThreadingActor, backend.Backend):
 
     @property
     def logged_in(self):
-        if not self._logged_in:
+        # Auto-login if HACK is enabled
+        if not self._logged_in and self.login_method == "HACK":
             if self._active_session.load_session_from_file(self.session_file_path):
                 logger.info("Loaded TIDAL session from file %s", self.session_file_path)
-                self._logged_in = True
+                self._logged_in = self.session_valid
         return self._logged_in
 
     @property

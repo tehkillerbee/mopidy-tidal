@@ -14,12 +14,16 @@ def library_provider(get_backend, config, mocker):
     config["tidal"]["login_method"] = "HACK"
     config["tidal"]["lazy"] = True
     backend, *_, session = get_backend(config=config)
-    session.check_login.return_value = False
     url = mocker.Mock(spec=LinkLogin, verification_uri_complete="link.tidal/URI")
     future = mocker.Mock(spec=Future)
     future.running.return_value = True
     session.login_oauth.return_value = (url, future)
     backend.on_start()
+
+    # Always start in logged-out state
+    session.check_login.return_value = False
+
+    backend._active_session = session
 
     return backend, TidalLibraryProvider(backend=backend)
 
@@ -50,7 +54,7 @@ class TestLibraryProviderMethods:
 
         browse_results = lp.browse(uri)
 
-        assert not backend.logged_in
+        assert not backend._logged_in
         assert backend.logging_in
         assert len(browse_results) == 1
         browse_result = browse_results[0]
@@ -283,6 +287,7 @@ class TestPlaybackMethods:
         get.assert_called_once()
         assert not audiof.exists()
 
+    # @pytest.disable()
     def test_downloaded_audio_removed_on_next_access(
         self, playback_provider, mocker, tidal_playlists
     ):
@@ -306,8 +311,9 @@ class TestPlaybackMethods:
         mocker.patch("mopidy_tidal.playlists.get_items", lambda x: x)
         backend.session.user.playlists.return_value = tidal_playlists[1:]
 
+        # User has now logged in. We should now be able to access playlists and audiof should be removed
+        backend._logged_in = True
         tpp = TidalPlaylistsProvider(backend=backend)
-
         assert tpp.as_list() == [
             Ref(name="Playlist-101", type="playlist", uri="tidal:playlist:101"),
             Ref(name="Playlist-222", type="playlist", uri="tidal:playlist:222"),
