@@ -1,5 +1,9 @@
 # Changelog
 
+#### v0.3.9
+
+- Bugfix: Handle get_urls() returning list in tidalapi v0.8.1
+
 #### v0.3.8
 
 - tidalapi version bump to v0.8.1
@@ -7,7 +11,6 @@
 
 #### v0.3.7
 
--
 - tidalapi version bump to v0.8.0
 - Tests: Fixed unit tests
 

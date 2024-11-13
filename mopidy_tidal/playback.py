@@ -33,7 +33,7 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
                 logger.info("Playback quality: %s", session.config.quality)
             else:
                 logger.info(
-                    "No HI_RES available for this track; Using playback quality: %s",
+                    "No HIRES_LOSSLESS available for this track; Using playback quality: %s",
                     "LOSSLESS",
                 )
 
@@ -63,4 +63,8 @@ class TidalPlaybackProvider(backend.PlaybackProvider):
             else:
                 raise AttributeError("No MPD manifest available!")
         elif stream.manifest_mime_type == ManifestMimeType.BTS:
-            return manifest.get_urls()
+            urls = manifest.get_urls()
+            if isinstance(urls, list):
+                return urls[0]
+            else:
+                return urls

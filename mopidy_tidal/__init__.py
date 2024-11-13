@@ -6,7 +6,7 @@ import sys
 
 from mopidy import config, ext
 
-__version__ = "0.3.8"
+__version__ = "0.3.9"
 
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class Extension(ext.Extension):
     def get_config_schema(self):
         schema = super().get_config_schema()
         schema["quality"] = config.String(
-            choices=["HI_RES_LOSSLESS", "HI_RES", "LOSSLESS", "HIGH", "LOW"]
+            choices=["HI_RES_LOSSLESS", "LOSSLESS", "HIGH", "LOW"]
         )
         schema["client_id"] = config.String(optional=True)
         schema["client_secret"] = config.String(optional=True)
