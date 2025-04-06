@@ -237,8 +237,10 @@ def api_test(tpp, mocker, api_method, tp):
         track.full_name = f"{track.name} (version)"
         track.artist.name = "artist_name"
         track.artist.id = i
+        track.artists = [track.artist]
         track.album.name = "album_name"
         track.album.id = i
+        track.album.artists = [track.artist]
         track.duration = 100 + i
         track.track_num = i
         track.disc_num = i
@@ -444,8 +446,10 @@ def test_get_items_mix(tpp, mocker):
         track.full_name = f"{track.name} (version)"
         track.artist.name = "artist_name"
         track.artist.id = i
+        track.artists = [track.artist]
         track.album.name = "album_name"
         track.album.id = i
+        track.album.artists = [track.artist]
         track.duration = 100
         track.track_num = i
         track.disc_num = i

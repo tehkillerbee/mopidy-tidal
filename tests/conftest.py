@@ -211,12 +211,13 @@ def make_tidal_mix():
 def tidal_artists(mocker):
     """A list of tidal artists."""
     artists = [mocker.Mock(spec=Artist, name=f"Artist-{i}") for i in range(2)]
-    album = mocker.Mock(spec=Album)
-    album.name = "demo album"
-    album.id = 7
     for i, artist in enumerate(artists):
         artist.id = i
         artist.name = f"Artist-{i}"
+        album = mocker.Mock(spec=Album)
+        album.name = "demo album"
+        album.id = 7 + i
+        album.artists = [artist]
         artist.get_top_tracks.return_value = [
             _make_tidal_track((i + 1) * 100, artist, album)
         ]
