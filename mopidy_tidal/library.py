@@ -464,9 +464,9 @@ class TidalLibraryProvider(backend.LibraryProvider):
         if tracks:
             # We get a spurious coverage error since the next expression should never raise StopIteration
             track = next(t for t in tracks if t.id == int(track_id))  # pragma: no cover
-            artist = full_models_mappers.create_mopidy_artist(track.artist)
-            album = full_models_mappers.create_mopidy_album(track.album, artist)
-            return [full_models_mappers.create_mopidy_track(artist, album, track)]
+            # artist = full_models_mappers.create_mopidy_artist(track.artist)
+            # album = full_models_mappers.create_mopidy_album(track.album, artist)
+            return [full_models_mappers.create_mopidy_track(None, None, track)]
         else:
             return []
 

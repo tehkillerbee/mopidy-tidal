@@ -35,14 +35,14 @@ def create_mopidy_albums(tidal_albums):
     return [create_mopidy_album(a, None) for a in tidal_albums]
 
 
-def create_mopidy_album(tidal_album, artist):
-    if artist is None:
-        artist = create_mopidy_artist(tidal_album.artist)
+def create_mopidy_album(tidal_album, artists):
+    if artists is None:
+        artists = [create_mopidy_artist(artist) for artist in tidal_album.artists]
 
     return Album(
         uri="tidal:album:" + str(tidal_album.id),
         name=tidal_album.name,
-        artists=[artist],
+        artists=artists,
         date=_get_release_date(tidal_album),
     )
 
@@ -51,21 +51,21 @@ def create_mopidy_tracks(tidal_tracks):
     return [create_mopidy_track(None, None, t) for t in tidal_tracks]
 
 
-def create_mopidy_track(artist, album, tidal_track):
+def create_mopidy_track(artists, album, tidal_track):
     uri = "tidal:track:{0}:{1}:{2}".format(
         tidal_track.artist.id, tidal_track.album.id, tidal_track.id
     )
-    if artist is None:
-        artist = create_mopidy_artist(tidal_track.artist)
+    if artists is None:
+        artists = [create_mopidy_artist(artist) for artist in tidal_track.artists]
     if album is None:
-        album = create_mopidy_album(tidal_track.album, artist)
+        album = create_mopidy_album(tidal_track.album, None)
 
     track_len = tidal_track.duration * 1000
     return Track(
         uri=uri,
         name=tidal_track.full_name,
         track_no=tidal_track.track_num,
-        artists=[artist],
+        artists=artists,
         album=album,
         length=track_len,
         date=_get_release_date(tidal_track),

@@ -24,7 +24,7 @@ class TestCreateMopidyAlbum:
         album = make_tidal_album(name="Alby", id=156)
         mopidy_artist = create_mopidy_artist(make_tidal_artist(name="Arty", id=12))
 
-        mopidy_album = create_mopidy_album(album, mopidy_artist)
+        mopidy_album = create_mopidy_album(album, [mopidy_artist])
 
         assert mopidy_album
         assert mopidy_album.uri == "tidal:album:156"
