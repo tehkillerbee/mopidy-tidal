@@ -119,6 +119,7 @@ def _make_tidal_track(
         name=name or f"Track-{id}",
         full_name=name or f"Track-{id}",
         artist=artist,
+        artists=[artist],
         album=album,
         uri=f"tidal:track:{artist.id}:{album.id}:{id}",
         duration=duration or (100 + id),
@@ -146,11 +147,13 @@ def _make_tidal_album(
     artist: Optional[Artist] = None,
     **kwargs,
 ):
+    artist = artist or _make_tidal_artist(name="Album Artist", id=id + 1234)
     album = _make_mock(
         mock=Mock(spec=Album, name=next(album_counter)),
         name=name,
         id=id,
-        artist=artist or _make_tidal_artist(name="Album Artist", id=id + 1234),
+        artist=artist,
+        artists=[artist],
         **kwargs,
     )
     tracks = [_make_tidal_track(**spec, album=album) for spec in (tracks or [])]
@@ -231,6 +234,7 @@ def tidal_albums(mocker):
         album.id = i
         album.name = f"Album-{i}"
         album.artist = artist
+        album.artists = [artist]
         album.tracks.return_value = [_make_tidal_track(i, artist, album)]
     return albums
 
