@@ -465,7 +465,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
             track = next((t for t in tracks if t.id == int(track_id)), None)
             if not track:
                 # A StopIteration is rare here, but it can happen - e.g. if the
-                # cache is stale and the track has been removed from TidaL
+                # cache is stale and the track has been removed from Tidal
                 logger.warning("No such track: %s", track_id)  # pragma: no cover
 
             artist = full_models_mappers.create_mopidy_artist(track.artist)
