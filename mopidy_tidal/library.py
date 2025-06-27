@@ -467,6 +467,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
                 # A StopIteration is rare here, but it can happen - e.g. if the
                 # cache is stale and the track has been removed from Tidal
                 logger.warning("No such track: %s", track_id)  # pragma: no cover
+                return []  # Return early to prevent accessing attributes of None
 
             artist = full_models_mappers.create_mopidy_artist(track.artist)
             album = full_models_mappers.create_mopidy_album(track.album, artist)
