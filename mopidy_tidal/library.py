@@ -462,8 +462,12 @@ class TidalLibraryProvider(backend.LibraryProvider):
         tracks = self._get_album_tracks(session, album_id)
         # If album is unavailable, no tracks will be returned
         if tracks:
-            # We get a spurious coverage error since the next expression should never raise StopIteration
-            track = next(t for t in tracks if t.id == int(track_id))  # pragma: no cover
+            track = next((t for t in tracks if t.id == int(track_id)), None)
+            if not track:
+                # A StopIteration is rare here, but it can happen - e.g. if the
+                # cache is stale and the track has been removed from TidaL
+                logger.warning("No such track: %s", track_id)  # pragma: no cover
+
             artist = full_models_mappers.create_mopidy_artist(track.artist)
             album = full_models_mappers.create_mopidy_album(track.album, artist)
             return [full_models_mappers.create_mopidy_track(artist, album, track)]
