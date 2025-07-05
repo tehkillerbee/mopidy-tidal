@@ -171,6 +171,17 @@ class TidalLibraryProvider(backend.LibraryProvider):
             return tracks  # type: ignore[return-value]
         if isinstance(tracks, list) and all(isinstance(t, tuple) for t in tracks):
             tracks = dict(tracks)  # type: ignore[assignment]
+        if isinstance(tracks, list) and all(isinstance(t, dict) for t in tracks):
+            return [
+                Track(
+                    **{
+                        k: t.get(k)  # type: ignore[assignment]
+                        for k in Track.model_fields  # pylint: disable=no-member
+                        if k != "model"
+                    },
+                )
+                for t in tracks
+            ]
         if isinstance(tracks, dict):
             return [
                 Track(
