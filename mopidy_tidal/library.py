@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from mopidy import backend, models
 from mopidy.models import Image, Ref, SearchResult, Track
@@ -153,6 +153,39 @@ class TidalLibraryProvider(backend.LibraryProvider):
     @property
     def _session(self):
         return self.backend.session
+
+    @staticmethod
+    def _convert_tracks(
+        tracks: Union[
+            List[Track], List[Tuple[str, Optional[Any]]], Dict[str, Optional[Any]]
+        ],
+    ) -> List[Track]:
+        """
+        Convert looked up tracks to a list of Track objects.
+
+        This is to ensure compatibility between Mopidy < 4.0 (which expects a
+        list of Track objects) and Mopidy >= 4.0 (which expects a list of key-value
+        tuples or a dictionary).
+        """
+        if isinstance(tracks, list) and all(isinstance(t, Track) for t in tracks):
+            return tracks  # type: ignore[return-value]
+        if isinstance(tracks, list) and all(isinstance(t, tuple) for t in tracks):
+            tracks = dict(tracks)  # type: ignore[assignment]
+        if isinstance(tracks, dict):
+            return [
+                Track(
+                    **{
+                        k: tracks.get(k)  # type: ignore[assignment]
+                        for k in Track.model_fields  # pylint: disable=no-member
+                        if k != "model"
+                    },
+                )
+            ]
+
+        raise TypeError(
+            f"Unsupported track format: {type(tracks)}. "
+            "Expected list of Track objects, list of tuples, or a dictionary."
+        )
 
     @login_hack(passthrough=True)
     def get_distinct(self, field, query=None) -> set[str]:
@@ -380,6 +413,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         for cache_name, new_data in cache_updates.items():
             getattr(self, cache_name).update(new_data)
 
+        tracks = self._convert_tracks(tracks)
         self._track_cache.update({track.uri: track for track in tracks})
         logger.info("Returning %d tracks", len(tracks))
         return tracks
