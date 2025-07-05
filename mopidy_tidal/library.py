@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 from mopidy import backend, models
 from mopidy.models import Image, Ref, SearchResult, Track
@@ -156,10 +156,8 @@ class TidalLibraryProvider(backend.LibraryProvider):
 
     @staticmethod
     def _convert_tracks(
-        tracks: Union[
-            List[Track], List[Tuple[str, Optional[Any]]], Dict[str, Optional[Any]]
-        ],
-    ) -> List[Track]:
+        tracks: Union[dict, list[dict], list[Track], list[tuple[str, Any | None]]],
+    ) -> list[Track]:
         """
         Convert looked up tracks to a list of Track objects.
 
@@ -169,8 +167,13 @@ class TidalLibraryProvider(backend.LibraryProvider):
         """
         if isinstance(tracks, list) and all(isinstance(t, Track) for t in tracks):
             return tracks  # type: ignore[return-value]
+        if isinstance(tracks, dict):
+            # Single-track lookup returns a dictionary
+            tracks = [tracks]  # type: ignore[assignment]
         if isinstance(tracks, list) and all(isinstance(t, tuple) for t in tracks):
-            tracks = dict(tracks)  # type: ignore[assignment]
+            # Single-track lookup returns a list of tuples that need to be converted
+            # to a dictionary first
+            tracks = [dict(tracks)]  # type: ignore[assignment]
         if isinstance(tracks, list) and all(isinstance(t, dict) for t in tracks):
             return [
                 Track(
@@ -181,16 +184,6 @@ class TidalLibraryProvider(backend.LibraryProvider):
                     },
                 )
                 for t in tracks
-            ]
-        if isinstance(tracks, dict):
-            return [
-                Track(
-                    **{
-                        k: tracks.get(k)  # type: ignore[assignment]
-                        for k in Track.model_fields  # pylint: disable=no-member
-                        if k != "model"
-                    },
-                )
             ]
 
         raise TypeError(
