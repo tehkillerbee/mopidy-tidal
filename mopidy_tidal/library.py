@@ -497,7 +497,16 @@ class TidalLibraryProvider(backend.LibraryProvider):
         else:  # Track in format `tidal:track:<artist_id>:<album_id>:<track_id>`
             album_id = parts[3]
             track_id = parts[4]
-        tracks = self._get_album_tracks(session, album_id)
+
+        try:
+            tracks = self._get_album_tracks(session, album_id)
+        except ObjectNotFound:
+            logger.warning("No such album: %s", album_id)
+            tracks = []
+        except TooManyRequests:
+            logger.warning("Too many requests when fetching album: %s", album_id)
+            tracks = []
+
         # If album is unavailable, no tracks will be returned
         if tracks:
             track = next((t for t in tracks if t.id == int(track_id)), None)
