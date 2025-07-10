@@ -6,7 +6,7 @@ import sys
 
 from mopidy import config, ext
 
-__version__ = "0.3.9"
+__version__ = "0.3.10"
 
 # TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)

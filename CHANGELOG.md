@@ -1,5 +1,12 @@
 # Changelog
 
+#### v0.3.10
+
+- Don't break tracks import if the track_id is not found
+- feature(library): Support Mopidy v4.0 tracks
+
+(Thanks [BlackLight](https://github.com/BlackLight) for the above PRs)
+
 #### v0.3.9
 
 - Bugfix: Handle get_urls() returning list in tidalapi v0.8.1
