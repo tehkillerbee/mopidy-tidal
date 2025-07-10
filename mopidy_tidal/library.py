@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 from mopidy import backend, models
 from mopidy.models import Image, Ref, SearchResult, Track
@@ -153,6 +153,43 @@ class TidalLibraryProvider(backend.LibraryProvider):
     @property
     def _session(self):
         return self.backend.session
+
+    @staticmethod
+    def _convert_tracks(
+        tracks: Union[dict, list[dict], list[Track], list[tuple[str, Any | None]]],
+    ) -> list[Track]:
+        """
+        Convert looked up tracks to a list of Track objects.
+
+        This is to ensure compatibility between Mopidy < 4.0 (which expects a
+        list of Track objects) and Mopidy >= 4.0 (which expects a list of key-value
+        tuples or a dictionary).
+        """
+        if isinstance(tracks, list) and all(isinstance(t, Track) for t in tracks):
+            return tracks  # type: ignore[return-value]
+        if isinstance(tracks, dict):
+            # Single-track lookup returns a dictionary
+            tracks = [tracks]  # type: ignore[assignment]
+        if isinstance(tracks, list) and all(isinstance(t, tuple) for t in tracks):
+            # Single-track lookup returns a list of tuples that need to be converted
+            # to a dictionary first
+            tracks = [dict(tracks)]  # type: ignore[assignment]
+        if isinstance(tracks, list) and all(isinstance(t, dict) for t in tracks):
+            return [
+                Track(
+                    **{
+                        k: t.get(k)  # type: ignore[assignment]
+                        for k in Track.model_fields  # pylint: disable=no-member
+                        if k != "model"
+                    },
+                )
+                for t in tracks
+            ]
+
+        raise TypeError(
+            f"Unsupported track format: {type(tracks)}. "
+            "Expected list of Track objects, list of tuples, or a dictionary."
+        )
 
     @login_hack(passthrough=True)
     def get_distinct(self, field, query=None) -> set[str]:
@@ -380,6 +417,7 @@ class TidalLibraryProvider(backend.LibraryProvider):
         for cache_name, new_data in cache_updates.items():
             getattr(self, cache_name).update(new_data)
 
+        tracks = self._convert_tracks(tracks)
         self._track_cache.update({track.uri: track for track in tracks})
         logger.info("Returning %d tracks", len(tracks))
         return tracks
@@ -459,7 +497,16 @@ class TidalLibraryProvider(backend.LibraryProvider):
         else:  # Track in format `tidal:track:<artist_id>:<album_id>:<track_id>`
             album_id = parts[3]
             track_id = parts[4]
-        tracks = self._get_album_tracks(session, album_id)
+
+        try:
+            tracks = self._get_album_tracks(session, album_id)
+        except ObjectNotFound:
+            logger.warning("No such album: %s", album_id)
+            tracks = []
+        except TooManyRequests:
+            logger.warning("Too many requests when fetching album: %s", album_id)
+            tracks = []
+
         # If album is unavailable, no tracks will be returned
         if tracks:
             track = next((t for t in tracks if t.id == int(track_id)), None)
